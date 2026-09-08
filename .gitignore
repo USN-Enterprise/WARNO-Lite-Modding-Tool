@@ -1,0 +1,12 @@
+bin/
+obj/
+publish/
+.vs/
+.dotnet-home/
+.nuget/
+/.dotnet-sdk/
+/tmp/
+/.warno-editor/
+/GameData/
+*.user
+*.suo

@@ -1,0 +1,6 @@
+// The directory name intentionally differs from the fixture root.
+export LocalisationDico_Test is TLocalisationDicoDescriptor
+(
+    CsvFile = "UNITS.csv"
+)
+

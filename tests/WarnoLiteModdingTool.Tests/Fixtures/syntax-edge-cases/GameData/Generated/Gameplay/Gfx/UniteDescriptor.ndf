@@ -1,0 +1,8 @@
+// export Commented_Out is TEntityDescriptor()
+export Descriptor_Unit_Syntax_Test is TEntityDescriptor
+(
+    Text = "A string containing export Fake is TBad() and a right paren )"
+    SingleQuoted = 'escaped \' quote and ('
+    Nested = [ TChild(Value = (1, 2)), MAP [("key", [3, 4])] ]
+)
+

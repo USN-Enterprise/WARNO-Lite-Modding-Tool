@@ -1,0 +1,7 @@
+// Synthetic P5 fixture. It is not copied from WARNO.
+MatrixCostName_P5_Test is MAP
+[
+    (Factory/Tanks, [1, 2]),
+    (Factory/Recons, [1]),
+    (Factory/Logistic, [1]),
+]

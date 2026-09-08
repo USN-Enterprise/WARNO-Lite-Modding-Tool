@@ -1,0 +1,1513 @@
+<Window x:Class="WarnoLiteModdingTool.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:WarnoLiteModdingTool.App.Localisation"
+        xmlns:controls="clr-namespace:WarnoLiteModdingTool.App.Controls"
+        Title="WARNO Lite Modding Tool" Icon="/WarnoLiteModdingTool;component/Assets/App.ico"
+        Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextBrush}"
+        Width="1420"
+        Height="860"
+        MinWidth="1200"
+        MinHeight="680"
+        WindowStartupLocation="CenterScreen"
+        SourceInitialized="Window_SourceInitialized"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing">
+    <Grid Background="{DynamicResource BackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Rectangle Grid.RowSpan="3" Fill="{DynamicResource MainBackgroundBrush}" IsHitTestVisible="False"/>
+        <Button Grid.Row="1" Panel.ZIndex="10" Content="{l:Loc Key='自动查找 Mod'}" Click="FindMods_Click" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="30,16"><Button.Style><Style TargetType="Button"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding HasOpenProject}" Value="False"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Button.Style></Button>
+        <Border x:Name="HeaderBar" Grid.Row="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="22,14">
+            <DockPanel LastChildFill="False">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="38" Height="38" CornerRadius="10" Background="{DynamicResource PrimaryBrush}">
+                        <TextBlock Text="W" Foreground="{DynamicResource OnPrimaryBrush}" FontWeight="Bold" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Margin="12,0,0,0">
+                        <TextBlock Text="WARNO Lite Modding Tool" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock Text="{l:Loc Key='1.8.5 · 单位简化与游戏规则'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="12" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="{l:Loc Key='引用工作台'}" Click="OpenAdvanced_Click" Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,10,0" />
+                    <Button Content="{l:Loc Key='设置'}" Click="OpenSettings_Click" Margin="0,0,12,0" Padding="12,7" />
+                    <TextBlock Visibility="Collapsed" Text="{l:Loc Key='主题'}" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,7,0" />
+                    <ComboBox x:Name="ThemeSelector" Visibility="Collapsed"
+                              Width="92"
+                              Margin="0,0,18,0"
+                              SelectionChanged="ThemeSelector_SelectionChanged">
+                        <ComboBoxItem Content="{l:Loc Key='黑蓝'}" Tag="DarkBlue" />
+                        <ComboBoxItem Content="{l:Loc Key='白蓝'}" Tag="LightBlue" />
+                    </ComboBox>
+                    <CheckBox x:Name="AdvancedModeCheckBox"
+                              Content="{l:Loc Key='专业模式'}"
+                              IsChecked="{Binding AdvancedMode}"
+                              Checked="AdvancedMode_Changed"
+                              Unchecked="AdvancedMode_Changed"
+                              VerticalAlignment="Center"
+                              Margin="0,0,18,0" />
+                    <Button Content="{l:Loc Key='取消扫描'}"
+                            Style="{StaticResource SecondaryButton}"
+                            Visibility="{Binding IsScanning, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            Click="CancelScan_Click"
+                            Margin="0,0,10,0" />
+                    <Button Content="{l:LocalizedBinding Path=ProblemButtonText}"
+                            Style="{StaticResource SecondaryButton}"
+                            Click="OpenProblems_Click"
+                            Padding="12,8"
+                            Margin="0,0,10,0" />
+                    <Grid Margin="0,0,10,0">
+                        <ToggleButton x:Name="ModToolsButton"
+                                      Content="{l:Loc Key='Mod 工具'}"
+                                      IsChecked="{Binding IsModToolsOpen, Mode=TwoWay}" />
+                        <Popup x:Name="ModToolsPopup"
+                               PlacementTarget="{Binding ElementName=ModToolsButton}"
+                               Placement="Bottom"
+                               HorizontalOffset="-250"
+                               VerticalOffset="5"
+                               AllowsTransparency="True"
+                               StaysOpen="False"
+                               IsOpen="{Binding IsModToolsOpen, Mode=TwoWay}">
+                            <Border Width="380" Background="{DynamicResource ControlBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
+                                <StackPanel>
+                                    <TextBlock Text="{l:Loc Key='Mod 项目与官方工具'}" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="{l:Loc Key='打开项目，或手动调用当前项目可用的官方流程；同一时间只运行一个流程。'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,10" />
+
+                                    <Button Content="{l:Loc Key='自动查找 Mod'}" Click="FindMods_Click" IsEnabled="{Binding CanOpenProject}" Padding="12,8" Margin="0,0,0,8"/>
+                                    <Button x:Name="ModToolsOpenProjectButton" Content="{l:Loc Key='打开 Mod 文件夹'}" Style="{StaticResource PrimaryButton}" Padding="12,8" IsEnabled="{Binding CanOpenProject}" Click="OpenProject_Click" />
+                                    <TextBlock Text="{l:Loc Key='选择包含 GameData 的 Mod 根目录'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="2,3,0,8" />
+
+                                    <Button Content="{l:Loc Key='启动开发模式'}" Style="{StaticResource SecondaryButton}" Padding="12,8" IsEnabled="{Binding CanRunDevMode}" Click="RunDevMode_Click" ToolTip="{l:LocalizedBinding Path=DevModeAvailability}" />
+                                    <TextBlock Text="{l:LocalizedBinding Path=DevModeAvailability}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="2,3,0,8" />
+
+                                    <Button Content="{l:Loc Key='上传 Mod'}" Style="{StaticResource SecondaryButton}" Padding="12,8" IsEnabled="{Binding CanRunUpload}" Click="RunUpload_Click" ToolTip="{l:LocalizedBinding Path=UploadAvailability}" />
+                                    <TextBlock Text="{l:LocalizedBinding Path=UploadAvailability}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="2,3,0,8" />
+
+                                    <TextBox Text="{Binding OfficialCommandOutput, Mode=OneWay}"
+                                             IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" MaxHeight="190" VerticalScrollBarVisibility="Auto"
+                                             Visibility="{Binding HasOfficialCommandOutput, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <Button Content="{l:Loc Key='创建新 Mod'}"
+                            Style="{StaticResource SecondaryButton}"
+                            IsEnabled="{Binding CanCreateMod}"
+                            Click="CreateMod_Click"
+                            Padding="12,8"
+                            Margin="0,0,10,0" />
+                    <Button x:Name="TopGenerateButton"
+                            Content="{l:Loc Key='生成 / 编译 Mod'}"
+                            Style="{StaticResource PrimaryButton}"
+                            IsEnabled="{Binding CanRunGenerate}"
+                            Click="RunGenerate_Click"
+                            ToolTip="{Binding GenerateAvailability}" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="ProjectPaneColumn" Width="272" MinWidth="220" MaxWidth="440" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition x:Name="WorkspaceColumn" Width="*" MinWidth="680" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource CardBorder}" Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="{l:Loc Key='项目'}" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource MutedTextBrush}" />
+                    <StackPanel Grid.Row="1" Margin="0,8,0,14">
+                        <TextBlock Text="{Binding ProjectName}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{l:LocalizedBinding Path=ProjectSummary}" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,5,0,0" />
+                    </StackPanel>
+
+                    <Border Grid.Row="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Margin="0,0,0,12" />
+
+                    <StackPanel Grid.Row="3">
+                        <TextBlock Text="{l:Loc Key='功能模块'}" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,8" />
+                        <ListBox ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemsSource="{Binding Modules}"
+                                 SelectedItem="{Binding SelectedModule}"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 HorizontalContentAlignment="Stretch">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="Margin" Value="0,0,0,7" />
+                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <Border x:Name="ItemBorder" Background="{DynamicResource NavigationItemBrush}" CornerRadius="6" Padding="11,9">
+                                                    <ContentPresenter />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource SelectionBrush}" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource SelectionHoverBrush}" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Opacity="{Binding Opacity}">
+                                        <DockPanel>
+                                            <TextBlock Text="{l:LocalizedBinding Path=StatusText}" DockPanel.Dock="Right" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="8,0,0,0" />
+                                            <TextBlock Text="{l:LocalizedBinding Path=DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                        </DockPanel>
+                                        <TextBlock Text="{l:LocalizedBinding Path=Summary}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="4" Margin="0,12,0,0">
+                        <TextBlock Text="{l:Loc Key='最近项目'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,6" />
+                        <ComboBox ItemsSource="{Binding RecentProjects}"
+                                  SelectedItem="{Binding SelectedRecentProject}"
+                                  DisplayMemberPath="DisplayText"
+                                  MaxDropDownHeight="220"
+                                  Padding="6" />
+                        <Grid Margin="0,7,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="{l:Loc Key='打开'}" Style="{StaticResource SecondaryButton}" Padding="10,6" Click="OpenRecent_Click" />
+                            <Button Grid.Column="2" Content="{l:Loc Key='移除记录'}" Style="{StaticResource SecondaryButton}" Padding="10,6" Click="RemoveRecent_Click" />
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <GridSplitter x:Name="MainPaneSplitter" Grid.Column="1" Style="{StaticResource PaneSplitter}" Margin="0,8" />
+
+            <Border Grid.Column="2" Style="{StaticResource CardBorder}" Padding="0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="18,16,18,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="300" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="{l:LocalizedBinding Path=SelectedModule.DisplayName}" FontSize="20" FontWeight="SemiBold" />
+                            <TextBlock Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0"
+                                       Visibility="{Binding IsObjectModule, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Run Text="{l:Loc Key='当前显示 '}" />
+                                <Run Text="{Binding VisibleObjectCount, Mode=OneWay}" FontWeight="SemiBold" />
+                                <Run Text="{l:Loc Key=' 个顶层对象'}" />
+                            </TextBlock>
+                            <TextBlock Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0"
+                                       Visibility="{Binding IsUnitModule, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Run Text="{l:Loc Key='当前显示 '}" />
+                                <Run Text="{Binding UnitWorkspace.VisibleUnitCount, Mode=OneWay}" FontWeight="SemiBold" />
+                                <Run Text="{l:Loc Key=' 个 Unit · 草稿 '}" />
+                                <Run Text="{Binding UnitWorkspace.DraftCount, Mode=OneWay}" FontWeight="SemiBold" />
+                                <Run Text="{l:Loc Key=' 项'}" />
+                            </TextBlock>
+                            <TextBlock Text="{l:Loc Key='按 Unit 选择现有 Weapon/Ammo；局部修改自动生成最小隔离链'}"
+                                       Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0"
+                                       Visibility="{Binding IsWeaponModule, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            <TextBlock Text="{l:Loc Key='直接选择 Ammo 修改本体字段；保存为全部引用作用域草稿'}"
+                                       Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0"
+                                       Visibility="{Binding IsAmmoModule, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            <TextBlock Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0"
+                                       Visibility="{Binding IsDivisionModule, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Run Text="{l:Loc Key='现有师 '}" /><Run Text="{Binding DivisionWorkspace.Divisions.Count, Mode=OneWay}" FontWeight="SemiBold" />
+                                <Run Text="{l:Loc Key=' 个 · 单位池与费用联动草稿'}" /><Run Text="{Binding DivisionWorkspace.CompatibilitySummary, Mode=OneWay}" />
+                            </TextBlock>
+                            <TextBlock Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0"
+                                       Visibility="{Binding IsDraftModule, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Run Text="{l:Loc Key='当前项目全部未应用修改 · 共 '}" />
+                                <Run Text="{Binding UnitWorkspace.DraftCount, Mode=OneWay}" FontWeight="SemiBold" />
+                                <Run Text="{l:Loc Key=' 项'}" />
+                            </TextBlock>
+                            <TextBlock Foreground="{DynamicResource MutedTextBrush}" Margin="0,3,0,0"
+                                       Visibility="{Binding IsProblemModule, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Run Text="{l:Loc Key='Mod 问题 '}" /><Run Text="{Binding ModProblemCount, Mode=OneWay}" FontWeight="SemiBold" />
+                                <Run Text="{l:Loc Key=' 项 · 工具问题 '}" /><Run Text="{Binding ToolProblemCount, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="{l:Loc Key=' 项'}" />
+                            </TextBlock>
+                        </StackPanel>
+                        <Grid Grid.Column="1"
+                              VerticalAlignment="Center"
+                              Visibility="{Binding IsObjectModule, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBox x:Name="ObjectSearchBox"
+                                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="{l:Loc Key='搜索可读名称、内部描述符或类型'}"
+                                     Padding="31,7,9,7" />
+                            <TextBlock x:Name="ObjectSearchIcon"
+                                       Text="&#xE721;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       Foreground="{DynamicResource MutedTextBrush}"
+                                       Margin="10,0,0,0"
+                                       HorizontalAlignment="Left"
+                                       VerticalAlignment="Center"
+                                       IsHitTestVisible="False" />
+                        </Grid>
+                    </Grid>
+
+                    <ProgressBar Grid.Row="1"
+                                 Height="3"
+                                 Minimum="0"
+                                 Maximum="100"
+                                 Value="{Binding ScanPercent, Mode=OneWay}"
+                                 Visibility="{Binding IsScanning, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                 Foreground="{DynamicResource PrimaryBrush}"
+                                 Background="{DynamicResource ProgressTrackBrush}" />
+
+                    <controls:RulesView Grid.Row="2" Workspace="{Binding RulesWorkspace}" Visibility="{Binding IsRulesModule, Converter={StaticResource BooleanToVisibilityConverter}}"><controls:RulesView.Style><Style TargetType="controls:RulesView"><Style.Triggers><DataTrigger Binding="{Binding UnitWorkspace.IsTransactionBusy}" Value="True"><Setter Property="IsEnabled" Value="False"/></DataTrigger></Style.Triggers></Style></controls:RulesView.Style></controls:RulesView>
+                    <controls:StrategicWorkspaceView Grid.Row="2" DataContext="{Binding StrategicWorkspace}" Visibility="{Binding DataContext.IsStrategicModule, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <Grid Grid.Row="2" Visibility="{Binding IsUnitModule, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="14,10">
+                            <Grid x:Name="UnitFilterPanel">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="230" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="8" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <Grid Grid.Column="0">
+                                    <TextBox x:Name="UnitSearchBox" Text="{Binding UnitWorkspace.TextFilter, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Loc Key='搜索名称或内部描述符'}" Padding="29,6,9,6" />
+                                    <TextBlock x:Name="UnitSearchIcon" Text="&#xE721;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource MutedTextBrush}" Margin="9,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False" />
+                                </Grid>
+
+                                <ScrollViewer Grid.Column="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" VerticalAlignment="Center">
+                                    <ItemsControl x:Name="UnitActiveFilterTags" ItemsSource="{Binding UnitWorkspace.ActiveFilterTags}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel Orientation="Horizontal" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{DynamicResource SelectionBrush}" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" CornerRadius="13" Padding="9,4,4,4" Margin="0,0,6,0">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding DisplayText}" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center" FontSize="11" />
+                                                        <Button Content="×" Style="{StaticResource SecondaryButton}" Padding="5,0" Margin="5,0,0,0" MinWidth="20" Click="RemoveFilterTag_Click" ToolTip="{l:Loc Key='移除此筛选'}" />
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+
+                                <Button Grid.Column="3" Content="{l:Loc Key='清空'}" Style="{StaticResource SecondaryButton}" Padding="10,6" Click="ClearUnitFilters_Click"
+                                        Visibility="{Binding UnitWorkspace.HasActiveFilters, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                                <ToggleButton x:Name="UnitFilterButton" Grid.Column="5" MinWidth="92" MinHeight="36" Padding="16,9" IsChecked="{Binding UnitWorkspace.IsFilterPanelOpen, Mode=TwoWay}">
+                                    <TextBlock>
+                                        <Run Text="{l:Loc Key='筛选 '}" /><Run Text="{Binding UnitWorkspace.ActiveFilterCount, Mode=OneWay}" />
+                                    </TextBlock>
+                                </ToggleButton>
+
+                                <Popup x:Name="UnitFilterPopup"
+                                       PlacementTarget="{Binding ElementName=UnitFilterButton}"
+                                       Placement="Bottom"
+                                       HorizontalOffset="-690"
+                                       VerticalOffset="5"
+                                       AllowsTransparency="True"
+                                       StaysOpen="False"
+                                       IsOpen="{Binding UnitWorkspace.IsFilterPanelOpen, Mode=TwoWay}">
+                                    <Border Width="790" MaxHeight="540" Background="{DynamicResource ControlBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                            <StackPanel>
+                                                <DockPanel Margin="0,0,0,12">
+                                                    <TextBlock Text="{l:Loc Key='组合筛选'}" FontSize="16" FontWeight="SemiBold" />
+                                                    <ComboBox DockPanel.Dock="Right" Width="112" ItemsSource="{Binding UnitWorkspace.FilterMatchModes}" SelectedItem="{Binding UnitWorkspace.FilterMatchMode}" ToolTip="{l:Loc Key='全部条件：跨类别都满足；任一条件：任一类别命中'}" />
+                                                </DockPanel>
+                                                <TextBlock Text="{l:Loc Key='同类标签始终任选其一；文本搜索始终与筛选结果相交。'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,-7,0,10" />
+                                                <ItemsControl ItemsSource="{Binding UnitWorkspace.FilterDimensions}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <StackPanel Margin="0,0,0,13">
+                                                                <TextBlock Text="{l:LocalizedBinding Path=Label}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,6" />
+                                                                <StackPanel Orientation="Horizontal"><Button Content="{l:Loc Key='全选'}" Tag="True" Click="SelectFilterDimension_Click"/><Button Content="{l:Loc Key='取消全选'}" Tag="False" Click="SelectFilterDimension_Click"/></StackPanel><ItemsControl ItemsSource="{Binding Options}">
+                                                                    <ItemsControl.ItemsPanel>
+                                                                        <ItemsPanelTemplate>
+                                                                            <WrapPanel Orientation="Horizontal" />
+                                                                        </ItemsPanelTemplate>
+                                                                    </ItemsControl.ItemsPanel>
+                                                                    <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <CheckBox Content="{l:GameBinding Path=Value, KindPath=DimensionKey}" Visibility="{l:GameBinding Path=Value, KindPath=DimensionKey, Visibility=True}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Style="{StaticResource FilterPillCheckBox}" Margin="0,0,7,6" />
+                                                                        </DataTemplate>
+                                                                    </ItemsControl.ItemTemplate>
+                                                                </ItemsControl>
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="0,11,0,0">
+                                                    <DockPanel>
+                                                        <Button Content="{l:Loc Key='清空全部'}" Style="{StaticResource SecondaryButton}" Padding="11,6" Click="ClearUnitFilters_Click" />
+                                                        <Button Content="{l:Loc Key='收起'}" DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Padding="14,6" Click="CloseUnitFilters_Click" />
+                                                    </DockPanel>
+                                                </Border>
+                                            </StackPanel>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="14,8">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,7">
+                                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                                        <Button x:Name="UnitSelectAllButton" Content="{l:Loc Key='全选当前筛选'}" Style="{StaticResource SecondaryButton}" Padding="10,6" Click="SelectVisibleBatch_Click" ToolTip="{l:Loc Key='把当前表格中的完整筛选结果加入勾选集合'}" />
+                                        <Button x:Name="UnitClearSelectionButton" Content="{l:Loc Key='清空选择'}" Style="{StaticResource SecondaryButton}" Padding="10,6" Margin="8,0,0,0" Click="ClearBatchSelection_Click" />
+                                    </StackPanel>
+                                    <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}">
+                                        <Run Text="{l:Loc Key='批量选择 · 已选 '}" /><Run Text="{Binding UnitWorkspace.BatchSelectedCount, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="{l:Loc Key=' 个'}" />
+                                    </TextBlock>
+                                </DockPanel>
+                            <StackPanel Orientation="Horizontal"><Button Content="{l:Loc Key=新增单位}" Click="CreateUnit_Click"/><Button Content="{l:Loc Key=编辑创建设置}" Tag="edit" Click="CreateUnit_Click"/></StackPanel><Expander IsExpanded="False">
+                                <Expander.Header>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{l:Loc Key='批量编辑'}" FontWeight="SemiBold" />
+                                        <TextBlock Foreground="{DynamicResource MutedTextBrush}" Margin="10,0,0,0">
+                                            <Run Text="{l:Loc Key='已勾选 '}" /><Run Text="{Binding UnitWorkspace.BatchSelectedCount, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="{l:Loc Key=' 个'}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Expander.Header>
+                                <StackPanel Margin="0,10,0,4">
+                                    <WrapPanel>
+                                        <StackPanel Width="155" Margin="0,0,10,8">
+                                            <TextBlock Text="{l:Loc Key='目标范围'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,0,0,3" />
+                                            <ComboBox ItemsSource="{Binding UnitWorkspace.BatchScopeOptions}" SelectedItem="{Binding UnitWorkspace.SelectedBatchScope}" ToolTip="{l:Loc Key='已勾选只处理复选框对象；当前筛选结果会处理表格中完整筛选集合'}" />
+                                        </StackPanel>
+                                        <StackPanel Width="190" Margin="0,0,10,8">
+                                            <TextBlock Text="{l:Loc Key='字段'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,0,0,3" />
+                                            <ComboBox ItemsSource="{Binding UnitWorkspace.VisibleBatchFields}" SelectedItem="{Binding UnitWorkspace.SelectedBatchField}" DisplayMemberPath="DisplayName" ToolTip="{l:Loc Key='只列出当前项目至少一个 Unit 上可编辑的字段'}" />
+                                        </StackPanel>
+                                        <StackPanel Width="180" Margin="0,0,10,8">
+                                            <TextBlock Text="{l:Loc Key='操作'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,0,0,3" />
+                                            <ComboBox ItemsSource="{Binding UnitWorkspace.VisibleBatchOperations}" SelectedItem="{Binding UnitWorkspace.SelectedBatchOperation}" DisplayMemberPath="DisplayName" />
+                                        </StackPanel>
+                                        <StackPanel Width="175" Margin="0,0,10,8">
+                                            <controls:ParameterNote Text="{Binding UnitWorkspace.SelectedBatchField.OriginalParameter}"/><TextBlock Text="{l:LocalizedBinding Path=UnitWorkspace.BatchOperandHint}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,0,0,3" />
+                                            <Grid>
+                                                <TextBox Text="{Binding UnitWorkspace.BatchOperand, UpdateSourceTrigger=PropertyChanged}"
+                                                         Visibility="{Binding UnitWorkspace.IsBatchTextEditor, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                <ComboBox ItemsSource="{Binding UnitWorkspace.BatchValueChoices}"
+                                                          SelectedItem="{Binding UnitWorkspace.BatchOperand, UpdateSourceTrigger=PropertyChanged}"
+                                                          Visibility="{Binding UnitWorkspace.IsBatchChoiceEditor, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                            </Grid>
+                                        </StackPanel>
+                                        <StackPanel Width="145" Margin="0,0,10,8" Visibility="{Binding UnitWorkspace.ShowsBatchFormulaOptions, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <TextBlock Text="{l:Loc Key='取整'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,0,0,3" />
+                                            <ComboBox ItemsSource="{Binding UnitWorkspace.BatchRoundingOptions}" SelectedItem="{Binding UnitWorkspace.SelectedBatchRounding}" DisplayMemberPath="DisplayName" />
+                                        </StackPanel>
+                                        <StackPanel Width="115" Margin="0,0,10,8" Visibility="{Binding UnitWorkspace.ShowsBatchFormulaOptions, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <TextBlock Text="{l:Loc Key='最小值（可空）'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,0,0,3" />
+                                            <TextBox Text="{Binding UnitWorkspace.BatchMinimum, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                        <StackPanel Width="115" Margin="0,0,10,8" Visibility="{Binding UnitWorkspace.ShowsBatchFormulaOptions, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <TextBlock Text="{l:Loc Key='最大值（可空）'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,0,0,3" />
+                                            <TextBox Text="{Binding UnitWorkspace.BatchMaximum, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                    </WrapPanel>
+
+                                    <WrapPanel Margin="0,2,0,0">
+                                        <Button Content="{l:Loc Key='预览批量结果'}" Style="{StaticResource SecondaryButton}" Padding="10,6" Margin="0,0,8,0" IsEnabled="{Binding UnitWorkspace.CanPreviewBatch}" Click="PreviewBatch_Click" />
+                                        <Button Content="{l:Loc Key='加入草稿'}" Style="{StaticResource PrimaryButton}" Padding="12,7" IsEnabled="{Binding UnitWorkspace.CanAddBatchDrafts}" Click="AddBatchDrafts_Click" ToolTip="{l:Loc Key='只写入 .warno-editor 草稿；正式文件仍需统一预览并应用'}" />
+                                    </WrapPanel>
+
+                                    <Border Background="{DynamicResource InfoBackgroundBrush}" BorderBrush="{DynamicResource InfoBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,9,0,0"
+                                            Visibility="{Binding UnitWorkspace.HasBatchPreview, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding UnitWorkspace.BatchPreviewSummary}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding UnitWorkspace.BatchSamplesText}" Margin="0,5,0,0" FontSize="11" TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding UnitWorkspace.BatchImpactText}" Margin="0,5,0,0" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Background="{DynamicResource WarningBackgroundBrush}" BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,7,0,0"
+                                            Visibility="{Binding UnitWorkspace.HasBatchMessages, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <TextBlock Text="{Binding UnitWorkspace.BatchMessagesText}" TextWrapping="Wrap" FontSize="11" />
+                                    </Border>
+                                </StackPanel>
+                            </Expander>
+                            </StackPanel>
+                        </Border>
+
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition x:Name="UnitListColumn" Width="*" MinWidth="360" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition x:Name="UnitInspectorColumn" Width="*" MinWidth="300" MaxWidth="600" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <DataGrid Grid.Column="0"
+                                      ItemsSource="{Binding UnitWorkspace.UnitsView}"
+                                      SelectedItem="{Binding UnitWorkspace.SelectedUnit}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="False"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      HeadersVisibility="Column"
+                                      GridLinesVisibility="Horizontal"
+                                      HorizontalGridLinesBrush="{DynamicResource GridLineBrush}"
+                                      BorderThickness="0"
+                                      RowHeaderWidth="0"
+                                      EnableRowVirtualization="True"
+                                      EnableColumnVirtualization="True"
+                                      VirtualizingPanel.IsVirtualizing="True"
+                                      VirtualizingPanel.VirtualizationMode="Recycling">
+                                <DataGrid.ContextMenu>
+                                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                        <MenuItem Header="{l:Loc Key='Unit 详情'}" IsEnabled="False" FontWeight="SemiBold" />
+                                        <Separator />
+                                        <MenuItem Header="{Binding UnitWorkspace.SelectedUnit.InternalName, StringFormat=内部名：{0}}" IsEnabled="False" />
+                                        <MenuItem Header="{Binding UnitWorkspace.SelectedUnit.DivisionsText, StringFormat=师规则：{0}}" IsEnabled="False" />
+                                        <MenuItem Header="{Binding UnitWorkspace.SelectedUnit.WeaponsText, StringFormat=Weapon：{0}}" IsEnabled="False" />
+                                        <MenuItem Header="{Binding UnitWorkspace.SelectedUnit.AmmunitionText, StringFormat=Ammo：{0}}" IsEnabled="False" />
+                                    </ContextMenu>
+                                </DataGrid.ContextMenu>
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Header="{l:Loc Key='选'}" Width="42">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding IsBatchSelected, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" ToolTip="{l:Loc Key='加入批量勾选范围'}" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="{l:Loc Key='名称'}" Binding="{Binding DisplayName}" ElementStyle="{StaticResource IndexPrimaryGridText}" HeaderStyle="{StaticResource IndexGridColumnHeader}" IsReadOnly="True" Width="2*" />
+                                    <DataGridTextColumn Header="{l:Loc Key='国家'}" Binding="{l:GameBinding Path=Country, Kind=country}" IsReadOnly="True" Width="70" />
+                                    <DataGridTextColumn Header="{l:Loc Key='栏位'}" Binding="{l:GameBinding Path=Factory, Kind=factory}" IsReadOnly="True" Width="1.1*" />
+                                    <DataGridTextColumn Header="{l:Loc Key='角色'}" Binding="{l:GameBinding Path=Role, Kind=role}" IsReadOnly="True" Width="90" />
+                                    <DataGridTextColumn Header="{l:Loc Key='草稿'}" Binding="{Binding DraftStatus}" IsReadOnly="True" Width="70" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <GridSplitter x:Name="UnitPaneSplitter" Grid.Column="1" Style="{StaticResource PaneSplitter}" />
+
+                            <Border Grid.Column="2" Background="{DynamicResource SurfaceAltBrush}">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <StackPanel Margin="16">
+                                        <TextBlock Text="{l:Loc Key='单位检查器'}" FontWeight="SemiBold" FontSize="16" />
+                                        <TextBlock Text="{Binding UnitWorkspace.SelectedUnit.DisplayName, TargetNullValue=尚未选择单位}" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0" TextWrapping="Wrap" />
+                                        <TextBlock Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}" Text="{Binding UnitWorkspace.SelectedUnit.InternalName}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,12" />
+
+                                        <Border Background="{DynamicResource InfoBackgroundBrush}" BorderBrush="{DynamicResource InfoBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,0,0,10"
+                                                Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <StackPanel>
+                                                <TextBlock Text="{l:Loc Key='只读引用影响'}" FontWeight="SemiBold" FontSize="11" />
+                                                <TextBlock Text="{Binding UnitWorkspace.SelectedUnit.DivisionsText, StringFormat=师规则：{0}}" FontSize="10" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                                <TextBlock Text="{Binding UnitWorkspace.SelectedUnit.WeaponsText, StringFormat=Weapon：{0}}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                                <TextBlock Text="{Binding UnitWorkspace.SelectedUnit.AmmunitionText, StringFormat=Ammo：{0}}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Border Background="{DynamicResource WarningBackgroundBrush}" BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,0,0,10"
+                                                Visibility="{Binding UnitWorkspace.HasDraftLoadError, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <TextBlock Text="{Binding UnitWorkspace.DraftLoadError}" TextWrapping="Wrap" />
+                                        </Border>
+
+                                        <ItemsControl x:Name="UnitFieldSections" ItemsSource="{Binding UnitWorkspace.FieldSections}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Expander IsExpanded="{Binding IsExpanded, Mode=TwoWay}" Margin="0,0,0,9">
+                                                        <Expander.Header>
+                                                            <DockPanel MinWidth="240">
+                                                                <TextBlock DockPanel.Dock="Right" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" VerticalAlignment="Center">
+                                                                    <Run Text="{Binding FieldCount, Mode=OneWay}" /><Run Text="{l:Loc Key=' 项'}" />
+                                                                </TextBlock>
+                                                                <TextBlock Text="{l:LocalizedBinding Path=Title}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBrush}" />
+                                                            </DockPanel>
+                                                        </Expander.Header>
+                                                        <ItemsControl ItemsSource="{Binding Groups}" Margin="0,8,0,0">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <StackPanel Margin="0,0,0,8">
+                                                                        <TextBlock Text="{l:LocalizedBinding Path=Title}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" FontWeight="SemiBold" Margin="2,0,0,5" />
+                                                                        <ItemsControl ItemsSource="{Binding Fields}">
+                                                                            <ItemsControl.ItemsPanel>
+                                                                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                                                            </ItemsControl.ItemsPanel>
+                                                                            <ItemsControl.ItemTemplate>
+                                                                                <DataTemplate>
+                                                                                    <Border Visibility="{Binding IsVisible, Converter={StaticResource BooleanToVisibilityConverter}}" Width="252" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="11" Margin="0,0,8,8" ToolTip="{l:LocalizedBinding Path=Hint}">
+                                                                                        <StackPanel>
+                                                                                            <StackPanel Visibility="{Binding IsReconPresetEditor, Converter={StaticResource BooleanToVisibilityConverter}}"><ComboBox ItemsSource="{Binding ReconPresets}" SelectedIndex="-1" SelectionChanged="ReconPreset_SelectionChanged" ToolTip="{l:Loc Key=侦察显示评级门槛}" IsEnabled="{Binding IsEditable}"/>
+                                                                                            <Expander Header="{l:Loc Key=档位参考}" IsExpanded="False"><TextBlock Text="{l:Loc Key='GDC 显示门槛：0 / 1768 / 2651 / 3535 / 5301 / 7068。原版常见组合（观察强度 / 识别率 / 周期秒）：1590 / 0.1 / 15；2473 / 0.2 / 12；3180 / 0.3 / 10；5300 / 0.5 / 6；7067 / 0.6 / 5；8834 / 0.75 / 4；侦察机特例 7500 / 1 / 2。仅作参考，选档不会修改识别率、周期或视野上限。'}" TextWrapping="Wrap" FontSize="10"/></Expander></StackPanel>
+                                                                                            <TextBlock Text="{l:LocalizedBinding Path=DisplayLabel}" FontWeight="SemiBold" /><controls:ParameterNote Text="{Binding OriginalParameter}"/><TextBlock Text="{l:Loc Key='四向类型不同，请选择统一类型'}" Visibility="{Binding ShowMixedArmor, Converter={StaticResource BooleanToVisibilityConverter}}" FontSize="10" TextWrapping="Wrap"/>
+                                                                                            <TextBlock Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" Text="{l:LocalizedBinding Path=Hint}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,2,0,7" MaxHeight="30" />
+                                                                                            <Grid>
+                                                                                                <TextBox Text="{Binding EditValue, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsEditable}" Visibility="{Binding IsTextEditor, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                                                                <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding ChoiceValue, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsEditable}" Padding="8,6" Visibility="{Binding IsChoiceEditor, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                                                                <StackPanel Visibility="{Binding IsDeploymentEditor, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                                                    <TextBox Text="{Binding EditValue, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsEditable}" ToolTip="{l:Loc Key='可直接填写任意非负有限部署距离'}" />
+                                                                                                    <ComboBox ItemsSource="{Binding DeploymentPresets}" DisplayMemberPath="Display" SelectedValuePath="Value" SelectedIndex="-1"
+                                                                                                              IsEnabled="{Binding IsEditable}" Padding="8,6" Margin="0,6,0,0"
+                                                                                                              SelectionChanged="DeploymentPreset_SelectionChanged" ToolTip="{l:Loc Key='选择当前 Mod 中已有的前置部署档位作为参考'}" />
+                                                                                                </StackPanel>
+                                                                                                <StackPanel Visibility="{Binding IsPillEditor, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                                                    <TextBlock FontSize="10" Margin="0,0,0,4"><Run Text="{l:Loc Key=已选}"/><Run Text=" "/><Run Text="{Binding SelectedChoiceCount, Mode=OneWay}"/></TextBlock><ItemsControl ItemsSource="{Binding SelectedChoices}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate><Border CornerRadius="8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="5,2" Margin="0,0,4,4"><StackPanel Orientation="Horizontal"><TextBlock Text="{l:GameBinding Path=Display, KindPath=Kind}" VerticalAlignment="Center"/><Button Content="×" Padding="3,0" IsEnabled="{Binding IsEnabled}" Click="RemoveUnitChoice_Click"/></StackPanel></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+                                                                                                    <ToggleButton x:Name="FieldChoiceButton" Content="{l:Loc Key='选择标签'}" IsEnabled="{Binding IsEditable}" Padding="10,6" />
+                                                                                                    <Popup PlacementTarget="{Binding ElementName=FieldChoiceButton}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True" IsOpen="{Binding IsChecked, ElementName=FieldChoiceButton, Mode=TwoWay}">
+                                                                                                        <Border Width="420" MaxHeight="360" Background="{DynamicResource ControlBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10">
+                                                                                                            <DockPanel><StackPanel DockPanel.Dock="Top"><TextBox Text="{Binding ChoiceSearch, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6" ToolTip="{l:Loc Key=搜索标签}"/>
+                                                                                                                <StackPanel Orientation="Horizontal" Visibility="{Binding IsMultiChoiceEditor, Converter={StaticResource BooleanToVisibilityConverter}}"><Button Content="{l:Loc Key='全选'}" Tag="True" Click="SelectFieldChoices_Click"/><Button Content="{l:Loc Key='取消全选'}" Tag="False" Click="SelectFieldChoices_Click"/></StackPanel></StackPanel><ListBox Height="250" ItemsSource="{Binding ChoicesView}" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True">
+                                                                                                                    
+                                                                                                                    <ListBox.ItemTemplate>
+                                                                                                                        <DataTemplate>
+                                                                                                                            <CheckBox Content="{l:GameBinding Path=Display, KindPath=Kind}" Visibility="{l:GameBinding Path=Display, KindPath=Kind, Visibility=True}" IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding IsEnabled}" Style="{StaticResource FilterPillCheckBox}" Margin="0,0,7,7" ToolTip="{l:Loc Key='锁定项是 Unit 身份标签，避免误删'}" />
+                                                                                                                        </DataTemplate>
+                                                                                                                    </ListBox.ItemTemplate>
+                                                                                                                </ListBox>
+                                                                                                            </DockPanel>
+                                                                                                        </Border>
+                                                                                                    </Popup>
+                                                                                                    <TextBox Text="{Binding EditValue, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,0"
+                                                                                                             Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                                                             ToolTip="{l:Loc Key='专业模式可直接编辑自定义标签；使用英文逗号分隔'}" />
+                                                                                                </StackPanel>
+                                                                                            </Grid>
+                                                                                            <DockPanel Margin="0,6,0,0">
+                                                                                                <Button Content="{l:Loc Key='撤销此项'}" DockPanel.Dock="Right" Padding="8,3" Style="{StaticResource SecondaryButton}" Visibility="{Binding HasDraft, Converter={StaticResource BooleanToVisibilityConverter}}" Click="UndoField_Click" />
+                                                                                                <TextBlock Text="{l:LocalizedBinding Path=StatusText}" Foreground="{DynamicResource PrimaryBrush}" FontSize="10" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                                                                            </DockPanel>
+                                                                                            <TextBlock Text="{l:LocalizedBinding Path=ReadOnlyReason}" Foreground="{DynamicResource ErrorTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                                                                            <StackPanel Margin="0,8,0,0" Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                                                <TextBlock Foreground="{DynamicResource MutedTextBrush}" FontSize="9" TextWrapping="Wrap"><Run Text="{l:Loc Key='字段：'}" /><Run Text="{Binding FieldPath, Mode=OneWay}" /></TextBlock>
+                                                                                                <TextBlock Foreground="{DynamicResource MutedTextBrush}" FontSize="9" TextWrapping="Wrap"><Run Text="{l:Loc Key='位置：'}" /><Run Text="{Binding SourceLocation, Mode=OneWay}" /></TextBlock>
+                                                                                                <TextBlock Foreground="{DynamicResource MutedTextBrush}" FontSize="9" TextWrapping="Wrap"><Run Text="{l:Loc Key='NDF 原值：'}" /><Run Text="{Binding RawValue, Mode=OneWay}" /></TextBlock>
+                                                                                                <TextBlock Foreground="{DynamicResource MutedTextBrush}" FontSize="9" TextWrapping="Wrap"><Run Text="{l:Loc Key='草稿目标：'}" /><Run Text="{Binding TargetRaw, Mode=OneWay}" /></TextBlock>
+                                                                                                <TextBlock Text="{Binding ConversionSource}" Foreground="{DynamicResource MutedTextBrush}" FontSize="9" TextWrapping="Wrap" />
+                                                                                            </StackPanel>
+                                                                                        </StackPanel>
+                                                                                    </Border>
+                                                                                </DataTemplate>
+                                                                            </ItemsControl.ItemTemplate>
+                                                                        </ItemsControl>
+                                                                    </StackPanel>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </Expander>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <Expander Margin="0,6,0,0" IsExpanded="False">
+                                            <Expander.Header>
+                                                <TextBlock FontWeight="SemiBold">
+                                                    <Run Text="{l:Loc Key='待应用草稿（'}" /><Run Text="{Binding UnitWorkspace.DraftCount, Mode=OneWay}" /><Run Text="）" />
+                                                </TextBlock>
+                                            </Expander.Header>
+                                            <StackPanel Margin="0,9,0,0">
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                    <Button Content="{l:Loc Key='预览并应用全部'}" Style="{StaticResource PrimaryButton}" Padding="11,7"
+                                                            IsEnabled="{Binding UnitWorkspace.CanApply}" Click="PreviewApply_Click" />
+                                                    <Button Content="{l:Loc Key='清空全部草稿'}" Style="{StaticResource SecondaryButton}" Padding="10,6" Margin="8,0,0,0"
+                                                            IsEnabled="{Binding UnitWorkspace.CanClearDrafts}" Click="ClearDrafts_Click" />
+                                                </StackPanel>
+                                                <TextBlock Text="{l:Loc Key='应用前会刷新基线、校验全部候选并创建事务备份。'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,8" />
+                                                <ItemsControl ItemsSource="{Binding UnitWorkspace.DraftItems}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="9" Margin="0,0,0,7">
+                                                                <StackPanel>
+                                                                    <TextBlock Text="{l:LocalizedBinding Path=Summary}" TextWrapping="Wrap" FontSize="11" />
+                                                                    <TextBlock Text="{Binding File}" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" FontSize="10" Margin="0,3,0,0" />
+                                                                    <DockPanel Margin="0,5,0,0">
+                                                                        <Button Content="{l:Loc Key='移除'}" DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Padding="8,3" Click="UndoDraft_Click" />
+                                                                        <TextBlock Text="{Binding Status}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" VerticalAlignment="Center" />
+                                                                    </DockPanel>
+                                                                </StackPanel>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Expander>
+
+                                        <Expander Margin="0,10,0,0" IsExpanded="False">
+                                            <Expander.Header>
+                                                <TextBlock Text="{l:Loc Key='事务备份与恢复'}" FontWeight="SemiBold" />
+                                            </Expander.Header>
+                                            <StackPanel Margin="0,9,0,0">
+                                                <TextBlock Text="{l:Loc Key='存在未应用草稿时不能恢复；恢复前也会备份当前文件。'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,8" />
+                                                <ItemsControl ItemsSource="{Binding UnitWorkspace.Backups}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="9" Margin="0,0,0,7">
+                                                                <StackPanel>
+                                                                    <DockPanel>
+                                                                        <TextBlock Text="{Binding Header}" FontWeight="SemiBold" FontSize="11" />
+                                                                        <TextBlock Text="{Binding StateText}" DockPanel.Dock="Right" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" />
+                                                                    </DockPanel>
+                                                                    <TextBlock Text="{Binding BackupId}" Foreground="{DynamicResource MutedTextBrush}" FontSize="9" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                                                    <TextBlock Text="{Binding FilesText}" Foreground="{DynamicResource MutedTextBrush}" FontSize="9" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                                                    <DockPanel Margin="0,5,0,0">
+                                                                        <Button Content="{l:Loc Key='恢复'}" DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Padding="8,3"
+                                                                                IsEnabled="{Binding CanRestore}" Click="RestoreBackup_Click" />
+                                                                        <TextBlock Text="{Binding ErrorText}" Foreground="{DynamicResource ErrorTextBrush}" FontSize="9" TextWrapping="Wrap" />
+                                                                    </DockPanel>
+                                                                </StackPanel>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Expander>
+
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Border>
+
+                            <GridSplitter Grid.Column="3" Width="6" Style="{StaticResource PaneSplitter}"
+                                          Visibility="{Binding UnitWorkspace.HasBatchInspector, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                            <Border Grid.Column="4" Width="330" Background="{DynamicResource SurfaceBrush}" Padding="12"
+                                    Visibility="{Binding UnitWorkspace.HasBatchInspector, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Grid>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{l:Loc Key='批量单位检查器'}" FontSize="16" FontWeight="SemiBold" />
+                                        <TextBlock Text="{l:Loc Key='只列出所有勾选 Unit 都具备的安全字段；输入本身不会创建草稿。'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,3,0,9" />
+                                    </StackPanel>
+                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl ItemsSource="{Binding UnitWorkspace.CommonBatchFields}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="9" Margin="0,0,0,7">
+                                                        <StackPanel>
+                                                            <TextBlock Text="{l:LocalizedBinding Path=Label}" FontWeight="SemiBold" /><controls:ParameterNote Text="{Binding OriginalParameter}"/>
+                                                            <TextBlock Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" Text="{l:LocalizedBinding Path=Hint}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,2,0,5" />
+                                                            <TextBox Text="{Binding EditValue, UpdateSourceTrigger=PropertyChanged}" Visibility="{Binding IsTextEditor, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                            <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding EditValue}" Visibility="{Binding IsChoiceEditor, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                            <DockPanel Margin="0,6,0,0">
+                                                                <Button Content="{l:Loc Key='加入草稿'}" DockPanel.Dock="Right" Padding="8,4" Click="AddCommonBatchField_Click" />
+                                                                <TextBlock Text="{l:LocalizedBinding Path=StatusText}" FontSize="9" Foreground="{DynamicResource PrimaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                                            </DockPanel>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
+
+                    <Grid Grid.Row="2" Visibility="{Binding IsWeaponModule, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="WeaponUnitsColumn" Width="300" MinWidth="220" MaxWidth="520" />
+                            <ColumnDefinition Width="6" />
+                            <ColumnDefinition x:Name="WeaponScopeColumn" Width="360" MinWidth="300" MaxWidth="620" />
+                            <ColumnDefinition Width="6" />
+                            <ColumnDefinition x:Name="WeaponFieldsColumn" Width="*" MinWidth="360" />
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                            <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="12,10">
+                                <StackPanel>
+                                    <TextBox Text="{Binding WeaponWorkspace.UnitSearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Loc Key='按显示名或内部名的任意片段搜索 Unit'}" /><controls:FacetFilter Tag="weapon" Rows="{Binding WeaponWorkspace.FilterRows}" FilterChanged="WorkspaceFilter_Changed"/>
+                                    <DockPanel Margin="0,7,0,0">
+                                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                                            <Button x:Name="WeaponSelectAllButton" Content="{l:Loc Key='全选当前筛选'}" Style="{StaticResource SecondaryButton}" Padding="8,5" Click="SelectVisibleWeaponScope_Click" />
+                                            <Button x:Name="WeaponClearSelectionButton" Content="{l:Loc Key='清空选择'}" Style="{StaticResource SecondaryButton}" Padding="8,5" Margin="7,0,0,0" Click="ClearWeaponScopeSelection_Click" />
+                                        </StackPanel>
+                                        <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" FontSize="10">
+                                            <Run Text="{l:Loc Key='已选 '}" /><Run Text="{Binding WeaponWorkspace.WeaponScopeSelectedCount, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="{l:Loc Key=' 个'}" />
+                                        </TextBlock>
+                                    </DockPanel>
+                                </StackPanel>
+                            </Border>
+                        <DataGrid Grid.Row="1" ItemsSource="{Binding WeaponWorkspace.UnitsView}" SelectedItem="{Binding WeaponWorkspace.SelectedUnit}"
+                                  AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="False"
+                                  HeadersVisibility="Column" GridLinesVisibility="Horizontal" BorderThickness="0" RowHeaderWidth="0">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Header="{l:Loc Key='选'}" Width="42">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsWeaponScopeSelected, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" Click="WeaponScopeCheck_Click" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Unit" Binding="{Binding DisplayName}" ElementStyle="{StaticResource IndexPrimaryGridText}" HeaderStyle="{StaticResource IndexGridColumnHeader}" IsReadOnly="True" Width="*" />
+                                <DataGridTextColumn Header="{l:Loc Key='国家'}" Binding="{l:GameBinding Path=Country, Kind=country}" IsReadOnly="True" Width="60" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        </Grid>
+
+                        <GridSplitter x:Name="WeaponLeftSplitter" Grid.Column="1" Style="{StaticResource PaneSplitter}" />
+
+                        <Border Grid.Column="2" Background="{DynamicResource SurfaceAltBrush}" Padding="14">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock Text="{l:Loc Key='挂载与作用域'}" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="{l:Loc Key='当前 Unit'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,12,0,4" />
+                                    <TextBlock Text="{Binding WeaponWorkspace.SelectedUnit.DisplayName}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                    <TextBlock Text="Weapon" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,11,0,4" />
+                                    <controls:SearchPicker ItemsSource="{Binding WeaponWorkspace.Weapons}" SelectedItem="{Binding WeaponWorkspace.SelectedWeapon}" DisplayMemberPath="Name" Placeholder="搜索并选择 Weapon" />
+                                    <TextBlock Text="MountedWeapon" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,11,0,4" />
+                                    <controls:SearchPicker ItemsSource="{Binding WeaponWorkspace.Mounts}" SelectedItem="{Binding WeaponWorkspace.SelectedMount}" DisplayMemberPath="Header" SecondaryMemberPath="AmmoName" Placeholder="搜索挂载或 Ammo" />
+
+                                    <TextBlock Text="{l:Loc Key='修改作用域'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,12,0,4" />
+                                    <ComboBox ItemsSource="{Binding WeaponWorkspace.VisibleScopeOptions}" SelectedItem="{Binding WeaponWorkspace.SelectedScope}" />
+                                    <TextBlock Text="{l:LocalizedBinding Path=WeaponWorkspace.SelectedUnitsText}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,5,0,0" />
+
+                                    <Border Background="{DynamicResource WarningBackgroundBrush}" BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="9" Margin="0,12,0,0">
+                                        <StackPanel>
+                                            <TextBlock Text="{l:Loc Key='共享影响'}" FontWeight="SemiBold" FontSize="11" />
+                                            <TextBlock Text="{Binding WeaponWorkspace.ImpactText}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                            <TextBlock Text="{Binding WeaponWorkspace.TotalAmmoText}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <TextBlock Text="{l:Loc Key='替换为已有 Weapon'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,12,0,4" />
+                                    <controls:SearchPicker ItemsSource="{Binding WeaponWorkspace.WeaponChoices}" SelectedItem="{Binding WeaponWorkspace.ReplacementWeapon}" Placeholder="搜索替换 Weapon" />
+                                    <Button Content="{l:Loc Key='保存 Weapon 替换草稿'}" Style="{StaticResource SecondaryButton}" Margin="0,7,0,0" Padding="9,5"
+                                            IsEnabled="{Binding WeaponWorkspace.CanReplaceWeapon}" Click="ReplaceWeapon_Click" />
+
+                                    <Expander Header="{l:Loc Key='表现链（只读）'}" Margin="0,14,0,0" IsExpanded="False">
+                                        <TextBlock Text="{Binding WeaponWorkspace.PresentationText}" FontSize="10" TextWrapping="Wrap" Margin="0,7,0,0" />
+                                    </Expander>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+
+                        <GridSplitter x:Name="WeaponRightSplitter" Grid.Column="3" Style="{StaticResource PaneSplitter}" />
+
+                        <Border Grid.Column="4" Padding="14">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock Text="{l:Loc Key='现有字段'}" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="{l:Loc Key='只显示当前对象中已存在且能唯一定位的字段；不新增或删除槽位。'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,3,0,10" />
+                                    <ItemsControl x:Name="WeaponFieldSections" ItemsSource="{Binding WeaponWorkspace.FieldSections}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Expander IsExpanded="{Binding IsExpanded, Mode=TwoWay}" Margin="0,0,0,8">
+                                                    <Expander.Header>
+                                                        <DockPanel MinWidth="300">
+                                                            <TextBlock DockPanel.Dock="Right" Foreground="{DynamicResource MutedTextBrush}" FontSize="10"><Run Text="{Binding FieldCount, Mode=OneWay}" /><Run Text="{l:Loc Key=' 项'}" /></TextBlock>
+                                                            <TextBlock Text="{l:LocalizedBinding Path=Title}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBrush}" />
+                                                        </DockPanel>
+                                                    </Expander.Header>
+                                                    <ItemsControl ItemsSource="{Binding Groups}" Margin="0,7,0,0">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <StackPanel Margin="0,0,0,7">
+                                                                    <TextBlock Text="{l:LocalizedBinding Path=Title}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" FontWeight="SemiBold" Margin="2,0,0,5" />
+                                                                    <ItemsControl ItemsSource="{Binding Fields}">
+                                                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate>
+                                                                                <Border Width="252" Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,0,8,8" ToolTip="{l:LocalizedBinding Path=Hint}">
+                                                                                    <StackPanel>
+                                                                                        <TextBlock Text="{l:LocalizedBinding Path=Label}" FontWeight="SemiBold" /><controls:ParameterNote Text="{Binding OriginalParameter}"/>
+                                                                                        <TextBlock Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" Text="{l:LocalizedBinding Path=Hint}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,2,0,6" MaxHeight="30" />
+                                                                                        <TextBox Text="{Binding EditValue, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsEditable}" Visibility="{Binding IsTextEditor, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                                                        <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding EditValue, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsEditable}" Visibility="{Binding IsChoiceEditor, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                                                        <controls:SearchPicker ItemsSource="{Binding ReferenceChoices}" SelectedItem="{Binding SelectedReference, UpdateSourceTrigger=PropertyChanged}" DisplayMemberPath="Label" SecondaryMemberPath="Search"
+                                                                                                               IsEnabled="{Binding IsEditable}" Placeholder="搜索并选择 Ammo"
+                                                                                                               Visibility="{Binding IsReferenceEditor, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                                                        <DockPanel Margin="0,5,0,0">
+                                                                                            <Button Content="{l:Loc Key='撤销此项'}" DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Padding="7,3" Visibility="{Binding HasDraft, Converter={StaticResource BooleanToVisibilityConverter}}" Click="UndoWeaponField_Click" />
+                                                                                            <TextBlock Text="{l:LocalizedBinding Path=StatusText}" FontSize="10" Foreground="{DynamicResource PrimaryBrush}" />
+                                                                                        </DockPanel>
+                                                                                        <StackPanel Margin="0,6,0,0" Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                                            <TextBlock Text="{Binding FieldPath, StringFormat=字段：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+                                                                                            <TextBlock Text="{Binding SourceLocation, StringFormat=位置：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+                                                                                            <TextBlock Text="{Binding RawValue, StringFormat=NDF 原值：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+                                                                                            <TextBlock Text="{Binding TargetRaw, StringFormat=草稿目标：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+                                                                                        </StackPanel>
+                                                                                    </StackPanel>
+                                                                                </Border>
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                </StackPanel>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </Expander>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <Border Background="{DynamicResource InfoBackgroundBrush}" BorderBrush="{DynamicResource InfoBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,5,0,0">
+                                        <StackPanel>
+                                            <TextBlock FontWeight="SemiBold"><Run Text="{l:Loc Key='统一事务中心 · 草稿 '}" /><Run Text="{Binding UnitWorkspace.DraftCount, Mode=OneWay}" /><Run Text="{l:Loc Key=' 项'}" /></TextBlock>
+                                            <StackPanel Orientation="Horizontal" Margin="0,7,0,0">
+                                                <Button Content="{l:Loc Key='预览并应用全部'}" Style="{StaticResource PrimaryButton}" Padding="10,6" IsEnabled="{Binding UnitWorkspace.CanApply}" Click="PreviewApply_Click" />
+                                                <Button Content="{l:Loc Key='清空全部草稿'}" Style="{StaticResource SecondaryButton}" Padding="9,5" Margin="7,0,0,0" IsEnabled="{Binding UnitWorkspace.CanClearDrafts}" Click="ClearDrafts_Click" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+
+                    <Grid Grid.Row="2" Visibility="{Binding IsAmmoModule, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="AmmoListColumn" Width="390" MinWidth="300" MaxWidth="560" />
+                            <ColumnDefinition Width="6" />
+                            <ColumnDefinition x:Name="AmmoFieldsColumn" Width="*" MinWidth="500" />
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="12,10">
+                                <StackPanel>
+                                    <DockPanel Margin="0,0,0,7">
+                                        <TextBlock Text="{l:Loc Key='Ammo 列表'}" FontWeight="SemiBold" />
+                                        <TextBlock DockPanel.Dock="Right" Foreground="{DynamicResource MutedTextBrush}" FontSize="10">
+                                            <Run Text="{l:Loc Key='当前 '}" /><Run Text="{Binding AmmoWorkspace.VisibleAmmoCount, Mode=OneWay}" /><Run Text="{l:Loc Key=' 项'}" />
+                                        </TextBlock>
+                                    </DockPanel>
+                                    <Grid>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                        <TextBox x:Name="AmmoSearchBox" Text="{Binding AmmoWorkspace.SearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Loc Key='搜索弹药名称、内部名、token或源文件'}" Padding="29,6,9,6" /><controls:FacetFilter Grid.Row="1" Tag="ammo" Rows="{Binding AmmoWorkspace.FilterRows}" FilterChanged="WorkspaceFilter_Changed"/>
+                                        <TextBlock Grid.Row="0" x:Name="AmmoSearchIcon" Text="&#xE721;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource MutedTextBrush}" Margin="9,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <DataGrid x:Name="AmmoIndexGrid"
+                                      Grid.Row="1"
+                                      ItemsSource="{Binding AmmoWorkspace.AmmunitionView}"
+                                      SelectedItem="{Binding AmmoWorkspace.SelectedAmmo}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      HeadersVisibility="Column"
+                                      GridLinesVisibility="Horizontal"
+                                      BorderThickness="0"
+                                      RowHeaderWidth="0"
+                                      RowHeight="38">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Ammo" Binding="{Binding DisplayName}" ElementStyle="{StaticResource IndexPrimaryGridText}" HeaderStyle="{StaticResource IndexGridColumnHeader}" Width="2*" MinWidth="180" />
+                                    <DataGridTextColumn Header="{l:Loc Key='引用'}" Binding="{Binding ReferencesText}" ElementStyle="{StaticResource SecondaryGridText}" Width="1.2*" MinWidth="90" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+
+                        <GridSplitter x:Name="AmmoPaneSplitter" Grid.Column="1" Style="{StaticResource PaneSplitter}" />
+
+                        <Grid Grid.Column="2" Margin="14">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <StackPanel>
+                                <TextBlock Text="{Binding AmmoWorkspace.SelectedAmmo.DisplayName, TargetNullValue=尚未选择 Ammo}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding AmmoWorkspace.SelectedAmmo.Name}" Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10"/>
+                                <TextBlock Text="{Binding AmmoWorkspace.SourceText}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                <Border Background="{DynamicResource WarningBackgroundBrush}" BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="9" Margin="0,10,0,10">
+                                    <StackPanel>
+                                        <TextBlock Text="{l:Loc Key='直接修改 Ammo 本体'}" FontWeight="SemiBold" FontSize="11" />
+                                        <TextBlock Text="{Binding AmmoWorkspace.ImpactText}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                        <TextBlock Text="{l:Loc Key='如需只影响某些 Unit，请回到武器页按 Unit 选择作用域；这里的修改会作用于全部引用者。'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                    </StackPanel>
+                                </Border>
+                                <Expander Header="{l:Loc Key='查看引用'}" IsExpanded="False" Margin="0,0,0,10">
+                                    <StackPanel Margin="0,8,0,0">
+                                        <TextBox Text="{Binding AmmoWorkspace.ReferenceSearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Loc Key='搜索 Weapon 或 Unit 内部名的任意片段'}" />
+                                        <TextBlock Text="{Binding AmmoWorkspace.ReferenceDraftStatus}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" Margin="0,5,0,6" TextWrapping="Wrap" />
+                                        <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto">
+                                            <ItemsControl ItemsSource="{Binding AmmoWorkspace.References}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,6">
+                                                            <StackPanel>
+                                                                <DockPanel><TextBlock Text="{Binding Weapon}" FontWeight="SemiBold" /><TextBlock DockPanel.Dock="Right" Text="{Binding CountText}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /></DockPanel>
+                                                                <TextBlock Text="{Binding UnitsText}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                </Expander>
+                            </StackPanel>
+
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl x:Name="AmmoFieldSections" ItemsSource="{Binding AmmoWorkspace.FieldSections}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Expander IsExpanded="{Binding IsExpanded, Mode=TwoWay}" Margin="0,0,0,8">
+                                                <Expander.Header>
+                                                    <DockPanel MinWidth="430">
+                                                        <TextBlock DockPanel.Dock="Right" Foreground="{DynamicResource MutedTextBrush}" FontSize="10"><Run Text="{Binding FieldCount, Mode=OneWay}" /><Run Text="{l:Loc Key=' 项'}" /></TextBlock>
+                                                        <TextBlock Text="{l:LocalizedBinding Path=Title}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBrush}" />
+                                                    </DockPanel>
+                                                </Expander.Header>
+                                                <ItemsControl ItemsSource="{Binding Groups}" Margin="0,7,0,0">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <StackPanel Margin="0,0,0,7">
+                                                                <TextBlock Text="{l:LocalizedBinding Path=Title}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" FontWeight="SemiBold" Margin="2,0,0,5" />
+                                                                <ItemsControl ItemsSource="{Binding Fields}">
+                                                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                                    <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <Border Width="252" Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,0,8,8" ToolTip="{l:LocalizedBinding Path=Hint}">
+                                                                                <StackPanel>
+                                                                                    <TextBlock Text="{l:LocalizedBinding Path=Label}" FontWeight="SemiBold" /><controls:ParameterNote Text="{Binding OriginalParameter}"/>
+                                                                                    <TextBlock Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" Text="{l:LocalizedBinding Path=Hint}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,2,0,6" MaxHeight="30" />
+                                                                                    <TextBox Text="{Binding EditValue, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsEditable}" Visibility="{Binding IsTextEditor, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                                                    <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding EditValue, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsEditable}" Visibility="{Binding IsChoiceEditor, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                                                    <DockPanel Margin="0,5,0,0">
+                                                                                        <Button Content="{l:Loc Key='撤销此项'}" DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Padding="7,3" Visibility="{Binding HasDraft, Converter={StaticResource BooleanToVisibilityConverter}}" Click="UndoAmmoField_Click" />
+                                                                                        <TextBlock Text="{l:LocalizedBinding Path=StatusText}" FontSize="10" Foreground="{DynamicResource PrimaryBrush}" />
+                                                                                    </DockPanel>
+                                                                                    <StackPanel Margin="0,6,0,0" Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                                        <TextBlock Text="{Binding FieldPath, StringFormat=字段：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+                                                                                        <TextBlock Text="{Binding SourceLocation, StringFormat=位置：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+                                                                                        <TextBlock Text="{Binding RawValue, StringFormat=NDF 原值：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+                                                                                        <TextBlock Text="{Binding TargetRaw, StringFormat=草稿目标：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+                                                                                    </StackPanel>
+                                                                                </StackPanel>
+                                                                            </Border>
+                                                                        </DataTemplate>
+                                                                    </ItemsControl.ItemTemplate>
+                                                                </ItemsControl>
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </Expander>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+
+                            <Border Grid.Row="2" Background="{DynamicResource InfoBackgroundBrush}" BorderBrush="{DynamicResource InfoBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,8,0,0">
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                        <Button Content="{l:Loc Key='预览并应用全部'}" Style="{StaticResource PrimaryButton}" Padding="10,6" IsEnabled="{Binding UnitWorkspace.CanApply}" Click="PreviewApply_Click" />
+                                        <Button Content="{l:Loc Key='清空全部草稿'}" Style="{StaticResource SecondaryButton}" Padding="9,5" Margin="7,0,0,0" IsEnabled="{Binding UnitWorkspace.CanClearDrafts}" Click="ClearDrafts_Click" />
+                                    </StackPanel>
+                                    <TextBlock VerticalAlignment="Center" FontWeight="SemiBold"><Run Text="{l:Loc Key='全部草稿 '}" /><Run Text="{Binding UnitWorkspace.DraftCount, Mode=OneWay}" /><Run Text="{l:Loc Key=' 项'}" /></TextBlock>
+                                </DockPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+
+                    <Grid Grid.Row="2" Visibility="{Binding IsDivisionModule, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="DivisionListColumn" Width="300" MinWidth="240" MaxWidth="520" />
+                            <ColumnDefinition Width="6" />
+                            <ColumnDefinition x:Name="DivisionEditorColumn" Width="*" MinWidth="480" />
+                        </Grid.ColumnDefinitions>
+
+                        <DockPanel Grid.Column="0"><TextBox DockPanel.Dock="Top" Margin="6" Text="{Binding DivisionWorkspace.Search, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Loc Key='搜索师'}"/>
+                        <DataGrid ItemsSource="{Binding DivisionWorkspace.DivisionsView}"
+                                  SelectedItem="{Binding DivisionWorkspace.SelectedDivision}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  BorderThickness="0"
+                                  RowHeaderWidth="0">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="{l:Loc Key='师'}" Binding="{Binding DisplayName}" ElementStyle="{StaticResource IndexPrimaryGridText}" HeaderStyle="{StaticResource IndexGridColumnHeader}" Width="*" />
+                                <DataGridTextColumn Header="{l:Loc Key='国家'}" Binding="{l:GameBinding Path=Country, Kind=country}" Width="58" />
+                                <DataGridTextColumn Header="{l:Loc Key='草稿'}" Binding="{Binding DraftStatus}" Width="58" />
+                            </DataGrid.Columns>
+                        </DataGrid></DockPanel>
+
+                        <GridSplitter x:Name="DivisionPaneSplitter" Grid.Column="1" Style="{StaticResource PaneSplitter}" />
+
+                        <Grid Grid.Column="2" Background="{DynamicResource SurfaceAltBrush}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TabControl Grid.Row="0" Margin="12" IsEnabled="{Binding DivisionWorkspace.CanEditSelected}">
+                                <TabItem Header="{l:Loc Key='单位池'}">
+                                    <Grid Margin="12">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Grid.Row="0"><controls:FacetFilter Tag="rules" Rows="{Binding DivisionWorkspace.RuleFilterRows}" FilterChanged="WorkspaceFilter_Changed"/><DockPanel Margin="0,0,0,10">
+                                            <Button Content="{l:Loc Key='删除选中规则'}" DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Padding="9,5" Click="RemoveDivisionRule_Click" />
+                                            <Button Content="{l:Loc Key='添加 Unit'}" DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Padding="9,5" Margin="8,0" Click="AddDivisionRule_Click" />
+                                            <controls:SearchPicker EnableUnitFilters="True" ItemsSource="{Binding DivisionWorkspace.UnitOptions}" SelectedItem="{Binding DivisionWorkspace.NewRuleUnit}"
+                                                                   DisplayMemberPath="DisplayName" SecondaryMemberPath="Name" Placeholder="按名称任意片段搜索并选择 Unit" />
+                                        </DockPanel></StackPanel>
+                                        <DataGrid Grid.Row="1" IsReadOnly="False" ItemsSource="{Binding DivisionWorkspace.RulesView}" SelectedItem="{Binding DivisionWorkspace.SelectedRule}"
+                                                  AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" RowHeaderWidth="0"
+                                                  HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Unit" Binding="{Binding Unit}" ElementStyle="{StaticResource PrimaryGridText}" IsReadOnly="True" Width="2*" />
+                                                <DataGridCheckBoxColumn Binding="{Binding AvailableWithoutTransport, UpdateSourceTrigger=PropertyChanged}" Width="140" ><DataGridCheckBoxColumn.Header><StackPanel MaxWidth="125"><TextBlock Text="{l:Loc Key='可无运输'}"/><controls:ParameterNote Text="AvailableWithoutTransport"/></StackPanel></DataGridCheckBoxColumn.Header></DataGridCheckBoxColumn>
+                                                <DataGridTextColumn Binding="{Binding MaxPackNumber, UpdateSourceTrigger=PropertyChanged}" Width="115" ><DataGridTextColumn.Header><StackPanel MaxWidth="125"><TextBlock Text="{l:Loc Key='最大卡数'}"/><controls:ParameterNote Text="MaxPackNumber"/></StackPanel></DataGridTextColumn.Header></DataGridTextColumn>
+                                                <DataGridTextColumn Binding="{Binding NumberOfUnitInPack, UpdateSourceTrigger=PropertyChanged}" Width="130" ><DataGridTextColumn.Header><StackPanel MaxWidth="125"><TextBlock Text="{l:Loc Key='单卡数量'}"/><controls:ParameterNote Text="NumberOfUnitInPack"/></StackPanel></DataGridTextColumn.Header></DataGridTextColumn>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                        <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,10,0,0">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="{l:Loc Key='允许的运输 Unit'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="AvailableTransportList"/>
+                                                    <ToggleButton x:Name="DivisionTransportPickerButton" Content="{Binding DivisionWorkspace.TransportPickerButtonText, Mode=OneWay}"
+                                                                  IsChecked="{Binding DivisionWorkspace.IsTransportPickerOpen, Mode=TwoWay}" Padding="10,6" Margin="0,4,0,5" />
+                                                    <Popup x:Name="DivisionTransportPickerPopup" PlacementTarget="{Binding ElementName=DivisionTransportPickerButton}" Placement="Bottom"
+                                                           AllowsTransparency="True" StaysOpen="False" IsOpen="{Binding DivisionWorkspace.IsTransportPickerOpen, Mode=TwoWay}">
+                                                        <Border Width="500" MaxHeight="470" Background="{DynamicResource ControlBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10">
+                                                            <Grid>
+                                                                <Grid.RowDefinitions>
+                                                                    <RowDefinition Height="Auto" />
+                                                                    <RowDefinition Height="Auto" />
+                                                                    <RowDefinition Height="*" />
+                                                                    <RowDefinition Height="Auto" />
+                                                                </Grid.RowDefinitions>
+                                                                <StackPanel><TextBox Text="{Binding DivisionWorkspace.TransportSearchText, UpdateSourceTrigger=PropertyChanged}" Padding="9,7" ToolTip="{l:Loc Key='按显示名或内部名的任意片段搜索运输 Unit'}" /><controls:UnitMiniFilter ItemsSource="{Binding DivisionWorkspace.TransportCandidates}" FilterChanged="TransportFilter_Changed"/><StackPanel Orientation="Horizontal"><Button Content="{l:Loc Key='全选'}" Tag="True" Click="SelectTransports_Click"/><Button Content="{l:Loc Key='取消全选'}" Tag="False" Click="SelectTransports_Click"/></StackPanel></StackPanel>
+                                                                <TextBlock Grid.Row="1" Margin="2,5,2,4" FontSize="10" Foreground="{DynamicResource MutedTextBrush}">
+                                                                    <Run Text="{l:Loc Key='只显示具有运输模块的 Unit · 已勾选 '}" /><Run Text="{Binding DivisionWorkspace.SelectedTransportCandidateCount, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="{l:Loc Key=' 个'}" />
+                                                                </TextBlock>
+                                                                <ListBox Grid.Row="2" ItemsSource="{Binding DivisionWorkspace.TransportCandidatesView}" MaxHeight="340"
+                                                                         ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+                                                                    <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate></ListBox.ItemsPanel>
+                                                                    <ListBox.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="5,4">
+                                                                                <StackPanel>
+                                                                                    <TextBlock Text="{l:GameBinding Path=DisplayName, Kind=division}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                                                    <TextBlock Text="{Binding Name}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" TextTrimming="CharacterEllipsis" />
+                                                                                </StackPanel>
+                                                                            </CheckBox>
+                                                                        </DataTemplate>
+                                                                    </ListBox.ItemTemplate>
+                                                                </ListBox>
+                                                                <DockPanel Grid.Row="3" Margin="0,8,0,0">
+                                                                    <Button Content="{l:Loc Key='取消'}" Style="{StaticResource SecondaryButton}" Padding="10,6" Click="CancelDivisionTransportSelection_Click" />
+                                                                    <Button Content="{l:Loc Key='应用选择'}" DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Padding="12,6" Click="ApplyDivisionTransportSelection_Click" />
+                                                                </DockPanel>
+                                                            </Grid>
+                                                        </Border>
+                                                    </Popup>
+                                                    <ItemsControl ItemsSource="{Binding DivisionWorkspace.SelectedTransportItems}">
+                                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="{DynamicResource SelectionBrush}" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" CornerRadius="12" Padding="7,3" Margin="0,0,5,5" ToolTip="{Binding Detail}">
+                                                                    <StackPanel Orientation="Horizontal"><TextBlock Text="{Binding DisplayText}" /><Button Content="×" Padding="4,0" Margin="4,0,0,0" Click="RemoveDivisionTransport_Click" /></StackPanel>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <TextBox Text="{Binding DivisionWorkspace.SelectedRule.AvailableTransportsText, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,0"
+                                                             Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" ToolTip="{l:Loc Key='专业模式：英文逗号分隔的内部名'}" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="{l:Loc Key='老练度数量倍率（XP0 起，逗号分隔）'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="NumberOfUnitInPackXPMultiplier"/>
+                                                    <TextBox Text="{Binding DivisionWorkspace.SelectedRule.XpMultipliersText, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,0" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </Grid>
+                                </TabItem>
+
+                                <TabItem Header="{l:Loc Key='师级设置与费用'}">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <StackPanel Margin="12">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="{l:Loc Key='总激活点'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="MaxActivationPoints"/><TextBox Text="{Binding DivisionWorkspace.MaxActivationPoints, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,8" />
+                                                    <TextBlock Text="{l:Loc Key='阵营'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="DivisionCoalition"/><ComboBox ItemsSource="{Binding DivisionWorkspace.CoalitionOptions}" SelectedItem="{Binding DivisionWorkspace.Coalition, UpdateSourceTrigger=PropertyChanged}" IsEditable="True" Margin="0,4,0,8" />
+                                                    <TextBlock Text="{l:Loc Key='国家'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="CountryId"/><TextBox Text="{Binding DivisionWorkspace.CountryId, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,8" />
+                                                    <TextBlock Text="{l:Loc Key='标签'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="DivisionTags"/>
+                                                    <ItemsControl ItemsSource="{Binding DivisionWorkspace.TagGroups}"><ItemsControl.ItemTemplate><DataTemplate><StackPanel><TextBlock Text="{l:LocalizedBinding Path=Label}" Margin="0,5,0,4"/><ItemsControl ItemsSource="{Binding Options}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate><Button Content="{Binding Value}" Click="DivisionTag_Click" Margin="0,0,5,5" Padding="9,5"><Button.Style><Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Style.Triggers><DataTrigger Binding="{Binding IsSelected}" Value="True"><Setter Property="Background" Value="{DynamicResource SelectionBrush}"/></DataTrigger></Style.Triggers></Style></Button.Style></Button></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></StackPanel></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+                                                    <TextBox Text="{Binding DivisionWorkspace.TagsText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"
+                                                             Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" ToolTip="{l:Loc Key='专业模式：英文逗号分隔，可保留自定义标签'}" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="{l:Loc Key='展示顺序'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="InterfaceOrder"/><TextBox Text="{Binding DivisionWorkspace.InterfaceOrder, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,8" />
+                                                    <TextBlock Text="{l:Loc Key='师类型（单选）'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="TypeToken"/>
+                                                    <ItemsControl ItemsSource="{Binding DivisionWorkspace.DivisionTypeOptions}" Margin="0,4,0,4">
+                                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate><DataTemplate><Button Content="{Binding}" Padding="10,5" Margin="0,0,6,6" Click="SelectDivisionType_Click" /></DataTemplate></ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <TextBlock Text="{Binding DivisionWorkspace.TypeToken, StringFormat=当前：{0}}" FontSize="10" Margin="0,0,0,8" />
+                                                    <TextBlock Text="{l:Loc Key='特色单位'}"/><controls:ParameterNote Text="StandoutUnits"/><Button Content="{l:Loc Key='选择单位'}" Click="StandoutUnits_Click"/><ItemsControl ItemsSource="{Binding DivisionWorkspace.StandoutItems}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate><Button Content="{Binding DisplayName, StringFormat='{}{0} ×'}" ToolTip="{Binding Name}" Click="RemoveStandout_Click" Margin="0,4,5,0"/></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+                                                </StackPanel>
+                                            </Grid>
+                                            <TextBlock Text="{l:Loc Key='各栏位激活费用曲线'}" FontWeight="SemiBold" Margin="0,8,0,7" /><controls:ParameterNote Text="CostMatrix → MAP"/>
+                                            <ItemsControl ItemsSource="{Binding DivisionWorkspace.CostCurves}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="9" Margin="0,0,0,8">
+                                                            <StackPanel>
+                                                                <TextBlock Text="{Binding Category}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                                                                <ItemsControl ItemsSource="{Binding CostSlots}">
+                                                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                                    <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <StackPanel Width="62" Margin="0,0,6,6">
+                                                                                <TextBlock Text="{Binding Number, StringFormat=第 {0} 格}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" />
+                                                                                <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" Padding="5" HorizontalContentAlignment="Center" />
+                                                                            </StackPanel>
+                                                                        </DataTemplate>
+                                                                    </ItemsControl.ItemTemplate>
+                                                                </ItemsControl>
+                                                                <TextBox Text="{Binding CostsText, UpdateSourceTrigger=PropertyChanged}" Margin="0,3,0,0"
+                                                                         Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                         ToolTip="{l:Loc Key='专业模式：完整费用数组；第 11 格以后只在这里显示并原样保留'}" />
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </TabItem>
+                            </TabControl>
+
+                            <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="12">
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                        <Button Content="{l:Loc Key='预览并应用全部'}" Style="{StaticResource PrimaryButton}" Padding="10,6" IsEnabled="{Binding UnitWorkspace.CanApply}" Click="PreviewApply_Click" />
+                                        <Button Content="{l:Loc Key='清空全部草稿'}" Style="{StaticResource SecondaryButton}" Padding="9,5" Margin="8,0,0,0" IsEnabled="{Binding UnitWorkspace.CanClearDrafts}" Click="ClearDrafts_Click" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="SemiBold"><Run Text="{l:Loc Key='全部草稿 '}" /><Run Text="{Binding UnitWorkspace.DraftCount, Mode=OneWay}" /><Run Text="{l:Loc Key=' 项'}" /></TextBlock>
+                                        <TextBlock Text="{Binding DivisionWorkspace.ValidationText}" Foreground="{DynamicResource WarningTextBrush}" FontSize="10" TextWrapping="Wrap" MaxWidth="560" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+
+                    <Grid Grid.Row="2" Visibility="{Binding IsDraftModule, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="DraftListColumn" Width="*" MinWidth="480" />
+                            <ColumnDefinition Width="6" />
+                            <ColumnDefinition x:Name="DraftDetailColumn" Width="390" MinWidth="320" MaxWidth="620" />
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="12,9">
+                                <DockPanel><StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><Button Content="{l:Loc Key='全选'}" Click="SelectAllDrafts_Click"/><Button Content="{l:Loc Key='取消全选'}" Click="ClearDraftSelection_Click"/><Button Content="{l:Loc Key='应用选中项'}" Tag="selected" Click="PreviewApply_Click"/><Button Content="{l:Loc Key='删除选中项'}" Click="DeleteSelectedDrafts_Click"/></StackPanel>
+                                    <TextBlock Text="{l:Loc Key='全部未应用草稿'}" FontWeight="SemiBold" />
+                                    <TextBlock DockPanel.Dock="Right" Foreground="{DynamicResource MutedTextBrush}" FontSize="10">
+                                        <Run Text="{l:Loc Key='共 '}" /><Run Text="{Binding UnitWorkspace.DraftCount, Mode=OneWay}" /><Run Text="{l:Loc Key=' 项 · 点击一行查看详情'}" />
+                                    </TextBlock>
+                                </DockPanel>
+                            </Border>
+                            <DataGrid x:Name="DraftOverviewGrid"
+                                      Grid.Row="1"
+                                      ItemsSource="{Binding UnitWorkspace.DraftView}"
+                                      SelectedItem="{Binding SelectedDraft}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      HeadersVisibility="Column"
+                                      GridLinesVisibility="Horizontal"
+                                      BorderThickness="0"
+                                      RowHeaderWidth="0"
+                                      RowHeight="42">
+                                <DataGrid.GroupStyle><GroupStyle><GroupStyle.ContainerStyle><Style TargetType="GroupItem"><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="GroupItem"><Expander x:Name="BatchExpander" IsExpanded="False" Margin="4"><Expander.Header><StackPanel x:Name="BatchHeader" Orientation="Horizontal"><CheckBox IsThreeState="True" Click="DraftGroupSelect_Click" Loaded="DraftGroup_Loaded" Margin="0,0,8,0"/><TextBlock Text="{Binding Items[0].BatchSummary}" MaxWidth="540" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding ItemCount, StringFormat=' · {0}'}"/></StackPanel></Expander.Header><ItemsPresenter Margin="20,0,0,0"/></Expander><ControlTemplate.Triggers><DataTrigger Binding="{Binding Items[0].Resolved.Operation.GroupId}" Value="{x:Null}"><Setter TargetName="BatchExpander" Property="IsExpanded" Value="True"/><Setter TargetName="BatchExpander" Property="Template"><Setter.Value><ControlTemplate TargetType="Expander"><ContentPresenter/></ControlTemplate></Setter.Value></Setter></DataTrigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style></GroupStyle.ContainerStyle></GroupStyle></DataGrid.GroupStyle>
+                                <DataGrid.Columns><DataGridTemplateColumn Width="40"><DataGridTemplateColumn.CellTemplate><DataTemplate><CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Click="DraftSelection_Click"/></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="{l:Loc Key='修改内容'}" Binding="{l:LocalizedBinding Path=Summary}" ElementStyle="{StaticResource IndexPrimaryGridText}" HeaderStyle="{StaticResource IndexGridColumnHeader}" Width="3*" MinWidth="260" />
+                                    <DataGridTextColumn Header="{l:Loc Key='模块'}" Binding="{l:LocalizedBinding Path=Module}" ElementStyle="{StaticResource SecondaryGridText}" Width="86" />
+                                    <DataGridTextColumn Header="{l:Loc Key='状态'}" Binding="{Binding Status}" ElementStyle="{StaticResource SecondaryGridText}" Width="110" />
+                                    <DataGridTextColumn Header="{l:Loc Key='源文件'}" Binding="{Binding File}" ElementStyle="{StaticResource SecondaryGridText}" Width="2*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+
+                        <GridSplitter x:Name="DraftPaneSplitter" Grid.Column="1" Style="{StaticResource PaneSplitter}" />
+
+                        <Grid Grid.Column="2" Background="{DynamicResource SurfaceAltBrush}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel Margin="16">
+                                    <TextBlock Text="{l:Loc Key='草稿详情'}" FontWeight="SemiBold" FontSize="15" />
+                                    <TextBlock Text="{Binding SelectedDraft.Summary, TargetNullValue=请从左侧选择一项草稿}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,12,0,0" />
+                                    <TextBlock Text="{Binding SelectedDraft.Status}" Foreground="{DynamicResource PrimaryBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0" />
+
+                                    <TextBlock Text="{l:Loc Key='修改值'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,18,0,6" />
+                                    <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10">
+                                        <StackPanel>
+                                            <TextBlock Text="{l:LocalizedBinding Path=SelectedDraft.BaselineValue}" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+                                            <TextBlock Text="↓" Foreground="{DynamicResource PrimaryBrush}" FontSize="14" Margin="0,3" />
+                                            <TextBlock Text="{Binding SelectedDraft.TargetValue, TargetNullValue=—}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Expander Header="{l:Loc Key='原始草稿'}" Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}"><TextBlock Text="{Binding SelectedDraft.RawValues}" TextWrapping="Wrap"/></Expander>
+                                    <TextBlock Text="{l:Loc Key='归属'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,16,0,5" />
+                                    <TextBlock Text="{Binding SelectedDraft.Module, StringFormat=模块：{0}}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding SelectedDraft.Scope, StringFormat=作用域：{0}}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                    <TextBlock Text="{Binding SelectedDraft.ObjectName, StringFormat=对象：{0}}" TextWrapping="Wrap" Margin="0,3,0,0" />
+
+                                    <TextBlock Text="{l:Loc Key='内部位置'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,16,0,5" />
+                                    <TextBlock Text="{Binding SelectedDraft.ObjectType, StringFormat=类型：{0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding SelectedDraft.FieldPath, StringFormat=字段：{0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                    <TextBlock Text="{Binding SelectedDraft.File, StringFormat=文件：{0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                    <TextBlock Text="{Binding SelectedDraft.UpdatedText, StringFormat=更新时间：{0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                </StackPanel>
+                            </ScrollViewer>
+                            <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="12">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Content="{l:Loc Key='预览并应用全部'}" Style="{StaticResource PrimaryButton}" Padding="10,6" IsEnabled="{Binding UnitWorkspace.CanApply}" Click="PreviewApply_Click" />
+                                    <Button Content="{l:Loc Key='清空全部草稿'}" Style="{StaticResource SecondaryButton}" Padding="9,5" Margin="7,0,0,0" IsEnabled="{Binding UnitWorkspace.CanClearDrafts}" Click="ClearDrafts_Click" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+
+                    <Grid Grid.Row="2" Visibility="{Binding IsProblemModule, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MinWidth="430" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="390" MinWidth="320" />
+                        </Grid.ColumnDefinitions>
+
+                        <DockPanel Grid.Column="0"><TextBlock DockPanel.Dock="Top" Text="{l:Loc Key='报错系统尚不完善，可能存在误报。如未进行相关操作，请忽略该提示。'}" TextWrapping="Wrap" Margin="0,0,0,8"/><StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8"><Button Content="{l:Loc Key=全选}" Tag="all" Click="ProblemAction_Click"/><Button Content="{l:Loc Key=取消全选}" Tag="none" Click="ProblemAction_Click"/><Button Content="{l:Loc Key=忽略所选问题}" Tag="ignore" Click="ProblemAction_Click"/><Button Content="{l:Loc Key=恢复所选问题}" Tag="restore" Click="ProblemAction_Click"/></StackPanel><TabControl x:Name="ProblemTabs">
+                            <TabItem>
+                                <TabItem.Header><TextBlock><Run Text="{l:Loc Key='Mod 问题（'}" /><Run Text="{Binding ModProblemCount, Mode=OneWay}" /><Run Text="）" /></TextBlock></TabItem.Header>
+                                <ListBox SelectionMode="Extended" x:Name="ModProblemList" ItemsSource="{Binding ModProblems}" SelectedItem="{Binding SelectedProblem}" BorderThickness="0" Background="Transparent">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="10,9">
+                                                <StackPanel>
+                                                    <DockPanel>
+                                                        <TextBlock Text="{l:LocalizedBinding Path=Title}" FontWeight="SemiBold" />
+                                                        <TextBlock DockPanel.Dock="Right" Text="{Binding SeverityText}" Foreground="{DynamicResource ErrorTextBrush}" FontSize="10" />
+                                                    </DockPanel>
+                                                    <TextBlock Text="{l:LocalizedBinding Path=Summary}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                                    <TextBlock Text="{Binding TimeText}" Foreground="{DynamicResource MutedTextBrush}" FontSize="9" Margin="0,3,0,0" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </TabItem>
+                            <TabItem>
+                                <TabItem.Header><TextBlock><Run Text="{l:Loc Key='工具问题（'}" /><Run Text="{Binding ToolProblemCount, Mode=OneWay}" /><Run Text="）" /></TextBlock></TabItem.Header>
+                                <ListBox SelectionMode="Extended" x:Name="ToolProblemList" ItemsSource="{Binding ToolProblems}" SelectedItem="{Binding SelectedProblem}" BorderThickness="0" Background="Transparent">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="10,9">
+                                                <StackPanel>
+                                                    <DockPanel>
+                                                        <TextBlock Text="{l:LocalizedBinding Path=Title}" FontWeight="SemiBold" />
+                                                        <TextBlock DockPanel.Dock="Right" Text="{Binding SeverityText}" Foreground="{DynamicResource ErrorTextBrush}" FontSize="10" />
+                                                    </DockPanel>
+                                                    <TextBlock Text="{l:LocalizedBinding Path=Summary}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                                    <TextBlock Text="{Binding TimeText}" Foreground="{DynamicResource MutedTextBrush}" FontSize="9" Margin="0,3,0,0" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </TabItem>
+                        <TabItem Header="{l:Loc Key=已忽略}"><ListBox x:Name="IgnoredProblemList" SelectionMode="Extended" ItemsSource="{Binding IgnoredProblems}" DisplayMemberPath="Title" SelectedItem="{Binding SelectedProblem}"/></TabItem></TabControl></DockPanel>
+
+                        <Border Grid.Column="2" Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="{l:Loc Key='诊断详情'}" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding SelectedProblem.Title, TargetNullValue=请选择一条问题}" FontWeight="SemiBold" Margin="0,10,0,0" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding SelectedProblem.Id, StringFormat=错误编号：{0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,3,0,0" />
+                                    <TextBlock Text="{Binding SelectedProblem.Location, StringFormat=位置：{0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                </StackPanel>
+                                <TextBox Grid.Row="1" Text="{Binding SelectedProblem.DiagnosticText, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Margin="0,10,0,10" />
+                                <StackPanel Grid.Row="2" Orientation="Horizontal">
+                                    <Button Content="{l:Loc Key='复制诊断'}" Style="{StaticResource PrimaryButton}" Padding="12,7" Click="CopyProblem_Click" />
+                                    <Button Content="{l:Loc Key='打开日志目录'}" Style="{StaticResource SecondaryButton}" Padding="12,7" Margin="8,0,0,0" Click="OpenProblemLogs_Click" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <Grid Grid.Row="2"
+                          Visibility="{Binding IsObjectModule, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0"
+                                Background="{DynamicResource SurfaceAltBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="0,0,0,1"
+                                Padding="12,7">
+                            <DockPanel>
+                                <TextBlock Text="{l:Loc Key='点击表头可切换排序'}" DockPanel.Dock="Right" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" />
+                                <TextBlock x:Name="ObjectSortLabel" Text="{l:Loc Key='排序：源文件 ↑ · 行号 ↑'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" />
+                            </DockPanel>
+                        </Border>
+
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition x:Name="ObjectListColumn" Width="*" MinWidth="480" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition x:Name="ObjectDetailColumn" Width="0" MinWidth="0" MaxWidth="620" />
+                            </Grid.ColumnDefinitions>
+
+                            <DataGrid x:Name="ObjectIndexGrid"
+                                      Grid.Column="0"
+                                      ItemsSource="{Binding ObjectsView}"
+                                      SelectedItem="{Binding SelectedObject}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      CanUserSortColumns="True"
+                                      Sorting="ObjectIndex_Sorting"
+                                      HeadersVisibility="Column"
+                                      GridLinesVisibility="Horizontal"
+                                      HorizontalGridLinesBrush="{DynamicResource GridLineBrush}"
+                                      BorderThickness="0"
+                                      RowHeaderWidth="0"
+                                      RowHeight="38"
+                                      EnableRowVirtualization="True"
+                                      EnableColumnVirtualization="True"
+                                      VirtualizingPanel.IsVirtualizing="True"
+                                      VirtualizingPanel.VirtualizationMode="Recycling">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="{l:Loc Key='名称'}"
+                                                        Binding="{Binding DisplayName}"
+                                                        SortMemberPath="DisplayName"
+                                                        ElementStyle="{StaticResource IndexPrimaryGridText}"
+                                                        HeaderStyle="{StaticResource IndexGridColumnHeader}"
+                                                        Width="2*" />
+                                    <DataGridTextColumn Header="{l:Loc Key='内部类型'}"
+                                                        Binding="{Binding TypeName}"
+                                                        SortMemberPath="TypeName"
+                                                        ElementStyle="{StaticResource SecondaryGridText}"
+                                                        Width="1.25*" />
+                                    <DataGridTextColumn Header="{l:Loc Key='源文件'}"
+                                                        Binding="{Binding RelativeSourceFile}"
+                                                        SortMemberPath="RelativeSourceFile"
+                                                        ElementStyle="{StaticResource SecondaryGridText}"
+                                                        Width="2.3*" />
+                                    <DataGridTextColumn Header="{l:Loc Key='行号'}"
+                                                        Binding="{Binding LineNumber}"
+                                                        SortMemberPath="LineNumber"
+                                                        ElementStyle="{StaticResource SecondaryGridText}"
+                                                        Width="72" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <GridSplitter x:Name="ObjectDetailSplitter"
+                                          Grid.Column="1"
+                                          Style="{StaticResource PaneSplitter}"
+                                          Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                            <Border Grid.Column="2"
+                                    Background="{DynamicResource SurfaceAltBrush}"
+                                    Padding="16"
+                                    Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <StackPanel>
+                                        <TextBlock Text="{l:Loc Key='高级详情'}" FontWeight="SemiBold" FontSize="15" />
+                                        <TextBlock Text="{l:Loc Key='选中对象'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,14,0,4" />
+                                        <TextBlock Text="{Binding SelectedObject.Name, TargetNullValue=尚未选择对象}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding SelectedObject.TypeName}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+
+                                        <TextBlock Text="{l:Loc Key='源文件'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,14,0,4" />
+                                        <TextBlock Text="{Binding SelectedObject.SourceFile, TargetNullValue=—}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,5,0,0" Foreground="{DynamicResource MutedTextBrush}" FontSize="10">
+                                            <Run Text="{l:Loc Key='行 '}" /><Run Text="{Binding SelectedObject.LineNumber, TargetNullValue=—, Mode=OneWay}" />
+                                            <Run Text="{l:Loc Key=' · 字符偏移 '}" /><Run Text="{Binding SelectedObject.CharacterOffset, TargetNullValue=—, Mode=OneWay}" />
+                                            <Run Text="{l:Loc Key=' · 字节偏移 '}" /><Run Text="{Binding SelectedObject.ByteOffset, TargetNullValue=—, Mode=OneWay}" />
+                                        </TextBlock>
+
+                                        <TextBlock Text="{l:Loc Key='项目诊断'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,18,0,7" />
+                                        <ItemsControl ItemsSource="{Binding Diagnostics}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="9" Margin="0,0,0,7">
+                                                        <StackPanel>
+                                                            <TextBlock Text="{l:LocalizedBinding Path=Title}" FontWeight="SemiBold" FontSize="12" />
+                                                            <TextBlock Text="{Binding Detail}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="18,9">
+            <DockPanel>
+                <TextBlock Text="{l:LocalizedBinding Path=StatusText}" Foreground="{DynamicResource MutedTextBrush}" />
+                <TextBlock Text="{Binding ProjectPath}" DockPanel.Dock="Right" Foreground="{DynamicResource MutedTextBrush}" TextTrimming="CharacterEllipsis" MaxWidth="760" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

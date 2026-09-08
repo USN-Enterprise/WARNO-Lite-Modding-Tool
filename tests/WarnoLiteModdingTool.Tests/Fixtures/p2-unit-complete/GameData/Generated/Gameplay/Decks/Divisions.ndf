@@ -1,0 +1,2 @@
+export Descriptor_Deck_Division_Test_US is TDeckDivisionDescriptor()
+export Descriptor_Deck_Division_Test_SOV is TDeckDivisionDescriptor()

@@ -1,0 +1,4 @@
+export LocalisationDico_Custom is TLocalisationDicoDescriptor
+(
+    CsvFile = "UNITS.csv"
+)

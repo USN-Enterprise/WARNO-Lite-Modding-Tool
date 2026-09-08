@@ -1,0 +1,13 @@
+export Descriptor_Deck_Division_Test_US_Rule is TDeckDivisionRule
+(
+    UnitRules = [
+        TDeckUniteRule(UnitDescriptor = $/GFX/Unit/Descriptor_Unit_Test_Tank_US),
+    ]
+)
+
+export Descriptor_Deck_Division_Test_SOV_Rule is TDeckDivisionRule
+(
+    UnitRules = [
+        TDeckUniteRule(UnitDescriptor = $/GFX/Unit/Descriptor_Unit_Test_Recon_SOV),
+    ]
+)

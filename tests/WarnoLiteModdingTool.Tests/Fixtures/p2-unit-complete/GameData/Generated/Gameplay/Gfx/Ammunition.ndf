@@ -1,0 +1,13 @@
+Ammo_Test_AP is TAmmunitionDescriptor
+(
+    Arme = TDamageTypeRTTI(Family=DamageFamily_ap Index=18)
+    PhysicalDamages = 10.0
+    SuppressDamages = 120
+    RadiusSplashPhysicalDamagesGRU = 13
+    RadiusSplashSuppressDamagesGRU = 25
+    BaseHitValueModifiers = MAP [
+        (EBaseHitValueModifier/Idling, 45),
+        (EBaseHitValueModifier/Moving, 35),
+    ]
+)
+Ammo_Test_MG is TAmmunitionDescriptor(PhysicalDamages = 1.0)

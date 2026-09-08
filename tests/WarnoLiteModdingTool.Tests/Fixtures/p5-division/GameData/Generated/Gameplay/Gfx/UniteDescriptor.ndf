@@ -1,0 +1,31 @@
+// Synthetic P5 fixture. It is not copied from WARNO.
+export Descriptor_Unit_P5_Tank is TEntityDescriptor
+(
+    DescriptorId = GUID:{50000000-0000-0000-0000-000000000001}
+    ModulesDescriptors = [
+        TTypeUnitModuleDescriptor(Coalition = TWargameCoalition/NATO MotherCountry = 'US')
+        TProductionModuleDescriptor(FactoryType = Factory/Tanks)
+        TUnitUIModuleDescriptor(UnitRole = 'armor' NameToken = 'P5TANK0001')
+    ]
+)
+
+export Descriptor_Unit_P5_Recon is TEntityDescriptor
+(
+    DescriptorId = GUID:{50000000-0000-0000-0000-000000000002}
+    ModulesDescriptors = [
+        TTypeUnitModuleDescriptor(Coalition = TWargameCoalition/NATO MotherCountry = 'US')
+        TProductionModuleDescriptor(FactoryType = Factory/Recons)
+        TUnitUIModuleDescriptor(UnitRole = 'reco' NameToken = 'P5RECON001')
+    ]
+)
+
+export Descriptor_Unit_P5_Transport is TEntityDescriptor
+(
+    DescriptorId = GUID:{50000000-0000-0000-0000-000000000003}
+    ModulesDescriptors = [
+        TTypeUnitModuleDescriptor(Coalition = TWargameCoalition/NATO MotherCountry = 'US')
+        TProductionModuleDescriptor(FactoryType = Factory/Logistic)
+        TUnitUIModuleDescriptor(UnitRole = 'transport' NameToken = 'P5TRANS001')
+        TTransporterModuleDescriptor()
+    ]
+)

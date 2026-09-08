@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>WarnoLiteModdingTool.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WarnoLiteModdingTool.Core\WarnoLiteModdingTool.Core.csproj" />
+    <ProjectReference Include="..\..\src\WarnoLiteModdingTool.App\WarnoLiteModdingTool.App.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Fixtures\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

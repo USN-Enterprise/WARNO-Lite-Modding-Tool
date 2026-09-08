@@ -1,0 +1,10 @@
+// Synthetic P5 fixture. It is not copied from WARNO.
+export Descriptor_Deck_P5_Test is TDeckDescriptor
+(
+    DeckDivision = $/GFX/Division/Descriptor_Deck_Division_P5_Test
+    DeckName = "P5DECK0001"
+    DeckPackList =
+    [
+        ~/Descriptor_Deck_Pack_P5_Tank_0_1,
+    ]
+)

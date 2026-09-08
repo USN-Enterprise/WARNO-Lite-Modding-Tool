@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>WarnoLiteModdingTool.App</RootNamespace>
+    <AssemblyName>WarnoLiteModdingTool</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>1.8.5</Version>
+    <ApplicationIcon>Assets/App.ico</ApplicationIcon>
+    <AssemblyTitle>WARNO Lite Modding Tool</AssemblyTitle>
+    <Product>WARNO Lite Modding Tool</Product>
+    <Description>面向 WARNO Mod 新手的轻量化中文图形化编辑器</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Localisation/en.tsv" />
+    <Resource Include="Assets/App.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WarnoLiteModdingTool.Core\WarnoLiteModdingTool.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\README.md" Link="使用说明.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\RELEASE_NOTES.md" Link="发布说明.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,53 @@
+<Window x:Class="WarnoLiteModdingTool.App.CreateModDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:WarnoLiteModdingTool.App.Localisation"
+        Title="{l:Loc Key='创建新 Mod'}"
+        Width="620"
+        Height="330"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+    <Grid Margin="22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="{l:Loc Key='创建新 WARNO Mod'}" FontSize="20" FontWeight="SemiBold" />
+            <TextBlock Text="{l:Loc Key='调用 WARNO 自带的 CreateNewMod.bat；成功后会自动打开新项目。'}" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Margin="0,18,0,0">
+            <TextBlock Text="{l:Loc Key='WARNO Mods 文件夹'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" Margin="0,0,0,5" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="92" />
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="ModsRootTextBox" TextChanged="Input_Changed" />
+                <Button Grid.Column="2" Content="{l:Loc Key='选择文件夹'}" Style="{StaticResource SecondaryButton}" Padding="10,7" Click="Browse_Click" />
+            </Grid>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Margin="0,14,0,0">
+            <TextBlock Text="{l:Loc Key='Mod 名称'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" Margin="0,0,0,5" />
+            <TextBox x:Name="ModNameTextBox" MaxLength="32" TextChanged="Input_Changed" />
+            <TextBlock Text="{l:Loc Key='只允许 1–32 位英文字母和数字；不能与现有 Mod 重名。'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,5,0,0" />
+        </StackPanel>
+
+        <Border Grid.Row="3" Background="{DynamicResource WarningBackgroundBrush}" BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,14,0,0" VerticalAlignment="Top">
+            <TextBlock x:Name="ValidationText" TextWrapping="Wrap" Foreground="{DynamicResource WarningTextBrush}" />
+        </Border>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="{l:Loc Key='取消'}" Style="{StaticResource SecondaryButton}" Padding="18,8" Click="Cancel_Click" />
+            <Button x:Name="CreateButton" Content="{l:Loc Key='创建'}" Style="{StaticResource PrimaryButton}" Padding="20,8" Margin="8,0,0,0" Click="Create_Click" IsDefault="True" />
+        </StackPanel>
+    </Grid>
+</Window>

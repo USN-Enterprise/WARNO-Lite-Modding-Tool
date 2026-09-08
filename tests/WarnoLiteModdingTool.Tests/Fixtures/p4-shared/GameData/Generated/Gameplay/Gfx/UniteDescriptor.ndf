@@ -1,0 +1,13 @@
+// Synthetic P4 fixture. It is not copied from WARNO.
+export Descriptor_Unit_P4_One is TEntityDescriptor
+(
+    ModulesDescriptors = [ $/GFX/Weapon/WeaponDescriptor_P4_Shared, ]
+)
+export Descriptor_Unit_P4_Two is TEntityDescriptor
+(
+    ModulesDescriptors = [ $/GFX/Weapon/WeaponDescriptor_P4_Shared, ]
+)
+export Descriptor_Unit_P4_Three is TEntityDescriptor
+(
+    ModulesDescriptors = [ $/GFX/Weapon/WeaponDescriptor_P4_Other, ]
+)

@@ -1,0 +1,6 @@
+unnamed TLocalisationDicoResource
+(
+    DicoToken = ~/LocalisationConstantes/dico_units
+    FileName = 'GameData:/Localisation/UnexpectedP2Dictionary/UNITS.csv'
+    CanBeMissing = true
+)

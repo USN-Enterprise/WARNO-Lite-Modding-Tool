@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="BackgroundBrush" Color="#EEF4FA" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="#F5F9FD" />
+    <SolidColorBrush x:Key="ControlBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ControlHoverBrush" Color="#EAF3FB" />
+    <SolidColorBrush x:Key="PrimaryBrush" Color="#247FBC" />
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#176DAB" />
+    <SolidColorBrush x:Key="OnPrimaryBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="TextBrush" Color="#142331" />
+    <SolidColorBrush x:Key="MutedTextBrush" Color="#607387" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#CBD9E5" />
+    <SolidColorBrush x:Key="SecondaryButtonBrush" Color="#E6F0F8" />
+    <SolidColorBrush x:Key="SecondaryHoverBrush" Color="#D5E9F7" />
+    <SolidColorBrush x:Key="NavigationItemBrush" Color="#F2F7FB" />
+    <SolidColorBrush x:Key="SelectionBrush" Color="#D2EAF9" />
+    <SolidColorBrush x:Key="SelectionHoverBrush" Color="#E4F2FC" />
+    <SolidColorBrush x:Key="ProgressTrackBrush" Color="#D9E4ED" />
+    <SolidColorBrush x:Key="GridLineBrush" Color="#E1EAF1" />
+    <SolidColorBrush x:Key="InfoBackgroundBrush" Color="#E7F3FC" />
+    <SolidColorBrush x:Key="InfoBorderBrush" Color="#AED4EE" />
+    <SolidColorBrush x:Key="WarningBackgroundBrush" Color="#FFF4E5" />
+    <SolidColorBrush x:Key="WarningBorderBrush" Color="#E1B45F" />
+    <SolidColorBrush x:Key="WarningTextBrush" Color="#9D6000" />
+    <SolidColorBrush x:Key="ErrorTextBrush" Color="#B63F45" />
+</ResourceDictionary>

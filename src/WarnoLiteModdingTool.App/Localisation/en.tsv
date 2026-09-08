@@ -1,0 +1,761 @@
+设置|Settings
+常规|General
+外观|Appearance
+关于|About
+界面语言|Interface language
+跟随系统|System default
+默认编辑模式|Default editing mode
+普通模式|Standard mode
+小白模式|Standard mode
+专业模式|Professional mode
+关闭|Close
+主题|Theme
+黑蓝|Dark blue
+白蓝|Light blue
+发布说明|Release notes
+版本|Version
+打开工具日志目录|Open application logs
+修改后立即生效并自动保存|Changes apply immediately and are saved automatically
+将军模式|Army General
+单位|Units
+武器|Weapons
+弹药|Ammunition
+战术师|Divisions
+草稿总览|Draft overview
+问题中心|Problem center
+搜索战略营|Search battalions
+新增连|Add company
+新增下级|Add child
+上移|Move up
+下移|Move down
+删除|Delete
+撤销本营|Undo battalion edits
+编制属性|Formation properties
+棋子属性|Pawn properties
+名称|Name
+HQ 指挥编组|HQ command group
+运输|Transport
+取消运输|Remove transport
+数量|Quantity
+老练度|Experience
+移动到|Move to
+移动|Move
+目标没有关联战略棋子|No strategic pawn is linked to this deck
+棋子名称|Pawn name
+初始行动点|Initial action points
+每回合恢复行动点|Action points recovered per turn
+增援初始行动点|Reinforcement action points
+控制区|Zone of control
+可作为初始攻击目标|Can be an initial attack target
+支援范围（行动点格）|Support radius (AP cells)
+战斗角色|Battle role
+移动类型|Movement type
+战略影响强度|Strategic influence strength
+最低战略影响|Minimum influence strength
+影响衰减速度|Influence decay per second
+区域内阻止衰减|Prevent influence decay in zone
+棋子按钮图标|Pawn button icon
+地图图标组合|Map icon pair
+新连|New company
+新组|New group
+引用工作台|Reference explorer
+原文与差异|Source and changes
+字段搜索|Search fields
+游戏值|Game value
+原始值|Raw value
+应用原值|Use raw value
+定位|Go to
+引用者|Referenced by
+引用目标|References
+候选文件|Candidate file
+修改前|Before
+修改后|After
+ · 字符偏移 | · Character offset 
+ · 字节偏移 | · Byte offset 
+ 个| items
+ 个 Unit · 草稿 | Units · Drafts 
+ 个 · 单位池与费用联动草稿| divisions · Unit pool and cost drafts
+ 个顶层对象| top-level objects
+ 项| items
+ 项 · 工具问题 | · Application issues 
+ 项 · 点击一行查看详情| items · Select a row for details
+1.7 · 将军模式、语言与高级编辑|1.7 · Army General, languages and advanced editing
+Ammo 列表|Ammunition list
+DEFAULT 与身份标签请谨慎取消|Review DEFAULT and identity tags before removing them
+Mod 名称|Mod name
+Mod 工具|Mod tools
+Mod 问题 |Mod issues 
+Mod 问题（|Mod issues (
+Mod 项目与官方工具|Mod project and official tools
+NDF 原值：|Raw NDF value: 
+Unit 详情|Unit details
+WARNO Mods 文件夹|WARNO Mods folder
+上传 Mod|Upload Mod
+事务备份与恢复|Transaction backups and restore
+位置：|Location: 
+保存 Weapon 替换草稿|Save weapon replacement draft
+修改作用域|Edit scope
+修改值|Value
+修改内容|Changes
+允许的运输 Unit|Allowed transports
+全选当前筛选|Select all filtered
+全部未应用草稿|All unapplied drafts
+全部条件：跨类别都满足；任一条件：任一类别命中|All conditions: match every category; Any condition: match any category
+全部草稿 |All drafts 
+共 |Total 
+共享影响|Shared impact
+内部位置|Source location
+内部类型|Internal type
+创建|Create
+创建新 Mod|Create Mod
+创建新 WARNO Mod|Create a WARNO Mod
+删除选中规则|Delete selected rule
+功能模块|Modules
+加入批量勾选范围|Add to batch selection
+加入草稿|Add to drafts
+单位检查器|Unit inspector
+单位池|Unit pool
+单卡数量|Units per card
+取整|Rounding
+取消|Cancel
+取消扫描|Cancel scan
+只允许 1–32 位英文字母和数字；不能与现有 Mod 重名。|Use 1–32 letters or digits; the name must be unique.
+只写入 .warno-editor 草稿；正式文件仍需统一预览并应用|Saves to .warno-editor drafts; preview and apply to update Mod files
+只列出当前项目至少一个 Unit 上可编辑的字段|Fields editable on at least one Unit in this project
+只列出所有勾选 Unit 都具备的安全字段；输入本身不会创建草稿。|Fields supported by all selected Units; typing alone does not create a draft.
+只显示具有运输模块的 Unit · 已勾选 |Transport-capable Units · Selected 
+只显示当前对象中已存在且能唯一定位的字段；不新增或删除槽位。|Shows existing, uniquely identified fields; weapon slots are preserved.
+只读引用影响|Reference impact (read-only)
+可无运输|Allow without transport
+可直接填写任意非负有限部署距离|Enter any finite, non-negative deployment distance
+各栏位激活费用曲线|Activation costs by category
+同类标签始终任选其一；文本搜索始终与筛选结果相交。|Tags within a category use OR; text search always narrows the results.
+启动开发模式|Launch developer mode
+国家|Country
+复制诊断|Copy diagnostics
+如需只影响某些 Unit，请回到武器页按 Unit 选择作用域；这里的修改会作用于全部引用者。|To edit selected Units, use the Weapons page. This page affects every reference.
+字段|Field
+字段：|Field: 
+存在未应用草稿时不能恢复；恢复前也会备份当前文件。|Apply or clear drafts before restoring. Current files are backed up before restore.
+展示顺序|Display order
+工具问题（|Application issues (
+已勾选 |Checked 
+已勾选只处理复选框对象；当前筛选结果会处理表格中完整筛选集合|Checked items uses the selected checkboxes; Filtered results uses the full matching set
+已选 |Selected 
+师|Division
+师类型（单选）|Division type (single choice)
+师级设置与费用|Division settings and costs
+应用前会刷新基线、校验全部候选并创建事务备份。|Applying refreshes the baseline, validates all candidates and creates a transaction backup.
+应用选择|Use selection
+引用|References
+归属|Membership
+当前 |Current 
+当前 Unit|Current Unit
+当前显示 |Showing 
+当前项目全部未应用修改 · 共 |All unapplied changes in this project · Total 
+待应用草稿（|Pending drafts (
+总激活点|Total activation points
+恢复|Restore
+打开|Open
+打开 Mod 文件夹|Open Mod folder
+打开日志目录|Open log folder
+打开项目，或手动调用当前项目可用的官方流程；同一时间只运行一个流程。|Open a project or run an available official tool. Only one process runs at a time.
+批量单位检查器|Batch unit inspector
+批量编辑|Batch edit
+批量选择 · 已选 |Batch selection · Selected 
+把当前表格中的完整筛选结果加入勾选集合|Add all matching results to the checked selection
+挂载与作用域|Mounts and scope
+按 Unit 选择现有 Weapon/Ammo；局部修改自动生成最小隔离链|Select an existing Weapon/Ammo for a Unit; local edits isolate shared references automatically
+按显示名或内部名的任意片段搜索 Unit|Search Units by display or internal name fragment
+按显示名或内部名的任意片段搜索运输 Unit|Search transports by display or internal name fragment
+排序：源文件 ↑ · 行号 ↑|Sort: source file ↑ · line ↑
+搜索 Ammo 内部名或源文件|Search ammunition internal names or source files
+搜索 Weapon 或 Unit 内部名的任意片段|Search Weapon or Unit internal name fragments
+搜索可读名称、内部描述符或类型|Search display names, descriptors or types
+搜索名称或内部描述符|Search names or internal descriptors
+撤销此项|Undo this edit
+操作|Operation
+收起|Collapse
+替换为已有 Weapon|Replace with an existing Weapon
+最大值（可空）|Maximum (optional)
+最大卡数|Maximum cards
+最小值（可空）|Minimum (optional)
+最近项目|Recent projects
+查看引用|View references
+标签|Tags
+栏位|Category
+模块|Module
+添加 Unit|Add Unit
+清空|Clear
+清空全部|Clear all
+清空全部草稿|Clear all drafts
+清空选择|Clear selection
+源文件|Source file
+点击表头可切换排序|Click a column header to change sorting
+特色 Unit（逗号分隔）|Standout Units (comma-separated)
+状态|Status
+现有字段|Existing fields
+现有师 |Divisions 
+生成 / 编译 Mod|Generate / compile Mod
+目标范围|Target scope
+直接修改 Ammo 本体|Edit shared ammunition
+直接选择 Ammo 修改本体字段；保存为全部引用作用域草稿|Edit ammunition directly; drafts affect all references
+移除|Remove
+移除此筛选|Remove this filter
+移除记录|Remove entry
+筛选 |Filters 
+组合筛选|Combined filters
+统一事务中心 · 草稿 |Transaction center · Drafts 
+老练度数量倍率（XP0 起，逗号分隔）|Experience quantity multipliers (from XP0, comma-separated)
+草稿|Drafts
+草稿目标：|Draft target: 
+草稿详情|Draft details
+行 |Line 
+行号|Line
+表现链（只读）|Visual references (read-only)
+角色|Role
+诊断详情|Diagnostic details
+调用 WARNO 自带的 CreateNewMod.bat；成功后会自动打开新项目。|Runs WARNO's CreateNewMod.bat and opens the new project after success.
+选|Select
+选中对象|Selected object
+选择包含 GameData 的 Mod 根目录|Select a Mod root folder containing GameData
+选择当前 Mod 中已有的前置部署档位作为参考|Choose an existing deployment distance from this Mod
+选择文件夹|Choose folder
+选择标签|Select tags
+锁定项是 Unit 身份标签，避免误删|Unit identity tags are locked to prevent accidental removal
+阵营|Coalition
+项目|Project
+项目诊断|Project diagnostics
+预览并应用全部|Preview and apply all
+预览批量结果|Preview batch results
+专业模式可直接编辑自定义标签；使用英文逗号分隔|Professional mode accepts custom tags separated by commas
+专业模式：完整费用数组；第 11 档以后只在这里显示并原样保留|Professional: full cost array, including entries beyond the tenth
+专业模式：英文逗号分隔的内部名|Professional: comma-separated internal names
+专业模式：英文逗号分隔，可保留自定义标签|Professional: comma-separated values, including custom tags
+高级详情|Advanced details
+费用与部署|Cost and deployment
+费用|Cost
+指挥点|Command points
+部署价格|Deployment cost
+将军模式价格|Army General cost
+单位在将军模式中的价格|Unit cost in Army General
+生存与防护|Survivability and protection
+耐久|Durability
+生命值|Health
+最大物理伤害承受|Maximum physical damage sustained
+压制承受|Suppression capacity
+最大压制伤害承受|Maximum suppression sustained
+眩晕承受|Stun capacity
+最大眩晕伤害承受|Maximum stun damage sustained
+正面护甲族|Front armor family
+正面装甲|Front armor
+侧面护甲族|Side armor family
+侧面装甲|Side armor
+后方护甲族|Rear armor family
+后方装甲|Rear armor
+顶部护甲族|Top armor family
+顶部装甲|Top armor
+防护|Protection
+界面显示正百分比；保存时自动换回代码层负值|Displays a positive percentage; saving converts it to the negative NDF value
+界面百分比 = -HitRollECM × 100；只接受 0 到 100%|Displayed percentage = -HitRollECM × 100; range 0–100%
+机动与续航|Mobility and endurance
+速度与操纵|Speed and handling
+最大速度|Maximum speed
+通用移动模块速度|General movement speed
+最大公路速度|Maximum road speed
+单位在公路上的最高速度|Maximum speed on roads
+加速度|Acceleration
+陆地移动模块加速度系数|Ground movement acceleration coefficient
+减速度|Deceleration
+陆地移动模块减速度系数|Ground movement deceleration coefficient
+转向时间|Turning time
+陆地移动模块转向时间系数|Ground movement turning-time coefficient
+秒|s
+燃油|Fuel
+燃油容量|Fuel capacity
+显示燃油量|Displayed fuel amount
+可持续移动时间|Movement endurance
+实际可运行时间|Actual operating time
+侦察与感知|Reconnaissance and detection
+隐蔽|Concealment
+隐蔽修正|Concealment modifier
+单位可见性修正|Unit visibility modifier
+视野基础系数|Base vision coefficients
+标准高度系数|Standard-height coefficient
+用于半主动武器制导；不涉及半主动武器时无需修改|Used by semi-active guidance; leave unchanged when it is not relevant
+低空系数|Low-altitude coefficient
+高空系数|High-altitude coefficient
+视野|Vision
+标准视野|Standard vision
+实际标准高度视野|Actual vision at standard height
+低空视野|Low-altitude vision
+实际低空视野|Actual low-altitude vision
+高空视野|High-altitude vision
+实际高空视野|Actual high-altitude vision
+部署|Deployment
+前置部署|Forward deployment
+部署偏移距离|Deployment offset distance
+战略数值|Strategic values
+自动结算|Auto-resolve
+战略攻击值|Strategic attack value
+将军模式战略数值，用于自动结算|Army General value used for auto-resolve
+战略防御值|Strategic defense value
+经验加成值|Experience bonus value
+基本信息|Basic information
+身份|Identity
+不会自动替换模型、语言或卡组|Does not automatically replace models, language or decks
+不会自动替换模型、贴图、语言或卡组|Does not automatically replace models, textures, language or decks
+分类|Classification
+单位类别|Unit categories
+AcknowUnitTypes；选项来自当前项目|AcknowUnitTypes; choices from this project
+生产栏位|Production category
+FactoryType；选项来自当前项目|FactoryType; choices from this project
+UnitRole；选项来自当前项目|UnitRole; choices from this project
+关系与标签|Relations and tags
+每个标签独立选择；只修改本 Unit 的 TagSet 草稿|Select tags independently; edits this Unit's TagSet draft only
+升级来源|Upgrade source
+只能选择当前项目中的其他 Unit|Choose another Unit in this project
+装甲 ResistanceFamily 索引|Armor ResistanceFamily index
+显示 TResistanceTypeRTTI 的 Index；不改 Family|Displays TResistanceTypeRTTI Index; preserves Family
+护甲族|Armor family
+ResistanceFamily；步兵护甲族的 Index 固定为 1|ResistanceFamily; infantry armor Index is fixed at 1
+选项来自当前 Mod 的 DamageResistance.ndf|Choices from this Mod's DamageResistance.ndf
+库存|Ammunition stock
+每次齐射射弹数|Shots per salvo
+与 Weapon 的 Salves 相乘得到推导总弹量。|Multiplied by Weapon Salves to derive total ammunition.
+界面每轮数量|Displayed shots per salvo
+仅写 Ammo 的界面显示基数。|Edits the ammunition display base only.
+射程|Range
+对地最小射程|Minimum ground range
+原始 GRU；当前没有可靠的统一界面换算。|Raw GRU; no reliable universal display conversion is available.
+对地最大射程|Maximum ground range
+对直升机最小射程|Minimum helicopter range
+原始 GRU。|Raw GRU.
+对直升机最大射程|Maximum helicopter range
+对固定翼最小射程|Minimum aircraft range
+对固定翼最大射程|Maximum aircraft range
+对投射物最小射程|Minimum projectile range
+对投射物最大射程|Maximum projectile range
+伤害|Damage
+伤害族|Damage family
+选项来自当前 Mod 的 DamageResistance.ndf。|Choices from this Mod's DamageResistance.ndf.
+伤害/穿深索引（原始）|Damage / penetration index (raw)
+伤害族 Index 不保证等于游戏面板数值。|The damage-family Index may differ from the in-game value.
+物理伤害|Physical damage
+Ammo 原始伤害值。|Raw ammunition damage value.
+压制伤害|Suppression damage
+Ammo 原始压制值。|Raw ammunition suppression value.
+伤害溅射|Damage splash radius
+压制溅射|Suppression splash radius
+精度|Accuracy
+静止精度|Stationary accuracy
+BaseHitValueModifiers/Idling 原始值。|Raw BaseHitValueModifiers/Idling value.
+移动精度|Moving accuracy
+BaseHitValueModifiers/Moving 原始值。|Raw BaseHitValueModifiers/Moving value.
+散布|Dispersion
+最小距离散布|Minimum-distance dispersion
+实际弹道散布。|Actual ballistic dispersion.
+最大距离散布|Maximum-distance dispersion
+角散布|Angular dispersion
+Ammo 原始角散布值。|Raw ammunition angular dispersion.
+射击|Firing
+射击间隔|Shot interval
+ 秒| s
+齐射间隔|Salvo interval
+瞄准时间|Aim time
+弹道|Ballistics
+弹速|Projectile speed
+ProjectileSpeedGRU 原始值。|Raw ProjectileSpeedGRU value.
+最大加速度|Maximum acceleration
+仅在当前 Ammo 已有字段时可编辑。|Editable only when this field already exists on the ammunition.
+补给|Supply
+补给消耗|Supply cost
+行为|Behavior
+允许点地射击|Allow fire at position
+允许移动射击|Allow firing on the move
+间接射击|Indirect fire
+反应射击|Reactive fire
+射后不理|Fire and forget
+IsFireAndForget；字段不存在时不猜测。|IsFireAndForget; missing fields are not inferred.
+Weapon.Salves 中与 AmmoBoxIndex 对应的项。|Weapon.Salves entry corresponding to AmmoBoxIndex.
+挂载与库存|Mounts and ammunition
+挂载|Mount
+使用的 Ammo|Assigned ammunition
+只能替换为当前项目中已有 Ammo；不新增槽位。|Select existing ammunition in this project; no slots are added.
+在界面隐藏|Hide in interface
+仅编辑已存在的 HideInInterface。|Edits existing HideInInterface only.
+炮塔|Turret
+界面以角度显示，写回弧度。|Displays degrees and saves radians.
+射界|Firing arc
+库存与消耗|Stock and supply
+作战性能|Combat performance
+射击与弹道|Firing and ballistics
+行为设置|Behavior settings
+其他|Other
+全部|All
+可用|Available
+部分可用|Partially available
+不可用|Unavailable
+解析异常|Parse error
+有草稿|Has drafts
+无草稿|No drafts
+冲突|Conflict
+全部条件|All conditions
+任一条件|Any condition
+已勾选 Unit|Checked Units
+当前筛选结果|Filtered results
+不取整|No rounding
+四舍五入|Round to nearest
+向下取整|Round down
+向上取整|Round up
+仅当前单位|Current Unit only
+当前选中的多个单位|Selected Units
+全部引用|All references
+请选择|Select
+尚未选择单位|No Unit selected
+尚未打开项目|No project open
+等待选择项目|Waiting for a project
+请选择一个 WARNO Mod 文件夹|Select a WARNO Mod folder
+草稿已恢复|Draft restored
+草稿已保存|Draft saved
+战略草稿已保存|Strategic draft saved
+侦察|Recon
+空降|Airborne
+
+上一页|Previous page
+下一页|Next page
+应用全部草稿|Apply all drafts
+原始值无效|Invalid raw value
+设为固定值|Set value
+当前值 × 系数|Multiply current value
+当前值 + 数值|Add to current value
+当前值增加百分比|Increase by percent
+当前值减少百分比|Decrease by percent
+目标值|Target value
+系数，例如 1.1|Multiplier, e.g. 1.1
+增加的数值，可为负数|Amount to add (may be negative)
+增加百分比，例如 10|Increase percentage, e.g. 10
+减少百分比，例如 10|Decrease percentage, e.g. 10
+仅当前 Unit|Current Unit only
+所选 Unit|Selected Units
+是|Yes
+否|No
+对象浏览|Object browser
+Mod 问题|Mod issues
+工具问题|Application issues
+名称与来源|Name and source
+所属师|Division membership
+草稿状态|Draft status
+恢复失败|Restore failed
+应用失败|Apply failed
+应用完成|Apply completed
+确认应用全部草稿|Confirm all changes
+确认恢复|Confirm restore
+无法准备应用|Cannot prepare changes
+无法加入批量草稿|Cannot add batch drafts
+无法创建 Mod|Cannot create Mod
+无法打开项目|Cannot open project
+未找到有效 Mod|No valid Mod found
+当前没有可编辑字段|No editable fields available
+请输入整数|Enter an integer
+请输入数字|Enter a number
+数值不能为负数|Value cannot be negative
+请选择是或否|Choose Yes or No
+战略目标不可用|Strategic target is unavailable
+战略草稿身份或基线已变化，请重新编辑|The strategic draft identity or baseline has changed. Edit it again.
+单位必须存在，老练度为 0–3，数量必须大于 0|The Unit must exist, experience must be 0–3 and quantity must be positive.
+新增运输必须具备可识别运输模块|A new transport must have a recognized transport module.
+名称不能为空或含控制字符|Names cannot be empty or contain control characters.
+原 Pack 不存在|The original Pack no longer exists.
+编组身份为空或重复|Formation identities are empty or duplicated.
+棋子字段集已变化|The pawn field set has changed.
+布尔值无效|Invalid boolean value.
+无战略棋子，无法修改棋子名称|No strategic pawn is linked; its name cannot be edited.
+缺少 DeckPackList|DeckPackList is missing.
+缺少 DeckCombatGroupList|DeckCombatGroupList is missing.
+缺少 SmartGroupList|SmartGroupList is missing.
+存在未编组 Pack 槽，保留只读以免丢失|Unassigned Pack slots exist; formation editing is read-only.
+PackIndex 越界或数量无效|PackIndex is out of range or quantity is invalid.
+PackIndex 重叠或元组覆盖不同 Pack|PackIndex ranges overlap or a tuple spans different Packs.
+确认后才会创建备份并提交。|A backup is created and changes are committed only after confirmation.
+正在建立项目字段、名称与引用索引|Indexing fields, names and references
+正在建立 Weapon/Ammo 关系与共享影响索引|Indexing Weapon/Ammo relationships and shared impact
+正在建立战术师、单位池、默认 Deck 与费用索引|Indexing divisions, pools, decks and costs
+草稿冲突：{0}|Draft conflict: {0}
+战略草稿保存失败：{0}|Strategic draft save failed: {0}
+{0} 必须选择当前 Mod 已有值|{0} must use a value already present in this Mod.
+{0} 数值无效|Invalid value for {0}.
+删除 {0} 及其下级编制？|Delete {0} and all its child formations?
+删除编组|Delete formation
+AmmoBox {0} 齐射次数|AmmoBox {0} salvo count
+作用域：{0} 个勾选 Unit|Scope: {0} checked Units
+已扫描 {0}/{1} 个文件|Scanned {0}/{1} files
+正在读取 {0}|Reading {0}
+扫描完成 · {0} 个对象 · {1} 条诊断|Scan complete · {0} objects · {1} diagnostics
+扫描完成 · {0} 个 Unit · {1} 项草稿|Scan complete · {0} Units · {1} drafts
+已识别 · {0}/{1} 个只读模块可用|Recognized · {0}/{1} modules available
+解析异常 · 已识别 {0} 个对象|Parse errors · {0} objects recognized
+{0} · {1} 个对象|{0} · {1} objects
+已识别 {0} 个源文件|Found {0} source files
+主战|Combat
+辅助支援|Auxiliary support
+地面支援|Ground support
+航空支援|Air support
+机械化|Mechanized
+步行|Foot
+直升机|Helicopter
+航空|Air
+炮兵|Artillery
+
+问题 {0}|Issues {0}
+可用 · {0} 个源文件|Available · {0} source files
+部分可用 · 找到 {0}/{1} 个源文件|Partial · {0}/{1} source files
+分别查看 Mod 问题与工具问题|View Mod and application issues separately
+查看当前项目全部未应用修改|All unapplied changes in this project
+原始索引自动重算|Indices are recalculated automatically
+
+将应用 {0} 项草稿到 {1} 个正式文件。|Apply {0} drafts to {1} Mod files.
+备份编号：{0}|Backup ID: {0}
+文件：|Files:
+日志：{0}|Log: {0}
+应用完成。|Changes applied.
+……另有 {0} 项|... and {0} more changes
+将军模式 · {0} · {1} 连 / {2} 单位|Army General · {0} · {1} companies / {2} units
+已重新索引并确认 {0} 项草稿基线|Reindexed and verified {0} draft baselines
+已构建并验证 {0} 个正式文件候选|Built and validated {0} candidate Mod files
+NDF 对象签名、字段目标、引用和 NameToken 唯一性通过|NDF signatures, field targets, references and NameToken uniqueness passed
+战术默认 Deck 不含战略 PackIndex；引用与容量已按 P5 规则校验|Tactical decks contain no strategic PackIndex; references and capacity validated
+战略编组、单位/运输、共享隔离及 PackIndex 候选已校验|Strategic formations, Units/transports, shared isolation and PackIndex candidates validated
+没有可安全应用的草稿，或草稿仍存在冲突。|No safely applicable drafts, or unresolved draft conflicts remain.
+已有事务正在进行。|A transaction is already in progress.
+正在刷新未提交编辑并构建应用预览…|Flushing edits and preparing the preview…
+正在重新索引并校验应用候选…|Reindexing and validating candidates…
+已取消本次事务；正式文件未改变|Transaction canceled; Mod files are unchanged
+游戏内名称|In-game name
+
+黑金|Black & Gold
+黑绿终端|Black & Green
+石墨青|Graphite & Cyan
+暖纸棕|Warm Paper
+冷白蓝|Cool White
+自定义背景|Custom Background
+启用背景图片|Enable background image
+选择 / 替换图片|Choose / Replace Image
+移除图片|Remove Image
+图片不透明度（0–30%）|Image opacity (0–30%)
+铺满裁剪|Fill and Crop
+完整显示|Fit Image
+平铺|Tile
+全选|Select All
+取消全选|Deselect All
+应用选中项|Apply Selected
+删除选中项|Delete Selected
+批量修改|Batch Edit
+当前值增加固定数值|Add Fixed Amount
+当前值减少固定数值|Subtract Fixed Amount
+自动查找 Mod|Find Mods Automatically
+正在查找 WARNO Mod…|Searching for WARNO mods…
+找到 {0} 个 Mod，请选择后打开|Found {0} mods. Select one to open.
+已找到 WARNO，但没有可编辑的 Mod。关闭后可使用“创建新 Mod”。|WARNO found, but no editable mods. Close this window and choose Create New Mod.
+未找到 WARNO，请手动选择 Mod 文件夹。|WARNO was not found. Select a mod folder manually.
+手动选择文件夹|Choose Folder Manually
+清除筛选|Clear Filters
+Pack 与索引|Packs & Indices
+起始索引|Start Index
+所属连 / 排|Company / Platoon
+应用到草稿|Save to Drafts
+自动重排索引|Recalculate Indices
+修改当前编制；每行表示一个连续槽位区间。|Edit the current formation. Each row represents a contiguous range of slots.
+组|Group
+
+允许指定地点射击|Allow fire at position
+允许行进间射击|Allow firing on the move
+使用间接射击|Indirect fire
+短装填时间|Shot interval
+长装填时间|Salvo interval
+护甲类型|Armor Type
+正面护甲类型|Front Armor Type
+侧面护甲类型|Side Armor Type
+后方护甲类型|Rear Armor Type
+顶部护甲类型|Top Armor Type
+只影响大厅显示，基本不必修改。|Only affects lobby display; usually no need to change it.
+四向类型不同，请选择统一类型|Sides use different types. Select a common type.
+四个方向的护甲数值必须适用于所选类型，请先分别调整数值。|All four armor values must fit the selected type. Adjust the values first.
+专业模式：完整费用数组；第 11 格以后只在这里显示并原样保留|Professional: full cost array; slots after 10 are shown here and preserved.
+报错系统尚不完善，可能存在误报。如未进行相关操作，请忽略该提示。|Error reporting is still being improved and may produce false alarms. If you have not performed the related action, please disregard the message.
+忽略选中问题|Ignore Selected
+恢复选中问题|Restore Selected
+已忽略|Ignored
+伤害类型|Damage Type
+新增单位|New Unit
+编辑创建设置|Edit Creation Settings
+1 选择母版|1 Template
+2 基本设置|2 Basics
+3 武器配置|3 Weapons
+4 可用师|4 Divisions
+5 创建草稿|5 Draft
+基于当前 Mod 的现有单位创建，沿用模型和动画。|Create from an existing unit in this mod, reusing its model and animations.
+为新单位建立独立武器配置|Create independent weapons for the new unit
+沿用母版的武器挂载；独立配置复制 Weapon，弹药保持共享，后续局部修改按需隔离。|Reuse the template loadout. Independent configuration copies weapons; ammunition stays shared until a local edit needs isolation.
+选择当前行运输|Select Transports for Current Row
+母版|Template
+所选师|Selected Divisions
+加入草稿后可继续调整，正式文件只在应用草稿时写入。|You can keep editing the draft. Formal files change only when drafts are applied.
+上一步|Back
+下一步|Next
+无法创建单位|Cannot Create Unit
+请选择母版|Select a template unit
+请选择待创建单位|Select a pending new unit
+请先打开完整的单位与武器模块|Open a mod with compatible unit and weapon modules first
+正在校验新单位…|Validating new unit...
+新增单位已加入草稿|New unit added to drafts
+所选师不可用|Selected division is unavailable
+新单位护甲类型与数值不匹配|The new unit's armor values do not fit its armor types
+新单位身份冲突|New unit identity conflict
+母版已变化或不存在|Template changed or no longer exists
+新单位身份无效|Invalid new unit identity
+新单位名称或token已占用|New unit identifier or name token is already in use
+牌组编号已占用|Deck serializer ID is already in use
+武器母版已变化|Weapon template has changed
+独立武器名称已占用|Independent weapon identifier is already in use
+无法唯一定位UNITS.csv声明，不能新增单位|Cannot locate a unique UNITS.csv declaration for unit creation
+名称表格式不兼容或token冲突|Incompatible name table or duplicate token
+所选师基线已变化|Selected division has changed
+选择单位|Select Units
+搜索名称或内部标识|Search name or identifier
+战斗类型|Battle Role
+类型|Type
+
+忽略所选问题|Ignore Selected Problems
+恢复所选问题|Restore Selected Problems
+师类型|Division Type
+战斗角色|Battle Role
+
+1.8 · 筛选、草稿与新增单位|1.8 · Filters, drafts and unit creation
+新单位|New Unit
+新单位GUID已占用|New unit GUID is already in use
+
+原始草稿|Raw draft
+以下为同一编制事务的全部修改|All changes in one formation transaction
+项修改|changes
+修改当前弹药名称，影响全部引用者。|Rename this ammunition for all units using it.
+战略草稿无法解析，请查看冲突原因|Cannot read strategic changes; check the conflict details
+营/团名称|Battalion/regiment name
+棋子|Pawn
+位置|Position
+指挥编组|HQ group
+起始索引|Start index
+连 {0} · {1}|Company {0} · {1}
+组 {0} · {1}|Group {0} · {1}
+单位 {0}|Unit {0}
+{0} / {1}|{0} / {1}
+{0}：{1} → {2}|{0}: {1} → {2}
+
+1.8.5 · 单位简化与游戏规则|1.8.5 · Unit editing and game rules
+
+搜索弹药名称、内部名、token或源文件|Search ammo name, internal ID, token or source file
+默认初始资金|Default starting funds
+初始资金选项|Starting funds options
+默认时间限制（分钟）|Default time limit (minutes)
+时间限制选项（0 为不限时）|Time limit options (0 = unlimited)
+征服胜利分数|Conquest victory scores
+歼灭胜利分数选项|Destruction victory score options
+征服基础收入|Conquest base income
+征服收入间隔（秒）|Conquest income interval (seconds)
+歼灭基础收入|Destruction base income
+歼灭收入间隔（秒）|Destruction income interval (seconds)
+收入倍率选项|Income multiplier options
+维护费比例选项与默认值|Upkeep options and default
+AI 初始资金额外加成|AI additional starting funds
+AI 收入额外加成|AI additional income
+AI 单位数量额外加成|AI additional unit availability
+AI 单位经验等级修正|AI experience level modifier
+指挥光环半径（GRU）|Command radius by level (GRU)
+眩晕持续时间（秒）|Stun duration (seconds)
+每秒压力恢复|Stress recovery per second
+压力恢复等待（秒）|Delay before stress recovery (seconds)
+脱战等待（秒）|Out-of-combat delay (seconds)
+攻击后暴露时间（秒）|Reveal duration after attack (seconds)
+补给范围（GRU）|Supply range (GRU)
+每秒燃料补给|Fuel supplied per second
+燃料补给每秒成本|Fuel supply cost per second
+每秒生命值修复|Health repaired per second
+生命值修复每秒成本|Health repair cost per second
+每秒弹药补给|Ammunition supplied per second
+每秒故障修复|Critical repairs per second
+故障修复每秒成本|Critical repair cost per second
+默认登车半径|Default loading radius
+击杀经验倍率|Experience multiplier on kill
+将军参战名额（战斗／辅助／空中／地面支援）|Army General battle slots (combat / auxiliary / air / ground support)
+将军初始战术点（攻方／守方）|Army General starting points (attacker / defender)
+将军战术点收入（攻方／守方）|Army General income (attacker / defender)
+营士气|Battalion morale
+将军战术时限（分钟）|Army General battle time limit (minutes)
+将军战术胜利分数|Army General victory score limit
+地面交战行动点|Ground battle action points
+飞机交战行动点|Aircraft battle action points
+防空驻防行动点|AA fortification action points
+单位解散阈值|Unit dissolution threshold
+瘫痪单位修复回合数|Disabled unit repair delay (turns)
+最大疲劳|Maximum fatigue
+每回合疲劳恢复|Fatigue recovery per turn
+最大疲劳溃退时清空行动点|Clear action points on maximum-fatigue rout
+攻方战后疲劳（战果按攻方视角）|Attacker fatigue after battle (attacker outcome)
+守方战后疲劳（战果按攻方视角）|Defender fatigue after battle (attacker outcome)
+将军 AI 战术收入额外加成|Army General AI additional tactical income
+将军 AI 单位经验加成|Army General AI unit experience bonus
+游戏规则|Game rules
+单位特性|Unit specialties
+搜索游戏规则|Search game rules
+已选|Selected
+基础模式 32 项 · 专业模式 50 项。修改保存为草稿；在草稿中心应用。参战名额变化会联动表长，新增列沿用末列值。|32 basic settings / 50 professional settings. Changes are saved as drafts; apply them in the draft center. Battle slot changes resize related tables; new cells repeat the last value.
+侦察显示评级门槛|Recon display thresholds
+档位参考|Preset reference
+视野上限|Vision limits
+标准视野上限|Standard vision limit
+低空视野上限|Low-altitude vision limit
+高空视野上限|High-altitude vision limit
+观察强度|Optical strength
+标准观察强度|Standard optical strength
+低空观察强度|Low-altitude optical strength
+高空观察强度|High-altitude optical strength
+值|Value
+值 · {0}|Value · {0}
+攻方 · 参战数量 · {0}|Attacker · participating units: {0}
+守方 · 参战数量 · {0}|Defender · participating units: {0}
+维护费比例选项|Upkeep options
+默认维护费比例|Default upkeep
+维护费比例选项 · {0}|Upkeep option · {0}
+战斗|Combat
+空中支援|Air support
+非常简单|Very easy
+简单|Easy
+普通|Normal
+困难|Hard
+非常困难|Very hard
+极难|Hardest
+惨败|Total defeat
+重大失败|Major defeat
+小败|Minor defeat
+平局|Draw
+小胜|Minor victory
+重大胜利|Major victory
+全面胜利|Total victory
+未指定战果|Unspecified outcome
+当前 Mod 缺少此文件|This file is missing from the current Mod
+只修改 SpecialtiesList；不会自动修改武器、烟幕、运输或 TagSet|Edits SpecialtiesList only; weapons, smoke, transport and TagSet are not changed automatically.
+视野扫描距离上限（GRU）；基础模式按原始比例联动低空和高空|Scan range limit (GRU). Basic mode scales low and high altitude values using the original ratios.
+侦察显示评级门槛参考；实际探测还受隐蔽和视野上限影响|Display-rating threshold reference. Actual detection also depends on concealment and vision limits.
+原始标准值为零或三项不是可编辑数值，请在专业模式分别修改|The original standard value is zero, or one of the values is not directly editable. Edit the three values separately in professional mode.
+缺少唯一字段：{0}|Missing or ambiguous field: {0}
+缺少唯一选项：{0}|Missing or ambiguous option: {0}
+数值格结构已变化|The numeric cell structure has changed.
+缺少字段；编辑后将通过草稿安全补建|This field is missing. Editing will add it through a validated draft.
+只允许修改数值|Only numeric values can be edited.
+GDC 显示门槛：0 / 1768 / 2651 / 3535 / 5301 / 7068。原版常见组合（观察强度 / 识别率 / 周期秒）：1590 / 0.1 / 15；2473 / 0.2 / 12；3180 / 0.3 / 10；5300 / 0.5 / 6；7067 / 0.6 / 5；8834 / 0.75 / 4；侦察机特例 7500 / 1 / 2。仅作参考，选档不会修改识别率、周期或视野上限。|GDC display thresholds: 0 / 1768 / 2651 / 3535 / 5301 / 7068. Common stock combinations (optical strength / identification probability / interval in seconds): 1590 / 0.1 / 15; 2473 / 0.2 / 12; 3180 / 0.3 / 10; 5300 / 0.5 / 6; 7067 / 0.6 / 5; 8834 / 0.75 / 4; recon aircraft exception: 7500 / 1 / 2. Reference only; selecting a threshold does not change identification probability, interval or vision limits.
+基础模式 32 项 · 专业模式 50 项|32 basic settings / 50 professional settings
+特性列表不是直接数组，引用暂不改写|Specialties are referenced rather than stored as a literal array; this value is read-only.
+编辑当前 Mod 的游戏规则|Edit the current Mod game rules
+修改保存为草稿；在草稿中心应用。参战名额变化会联动表长，新增列沿用末列值。|Changes are saved as drafts; apply them in the draft center. Battle slot changes resize related tables; new cells repeat the last value.
+元组数量|Tuple count
+元组索引|Tuple index

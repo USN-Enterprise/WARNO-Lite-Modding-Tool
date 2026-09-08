@@ -1,0 +1,157 @@
+// Synthetic P2 fixture. It is not copied from WARNO.
+export Descriptor_Unit_Test_Tank_US is TEntityDescriptor
+(
+    DescriptorId = GUID:{10000000-0000-0000-0000-000000000001}
+    ModulesDescriptors = [
+        TTypeUnitModuleDescriptor
+        (
+            Coalition = TWargameCoalition/NATO
+            MotherCountry = 'US'
+            AcknowUnitTypes = [ ~/TAcknowUnitType_Tank, ~/TAcknowUnitType_Transport, ]
+        ),
+        TTagsModuleDescriptor
+        (
+            TagSet = [ "AllUnits", "Char", "Unite", ]
+        ),
+        TVisibilityModuleDescriptor(UnitConcealmentBonus = 1.25),
+        $/GFX/Weapon/WeaponDescriptor_Test_Tank_US,
+        TBaseDamageModuleDescriptor
+        (
+            MaxPhysicalDamages = 10
+            MaxSuppressionDamages = 20
+            MaxStunDamages = 30
+        ),
+        TDamageModuleDescriptor
+        (
+            BlindageProperties = TBlindageProperties
+            (
+                ResistanceFront = TResistanceTypeRTTI(Family=ResistanceFamily_blindage Index=18)
+                ResistanceSides = TResistanceTypeRTTI(Family=ResistanceFamily_blindage Index=8)
+                ResistanceRear = TResistanceTypeRTTI(Family=ResistanceFamily_blindage Index=5)
+                ResistanceTop = TResistanceTypeRTTI(Family=ResistanceFamily_blindage Index=3)
+            )
+            HitRollECM = -0.5
+        ),
+        TGenericMovementModuleDescriptor
+        (
+            MaxSpeedInKmph = 65
+        ),
+        TLandMovementModuleDescriptor
+        (
+            MaxAccelerationGRU = 18.0
+            MaxDecelerationGRU = 55.0
+            TempsDemiTour = 5.5
+        ),
+        TFuelModuleDescriptor
+        (
+            FuelCapacity = 1900
+            FuelMoveDuration = 575.0
+        ),
+        TScannerConfigurationDescriptor
+        (
+            VisionRangesGRU = MAP [
+                ( EVisionRange/Standard, 3500.0 ),
+                ( EVisionRange/LowAltitude, 4947.0 ),
+                ( EVisionRange/HighAltitude, 5654.0 ),
+            ]
+            OpticalStrengths = MAP [
+                ( EOpticalStrength/Standard, 2473.0 ),
+                ( EOpticalStrength/LowAltitude, 2473.0 ),
+                ( EOpticalStrength/HighAltitude, 706.0 ),
+            ]
+        ),
+        TDeploymentShiftModuleDescriptor(DeploymentShiftGRU = 2473.49823322),
+        TProductionModuleDescriptor
+        (
+            FactoryType = Factory/Tanks
+            ProductionRessourcesNeeded = MAP [
+                ($/GFX/Resources/Resource_CommandPoints, 275),
+                ($/GFX/Resources/Resource_Tickets, 4),
+            ]
+        ),
+        TStrategicDataModuleDescriptor
+        (
+            UnitAttackValue = 547
+            UnitDefenseValue = 417
+            UnitBonusXpPerLevelValue = 1
+        ),
+        TUnitUpkeepModuleDescriptor( UpkeepPercentage = 1.0 ),
+        TVisualShootPositionsModuleDescriptor(),
+        TUnitUIModuleDescriptor
+        (
+            UnitRole = 'armor'
+            NameToken = 'TESTUNIT01'
+            DisplayRoadSpeedInKmph = 75
+        ),
+    ]
+)
+
+export Descriptor_Unit_Test_Recon_SOV is TEntityDescriptor
+(
+    DescriptorId = GUID:{10000000-0000-0000-0000-000000000002}
+    ModulesDescriptors = [
+        TTypeUnitModuleDescriptor
+        (
+            Coalition = TWargameCoalition/PACT
+            MotherCountry = 'SOV'
+            AcknowUnitTypes = [ ~/TAcknowUnitType_Reco, ]
+        ),
+        TTagsModuleDescriptor(TagSet = [ "AllUnits", "Reco", "Unite", ]),
+        TVisibilityModuleDescriptor(UnitConcealmentBonus = 2.0),
+        $/GFX/Weapon/WeaponDescriptor_Test_Recon_SOV,
+        TBaseDamageModuleDescriptor
+        (
+            MaxPhysicalDamages = 5
+            MaxSuppressionDamages = ~/GroundUnit_MaxSuppressionDamages
+            MaxStunDamages = ~/GroundUnit_MaxStunDamages
+        ),
+        TDamageModuleDescriptor
+        (
+            BlindageProperties = TBlindageProperties
+            (
+                ResistanceFront = TResistanceTypeRTTI(Family=ResistanceFamily_blindage Index=1)
+                ResistanceSides = TResistanceTypeRTTI(Family=ResistanceFamily_blindage Index=1)
+                ResistanceRear = TResistanceTypeRTTI(Family=ResistanceFamily_blindage Index=1)
+                ResistanceTop = TResistanceTypeRTTI(Family=ResistanceFamily_blindage Index=1)
+            )
+            HitRollECM = 0.0
+        ),
+        TGenericMovementModuleDescriptor(MaxSpeedInKmph = 36),
+        TScannerConfigurationDescriptor
+        (
+            VisionRangesGRU = MAP [
+                ( EVisionRange/Standard, 4000.0 ),
+                ( EVisionRange/LowAltitude, 5000.0 ),
+                ( EVisionRange/HighAltitude, 6000.0 ),
+            ]
+            OpticalStrengths = MAP [
+                ( EOpticalStrength/Standard, 3000.0 ),
+                ( EOpticalStrength/LowAltitude, 3000.0 ),
+                ( EOpticalStrength/HighAltitude, 1000.0 ),
+            ]
+        ),
+        TProductionModuleDescriptor
+        (
+            FactoryType = Factory/Recons
+            ProductionRessourcesNeeded = MAP [
+                ($/GFX/Resources/Resource_CommandPoints, 40),
+                ($/GFX/Resources/Resource_Tickets, 1),
+            ]
+        ),
+        TStrategicDataModuleDescriptor
+        (
+            UnitAttackValue = 10
+            UnitDefenseValue = 12
+            UnitBonusXpPerLevelValue = 1
+        ),
+        TUnitUpkeepModuleDescriptor( UpkeepPercentage = 1.0 ),
+        TVisualShootPositionsModuleDescriptor(),
+        TUnitUIModuleDescriptor
+        (
+            UnitRole = 'reco'
+            NameToken = 'TESTUNIT02'
+            DisplayRoadSpeedInKmph = 40
+            UpgradeFromUnit = Descriptor_Unit_Test_Tank_US
+        ),
+    ]
+)

@@ -1,0 +1,6 @@
+// Synthetic P5 fixture. It is not copied from WARNO.
+Descriptor_Deck_Pack_P5_Tank_0_1 is DeckPackDescriptor
+(
+    Unit = $/GFX/Unit/Descriptor_Unit_P5_Tank
+    Number = 1
+)

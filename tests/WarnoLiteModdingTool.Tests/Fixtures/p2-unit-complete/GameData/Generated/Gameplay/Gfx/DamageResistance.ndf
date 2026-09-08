@@ -1,0 +1,13 @@
+// Synthetic resistance-family fixture.
+private DamageResistanceParams is TGameplayDamageResistanceContainer
+(
+    ResistanceFamilyCounts = [
+        (ResistanceFamily_blindage, 30),
+        (ResistanceFamily_infanterie, 3),
+    ]
+    DamageFamilyCounts = [
+        (DamageFamily_ap, 40),
+        (DamageFamily_he, 3),
+    ]
+    Values = []
+)

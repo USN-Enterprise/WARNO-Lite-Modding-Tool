@@ -1,0 +1,49 @@
+export WeaponDescriptor_P4_Shared is TWeaponManagerModuleDescriptor
+(
+    Salves = [ 4, 5, ]
+    TurretDescriptorList = [
+        TTurretTwoAxisDescriptor
+        (
+            AngleRotationMax = 3.141592653589793
+            AngleRotationMaxPitch = 0.5
+            AngleRotationMinPitch = -0.25
+            VitesseRotation = 1.0
+            MountedWeaponDescriptorList = [
+                TMountedWeaponDescriptor
+                (
+                    AmmoBoxIndex = 0
+                    Ammunition = $/GFX/Weapon/Ammo_P4_Shared
+                    EffectTag = "FireEffect_P4_AP"
+                    HandheldEquipmentKey = "WeaponAlternative_1"
+                    WeaponActiveAndCanShootPropertyName = "WeaponActiveAndCanShoot_1"
+                ),
+                TMountedWeaponDescriptor
+                (
+                    AmmoBoxIndex = 0
+                    Ammunition = $/GFX/Weapon/Ammo_P4_Alt
+                    EffectTag = "FireEffect_P4_HE"
+                    HandheldEquipmentKey = "WeaponAlternative_2"
+                    HideInInterface = False
+                ),
+            ]
+        ),
+    ]
+)
+export WeaponDescriptor_P4_Other is TWeaponManagerModuleDescriptor
+(
+    Salves = [ 3, ]
+    TurretDescriptorList = [
+        TTurretUnitDescriptor
+        (
+            MountedWeaponDescriptorList = [
+                TMountedWeaponDescriptor
+                (
+                    AmmoBoxIndex = 0
+                    Ammunition = $/GFX/Weapon/Ammo_P4_Shared
+                    EffectTag = "FireEffect_P4_Other"
+                    HandheldEquipmentKey = "WeaponAlternative_1"
+                ),
+            ]
+        ),
+    ]
+)

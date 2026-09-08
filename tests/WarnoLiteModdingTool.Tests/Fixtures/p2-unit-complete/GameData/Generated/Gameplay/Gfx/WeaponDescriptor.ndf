@@ -1,0 +1,25 @@
+export WeaponDescriptor_Test_Tank_US is TWeaponManagerModuleDescriptor
+(
+    Salves = [4,]
+    TurretDescriptorList = [
+        TTurretUnitDescriptor
+        (
+            MountedWeaponDescriptorList = [
+                TMountedWeaponDescriptor(Ammunition = $/GFX/Weapon/Ammo_Test_AP AmmoBoxIndex = 0),
+            ]
+        ),
+    ]
+)
+
+export WeaponDescriptor_Test_Recon_SOV is TWeaponManagerModuleDescriptor
+(
+    Salves = [5,]
+    TurretDescriptorList = [
+        TTurretUnitDescriptor
+        (
+            MountedWeaponDescriptorList = [
+                TMountedWeaponDescriptor(Ammunition = $/GFX/Weapon/Ammo_Test_MG AmmoBoxIndex = 0),
+            ]
+        ),
+    ]
+)

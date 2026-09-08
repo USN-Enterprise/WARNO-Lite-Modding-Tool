@@ -1,0 +1,24 @@
+// Synthetic P5 fixture. It is not copied from WARNO.
+Descriptor_Deck_Division_P5_Test_Rule is TDeckDivisionRule
+(
+    UnitRuleList =
+    [
+        TDeckUniteRule
+        (
+            UnitDescriptor = $/GFX/Unit/Descriptor_Unit_P5_Tank
+            AvailableWithoutTransport = True
+            MaxPackNumber = 2
+            NumberOfUnitInPack = 4
+            NumberOfUnitInPackXPMultiplier = [1.0, 0.5, 0.0, 0.0]
+        ),
+        TDeckUniteRule
+        (
+            UnitDescriptor = $/GFX/Unit/Descriptor_Unit_P5_Recon
+            AvailableWithoutTransport = False
+            AvailableTransportList = [ $/GFX/Unit/Descriptor_Unit_P5_Transport ]
+            MaxPackNumber = 1
+            NumberOfUnitInPack = 2
+            NumberOfUnitInPackXPMultiplier = [1.0, 0.5, 0.0, 0.0]
+        ),
+    ]
+)

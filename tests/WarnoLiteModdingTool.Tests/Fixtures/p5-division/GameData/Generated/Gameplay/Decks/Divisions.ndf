@@ -1,0 +1,16 @@
+// Synthetic P5 fixture. It is not copied from WARNO.
+export Descriptor_Deck_Division_P5_Test is TDeckDivisionDescriptor
+(
+    DescriptorId = GUID:{50000000-0000-0000-0000-000000000010}
+    CfgName = 'P5_Test'
+    DivisionName = 'P5DIV00001'
+    InterfaceOrder = 1.0
+    DivisionCoalition = TWargameCoalition/NATO
+    DivisionTags = ['DEFAULT', 'US', 'NATO', 'ARMORED']
+    MaxActivationPoints = 10
+    DivisionRule = Descriptor_Deck_Division_P5_Test_Rule
+    CostMatrix = MatrixCostName_P5_Test
+    TypeToken = "ARMORED"
+    CountryId = "US"
+    StandoutUnits = [ $/GFX/Unit/Descriptor_Unit_P5_Tank, ]
+)

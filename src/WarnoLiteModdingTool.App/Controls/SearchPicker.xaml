@@ -1,0 +1,50 @@
+<UserControl x:Class="WarnoLiteModdingTool.App.Controls.SearchPicker"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:WarnoLiteModdingTool.App.Controls"
+             MinHeight="32">
+    <Grid>
+        <ToggleButton x:Name="OpenButton" HorizontalContentAlignment="Stretch" Padding="9,6">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="⌄" Margin="8,0,0,0" />
+                <TextBlock x:Name="SelectedText" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </ToggleButton>
+        <Popup x:Name="PickerPopup"
+               PlacementTarget="{Binding ElementName=OpenButton}"
+               Placement="Bottom"
+               AllowsTransparency="True"
+               StaysOpen="False"
+               IsOpen="{Binding IsChecked, ElementName=OpenButton, Mode=TwoWay}">
+            <Border Width="430" MaxHeight="440" Padding="8" Background="{DynamicResource ControlBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <StackPanel><TextBox x:Name="SearchBox" TextChanged="SearchBox_TextChanged" Padding="9,7"/><local:UnitMiniFilter x:Name="MiniFilter" Visibility="Collapsed"/></StackPanel>
+                    <TextBlock x:Name="ResultHint" Grid.Row="1" Margin="2,5,2,4" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" />
+                    <ListBox x:Name="ResultList" Grid.Row="2" SelectionChanged="ResultList_SelectionChanged"
+                             ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True"
+                             VirtualizingPanel.VirtualizationMode="Recycling" MaxHeight="340">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="5,4">
+                                    <TextBlock Text="{Binding Primary}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Secondary}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}"
+                                               TextTrimming="CharacterEllipsis" Visibility="{Binding HasSecondary, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+        </Popup>
+    </Grid>
+</UserControl>

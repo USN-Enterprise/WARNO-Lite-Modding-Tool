@@ -1,0 +1,7 @@
+// Minimal synthetic fixture. It is not copied from WARNO.
+export Descriptor_Unit_Test_US is TEntityDescriptor
+(
+    DescriptorId = GUID:{00000000-0000-0000-0000-000000000001}
+    ModulesDescriptors = [ TTypeUnitModuleDescriptor(Coalition = TWargameCoalition/NATO) ]
+)
+

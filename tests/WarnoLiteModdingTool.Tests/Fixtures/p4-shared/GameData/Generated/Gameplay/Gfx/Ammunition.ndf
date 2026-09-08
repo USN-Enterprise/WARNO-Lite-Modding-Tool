@@ -1,0 +1,43 @@
+Ammo_P4_Shared is TAmmunitionDescriptor
+(
+    DescriptorId = GUID:{40000000-0000-0000-0000-000000000001}
+    Arme = TDamageTypeRTTI(Family=DamageFamily_ap Index=8)
+    TimeBetweenTwoShots = 1.0
+    MinimumRangeGRU = 10
+    MaximumRangeGRU = 2000
+    MinimumRangeHelicopterGRU = 0
+    MaximumRangeHelicopterGRU = 0
+    MinimumRangeAirplaneGRU = 0
+    MaximumRangeAirplaneGRU = 0
+    MinimumRangeProjectileGRU = 0
+    MaximumRangeProjectileGRU = 0
+    AngleDispersion = 0.0
+    DispersionAtMaxRangeGRU = 100
+    DispersionAtMinRangeGRU = 10
+    PhysicalDamages = 10.0
+    SuppressDamages = 50.0
+    TirIndirect = False
+    TirReflexe = True
+    ProjectileSpeedGRU = 2000
+    HitRollRuleDescriptor = TDiceHitRollRuleDescriptor
+    (
+        BaseHitValueModifiers = [
+            (EBaseHitValueModifier/Idling, 65),
+            (EBaseHitValueModifier/Moving, 50),
+        ]
+    )
+    AimingTime = 2.0
+    TimeBetweenTwoSalvos = 5.0
+    ShotsCountPerSalvo = 2
+    SupplyCost = 12.0
+    CanShootOnPosition = False
+    CanShootWhileMoving = True
+    AffichageMunitionParSalve = 2
+)
+Ammo_P4_Alt is TAmmunitionDescriptor
+(
+    DescriptorId = GUID:{40000000-0000-0000-0000-000000000002}
+    PhysicalDamages = 3.0
+    ShotsCountPerSalvo = 1
+    AffichageMunitionParSalve = 1
+)

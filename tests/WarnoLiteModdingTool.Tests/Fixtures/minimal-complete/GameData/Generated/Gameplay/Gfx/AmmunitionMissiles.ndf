@@ -1,0 +1,4 @@
+Ammo_Test_Missile is TAmmunitionDescriptor
+(
+    ShotsCountPerSalvo = 1
+)

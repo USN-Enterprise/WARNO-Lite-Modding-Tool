@@ -1,0 +1,5 @@
+export Descriptor_Deck_Division_Test is TDeckDivisionDescriptor
+(
+    MaxActivationPoints = 50
+)
+

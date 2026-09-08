@@ -1,0 +1,2 @@
+# Preserve original bytes and mixed LF/CRLF test fixtures on every platform.
+* -text

@@ -1,0 +1,61 @@
+namespace WarnoLiteModdingTool.Core.Rules;
+public sealed record RuleDefinition(int Number, string Label, string File, string Constructor, string Fields, string? MapKey)
+{
+    public bool Basic => Number <= 16 || Number is >= 33 and <= 48;
+    public string RelativePath => "GameData/Gameplay/Constantes/" + File;
+}
+public static class RuleCatalog
+{
+    public static IReadOnlyList<RuleDefinition> All { get; } = [
+        new(1, "默认初始资金", "GDConstants.ndf", "TWargameTunableConstante", "DefaultArgentInitial", null),
+        new(2, "初始资金选项", "GDConstants.ndf", "TWargameTunableConstante", "ArgentInitialSetting", null),
+        new(3, "默认时间限制（分钟）", "GDConstants.ndf", "TTunableConstante", "DefaultTimeLimitInMinutes", null),
+        new(4, "时间限制选项（0 为不限时）", "GDConstants.ndf", "TTunableConstante", "TimeLimitTable", null),
+        new(5, "征服胜利分数", "GDConstants.ndf", "TWargameTunableConstante", "ConquestPossibleScores", null),
+        new(6, "歼灭胜利分数选项", "GDConstants.ndf", "TWargameTunableConstante", "DefaultDestructionScoreToReachSetting", null),
+        new(7, "征服基础收入", "GDConstants.ndf", "TWargameTunableConstante", "BaseIncome", "ECombatRule/Conquest"),
+        new(8, "征服收入间隔（秒）", "GDConstants.ndf", "TWargameTunableConstante", "TimeBeforeEarningCommandPointsSkirmish", "ECombatRule/Conquest"),
+        new(9, "歼灭基础收入", "GDConstants.ndf", "TWargameTunableConstante", "BaseIncome", "ECombatRule/Destruction"),
+        new(10, "歼灭收入间隔（秒）", "GDConstants.ndf", "TWargameTunableConstante", "TimeBeforeEarningCommandPointsSkirmish", "ECombatRule/Destruction"),
+        new(11, "收入倍率选项", "GDConstants.ndf", "TWargameTunableConstante", "IncomeMultiplier", null),
+        new(12, "维护费比例选项与默认值", "GDConstants.ndf", "TWargameTunableConstante", "UpkeepPercentAvailableSettings;UpkeepPercentDefaultSetting", null),
+        new(13, "AI 初始资金额外加成", "GDConstants.ndf", "TModernWarfareTunableConstante", "RelativeBonusMoneyByIADifficulty", null),
+        new(14, "AI 收入额外加成", "GDConstants.ndf", "TWargameTunableConstante", "RelativeBonusFluxByIADifficulty", null),
+        new(15, "AI 单位数量额外加成", "GDConstants.ndf", "TWargameTunableConstante", "DeckUnitCountMultiplierByIADifficulty", null),
+        new(16, "AI 单位经验等级修正", "GDConstants.ndf", "TWargameTunableConstante", "DeckUnitExpLevelAdditiveModifierByIADifficulty", null),
+        new(17, "指挥光环半径（GRU）", "GDConstants.ndf", "TTunableConstante", "CommanderRadiusEffectByLevelGRU", null),
+        new(18, "眩晕持续时间（秒）", "GDConstants.ndf", "TTunableConstante", "StunEffectDuration", null),
+        new(19, "每秒压力恢复", "GDConstants.ndf", "TModernWarfareTunableConstante", "RegenStressParSeconde", null),
+        new(20, "压力恢复等待（秒）", "GDConstants.ndf", "TModernWarfareTunableConstante", "TempsSansStressPourRegen", null),
+        new(21, "脱战等待（秒）", "GDConstants.ndf", "TModernWarfareTunableConstante", "TempsSansTirNiDamagePourPasserHorsCombat", null),
+        new(22, "攻击后暴露时间（秒）", "GDConstants.ndf", "TModernWarfareTunableConstante", "DureeDeRevelationApresAttaque", null),
+        new(23, "补给范围（GRU）", "Ravitaillement.ndf", "TSupplyDescriptor", "DefaultSupplyRangeGRU", null),
+        new(24, "每秒燃料补给", "Ravitaillement.ndf", "TSupplyDescriptor", "FuelSupplyBySecond", null),
+        new(25, "燃料补给每秒成本", "Ravitaillement.ndf", "TSupplyDescriptor", "FuelSupplyCostBySecond", null),
+        new(26, "每秒生命值修复", "Ravitaillement.ndf", "TSupplyDescriptor", "HealthSupplyBySecond", null),
+        new(27, "生命值修复每秒成本", "Ravitaillement.ndf", "TSupplyDescriptor", "HealthSupplyCostBySecond", null),
+        new(28, "每秒弹药补给", "Ravitaillement.ndf", "TSupplyDescriptor", "AmmunitionSupplyBySecond", null),
+        new(29, "每秒故障修复", "Ravitaillement.ndf", "TSupplyDescriptor", "CriticsSupplyBySecond", null),
+        new(30, "故障修复每秒成本", "Ravitaillement.ndf", "TSupplyDescriptor", "CriticsSupplyCostBySecond", null),
+        new(31, "默认登车半径", "Transport.ndf", "", "DefaultTransportLoadRadius", null),
+        new(32, "击杀经验倍率", "Experience.ndf", "", "ExperienceMultiplierBonusOnKill", null),
+        new(33, "将军参战名额（战斗／辅助／空中／地面支援）", "Strategic/GDConstants.ndf", "TStrategicTunableConstante", "BattleNbMaxPawnByRole", null),
+        new(34, "将军初始战术点（攻方／守方）", "Strategic/GDConstants.ndf", "TStrategicTunableConstante", "DefaultStartingTicketsPointsByPawnNumber", null),
+        new(35, "将军战术点收入（攻方／守方）", "Strategic/GDConstants.ndf", "TStrategicTunableConstante", "DefaultTicketsPointsIncomeByPawnNumber", null),
+        new(36, "营士气", "Strategic/GDConstants.ndf", "TStrategicTunableConstante", "BataillonMoralValue", null),
+        new(37, "将军战术时限（分钟）", "Strategic/GDConstants.ndf", "TStrategicTunableConstante", "TacticalTimeLimit", null),
+        new(38, "将军战术胜利分数", "Strategic/GDConstants.ndf", "TStrategicTunableConstante", "TacticalScoreLimit", null),
+        new(39, "地面交战行动点", "Strategic/GDConstants.ndf", "TStrategicTunableConstante", "NbActionPointsNeededToFight", null),
+        new(40, "飞机交战行动点", "Strategic/GDConstants.ndf", "TStrategicTunableConstante", "NbActionPointsNeededToFightForAirplane", null),
+        new(41, "防空驻防行动点", "Strategic/GDConstants.ndf", "TStrategicTunableConstante", "ActionPointCostPerOrder", "EOrderType/FortifyAntiAir"),
+        new(42, "单位解散阈值", "Strategic/GDConstants.ndf", "TStrategicTunableConstante", "PawnDissolutionFactor", null),
+        new(43, "瘫痪单位修复回合数", "Strategic/GDConstants.ndf", "TStrategicTunableConstante", "NbTurnToRepairDisabledUnit", null),
+        new(44, "最大疲劳", "Strategic/StrategicFatigueConstants.ndf", "", "StrategicMaxFatiguePerUnit", null),
+        new(45, "每回合疲劳恢复", "Strategic/StrategicFatigueConstants.ndf", "", "StrategicFatigueLossOnNextTurn", null),
+        new(46, "最大疲劳溃退时清空行动点", "Strategic/StrategicFatigueConstants.ndf", "", "StrategicEmptyActionPointsOnMaxFatigueRout", null),
+        new(47, "攻方战后疲劳（战果按攻方视角）", "Strategic/StrategicFatigueConstants.ndf", "", "StrategicBattleAttackerFatigueGainAfterBattle", null),
+        new(48, "守方战后疲劳（战果按攻方视角）", "Strategic/StrategicFatigueConstants.ndf", "", "StrategicBattleDefenderFatigueGainAfterBattle", null),
+        new(49, "将军 AI 战术收入额外加成", "Strategic/GDConstants.ndf", "TStrategicTunableConstante", "TacticalRelativeBonusFluxByIADifficulty", null),
+        new(50, "将军 AI 单位经验加成", "Strategic/GDConstants.ndf", "TStrategicTunableConstante", "FlatIAPawnXPBonusByIADifficulty", null),
+    ];
+}

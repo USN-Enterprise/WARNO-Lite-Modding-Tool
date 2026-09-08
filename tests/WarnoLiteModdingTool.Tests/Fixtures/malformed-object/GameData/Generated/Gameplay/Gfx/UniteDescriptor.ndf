@@ -1,0 +1,8 @@
+export Descriptor_Unit_Broken is TEntityDescriptor
+(
+    ModulesDescriptors = [
+        TTypeUnitModuleDescriptor
+        (
+            Coalition = TWargameCoalition/NATO
+        )
+
