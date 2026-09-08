@@ -65,7 +65,7 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 单位页“新增单位”启动五步向导；“编辑创建设置”可修改待创建单位。创建先进入草稿，应用时才一并写入身份、名称、牌组注册和所选师规则。母版外观沿用，可选择独立武器配置。暂不提供空白创建、跨 Mod 导入和正式单位删除。
 
-武器、弹药、将军与师内列表提供折叠筛选；战术师列表支持搜索。问题中心可多选忽略与恢复，忽略不跳过正式应用校验。详见 `docs/1.8实施说明.md`。
+武器、弹药、将军与师内列表提供折叠筛选；战术师列表支持搜索。问题中心可多选忽略与恢复，忽略不跳过正式应用校验。详见 [发布说明](RELEASE_NOTES.md)。
 
 1.8.1：共用 NameToken 的单位可独立改名，自动新增名称 token；战术师默认按国家排序；切换单位仅展开最后手动展开的分区。
 
@@ -73,4 +73,4 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 1.8.3：高级模式更名为专业模式。
 
-1.8.4 的具体范围、数值联动与验证见 [实施说明](docs/1.8.4实施说明.md)。
+1.8.4 的版本变更见 [发布说明](RELEASE_NOTES.md)。
