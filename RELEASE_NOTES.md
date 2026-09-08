@@ -1,5 +1,9 @@
 # WARNO Lite Modding Tool 发布说明
 
+[中文](#chinese) | [English](#english)
+
+<a id="chinese"></a>
+
 仅列出功能更新和影响使用的问题修复。
 
 ## 1.8.5 — 2026-09-08
@@ -97,3 +101,109 @@
 - 支持批量赋值、公式调整和影响预览；武器修改可限定到所选单位。
 - 编辑自动保存为草稿，正式应用提供校验、备份和恢复。
 - 提供 Windows x64 便携版，解压即用。
+
+---
+
+<a id="english"></a>
+
+# WARNO Lite Modding Tool — Release Notes
+
+[中文](#chinese) | [English](#english)
+
+Feature updates and fixes that affect everyday use.
+
+## 1.8.5 — 2026-09-08
+
+- Fixed valid game constants being incorrectly reported as syntax errors.
+- Added original parameter names beside editable fields for easier reference.
+
+## 1.8.4 — 2026-09-08
+
+- Added Game Rules editing for starting funds, player slots, and other global parameters.
+- Simplified armor and vision editing in Basic mode. Air-vision values follow their original ratios; recon thresholds support presets and custom values.
+- Unit specialties now support searchable tags that can be added or removed. Professional mode accepts custom identifiers.
+- The Professional workbench supports editing recognized numerical parameters.
+
+## 1.8.2 — 2026-09-08
+
+- Added in-game ammunition names, name search, and renaming. Renaming on the Ammunition page affects every unit using that ammunition.
+- Added searchable multi-select filters and a country column to Army General. Basic mode shows Chinese country names when using Chinese.
+- Army General drafts and application confirmations show specific before-and-after values.
+- Fixed overlapping ammunition search and filter controls and an overly narrow name column.
+
+## 1.8.1 — 2026-09-08
+
+- Units sharing a name can be renamed independently without affecting other units.
+- Tactical divisions now sort by country.
+- Switching units opens only the last manually expanded section.
+
+## 1.8.0 — 2026-09-08
+
+- Added a unit creation wizard: create a variant from an existing unit, optionally give it independent weapons, and add it to a selected division.
+- Added Army General, tactical division, weapon, and ammunition filters, plus card parameter editing within divisions.
+- Featured units and tags support search and multi-selection. Batch changes can be added directly to drafts.
+- The Problems panel supports ignoring and restoring multiple entries at once.
+
+## 1.7.1 — 2026-09-08
+
+- Fixed automatic Mod search listing the same folder more than once.
+
+## 1.7.0 — 2026-09-08
+
+- Enabled editing of visible fields in Basic mode and restored the standalone Ammunition module.
+- Added theme choices and custom background images.
+- Drafts support multi-selection, partial application, and partial deletion. Professional batch editing supports fixed additions and subtractions.
+- Army General formations display vanilla Chinese and English names. Professional mode can inspect and edit formation indices.
+- Added automatic discovery of WARNO Mods in Steam. Unit and transport selection now includes filters, select-all, and clear controls.
+
+## 1.6.0 — 2026-09-08
+
+- Added Army General editing for company and platoon formations, units, quantities, veterancy, and transport. Add, delete, move, reorder, rename, and assign HQ status to companies and platoons.
+- Added strategic pawn editing for action points, movement, combat roles, zones of control, support range, and other properties.
+- Added language and default-mode settings, with Simplified Chinese and English support.
+- Added the Professional Reference Workbench, field search, and before-and-after source previews.
+
+## 1.5.0 — 2026-09-07
+
+- Basic mode supports custom forward-deployment values and presets from the current Mod.
+- Improved application preview responsiveness and reduced UI freezes while waiting.
+- Tactical divisions support searching and selecting multiple transports at once.
+- Unit and weapon lists include select-all-filtered, clear-selection, and selected-count controls.
+- Mounted ammunition can be selected through search. Reduced problem reports caused by unrelated descriptors.
+
+## 1.4.0
+
+- Unit filters support matching all or any conditions. Categories, roles, and division tags use selectors.
+- Added a multi-unit inspector for directly editing shared parameters.
+- Added forward-deployment settings for structurally compatible units that lack them.
+- Added armor, damage-type, and splash editing. ECM is displayed as a positive percentage.
+- Expanded weapon, unit, and transport search and improved large candidate-list responsiveness.
+- Division cost curves use separate input cells. Removed default-deck editing while retaining existing deck data.
+- Added ammunition-user lookup. Fixed valid MAP data being incorrectly reported as syntax errors.
+
+## 1.3.0
+
+- Unit, weapon, and ammunition fields are grouped into collapsible categories. Unit filters support multi-select tags.
+- Added a Problems panel separating Mod issues from editor issues, with copyable diagnostics.
+- Added access to official Mod creation, generation, development launch, and upload workflows.
+
+## 1.2.0
+
+- Added Draft Overview to inspect before-and-after values and affected scope.
+- The Ammunition page supports editing shared ammunition directly and shows linked weapon and unit counts.
+
+## 1.1.0
+
+- Added black-and-blue and white-and-blue themes with instant switching and saved preferences.
+- Workspace panels can be resized by dragging dividers. The object list supports sorting by file and line number.
+
+## 1.0.1
+
+- Fixed a possible crash when opening a Mod containing a unit module.
+
+## 1.0.0
+
+- Open structurally compatible WARNO Mods and edit unit stats and names, weapon and ammunition parameters, and tactical division unit pools and costs.
+- Apply batch values and formulas with impact previews. Weapon changes can be limited to selected units.
+- Edits are automatically saved as drafts. Applying changes includes validation, backups, and restoration.
+- Available as a portable Windows x64 release: extract and run.
