@@ -12,6 +12,12 @@
 
 欢迎进群交流使用心得、反馈问题，一起探讨 Mod 制作。
 
+## 许可证
+
+本项目原创代码与文档采用 [MIT 许可证](LICENSE)，允许修改、分发和商用，需保留版权与许可声明。
+
+从 WARNO 提取的游戏资料不在 MIT 授权范围内，包括 `src/WarnoLiteModdingTool.Core/Localisation/vanilla-names.json` 中的原版名称数据；相关权利归各自权利人所有，本项目不授予这些资料的再分发许可。
+
 ## 直接使用
 
 1. 解压完整发布 ZIP。
@@ -100,6 +106,12 @@ The author is also a WARNO Mod beginner learning along the way. If you encounter
 **QQ community group: 1013181135**
 
 Join us to share tips, report issues, and discuss Mod creation.
+
+## License
+
+The project's original code and documentation are licensed under the [MIT License](LICENSE). Modification, redistribution, and commercial use are permitted, provided the copyright and license notices are retained.
+
+Data extracted from WARNO is excluded from the MIT license, including the vanilla names in `src/WarnoLiteModdingTool.Core/Localisation/vanilla-names.json`. Rights to that material remain with its respective rights holders; this project grants no redistribution permission for it.
 
 ## Getting started
 
