@@ -8,5 +8,7 @@ publish/
 /tmp/
 /.warno-editor/
 /GameData/
+/docs/
+/logs/
 *.user
 *.suo
