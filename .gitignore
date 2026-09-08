@@ -10,5 +10,6 @@ publish/
 /GameData/
 /docs/
 /logs/
+/AGENTS.md
 *.user
 *.suo
