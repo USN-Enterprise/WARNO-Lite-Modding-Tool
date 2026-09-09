@@ -6,6 +6,21 @@
 
 仅列出功能更新和影响使用的问题修复。
 
+## 1.9.1 — 2026-09-09
+
+- 列表增加行高和留白，文字垂直居中，改善单位页拥挤。
+- 自动列宽依据当前筛选结果的实际内容分配，空间允许时以至少90%的条目完整显示为目标；窄窗口保留可读列宽与横向滚动。
+- 左侧功能模块恢复备注说明，模块项和侧栏适当加大。
+- 工作区内容沿面板圆角收边；软件窗口普通状态采用圆角，最大化贴屏，还原后恢复。
+
+## 1.9.0 — 2026-09-09
+
+- 重做正式编辑器主框架：项目顶栏、紧凑导航和全局草稿入口；设置与模式移至左下角。
+- 首次启动及无效主题配置默认白蓝，保留七套主题和已有个人设置。
+- 单位、武器、弹药使用统一字段行，名称、原参数和输入对齐。
+- 单位多选在同一个右侧区域切换为批量编辑；混合值输入留空，避免误写为零。
+- 草稿总览集中提供批次、部分应用和事务备份/恢复；单位创建、引用隔离、战术师、将军模式、游戏规则和专业工作台继续可用。
+
 ## 1.8.7 — 2026-09-09
 
 - 禁止同时打开多个程序实例；重复启动时提示“已在运行”，确认后退出。
@@ -124,6 +139,21 @@
 [中文](#chinese) | [English](#english)
 
 Feature updates and fixes that affect everyday use.
+
+## 1.9.1 — 2026-09-09
+
+- More spacious list rows with vertically centered text, especially in the unit list.
+- Columns size to the filtered content, targeting at least 90% fully readable entries when space permits. Narrow layouts retain minimum widths and horizontal scrolling.
+- Module notes return to a larger navigation sidebar.
+- Workspace content follows rounded panel edges. The application window is rounded when restored and fills the screen when maximized.
+
+## 1.9.0 — 2026-09-09
+
+- Reworked the production editor shell with compact navigation and global draft access; settings and mode controls now sit at the bottom left.
+- Fresh or invalid theme settings default to white-blue. All seven themes and valid saved preferences are preserved.
+- Units, Weapons, and Ammunition share aligned field rows with original parameter notes.
+- Selecting multiple units switches the existing right inspector to batch editing. Mixed-value inputs remain empty until a target value is entered.
+- Draft Overview centralizes grouped changes, partial application, and transaction backups. Existing creation, reference isolation, division, Army General, rules, and professional tools remain available.
 
 ## 1.8.7 — 2026-09-09
 

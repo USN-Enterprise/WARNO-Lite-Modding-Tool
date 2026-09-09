@@ -1,0 +1,197 @@
+<UserControl x:Class="WarnoLiteModdingTool.App.Workspaces.DivisionWorkspaceView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:l="clr-namespace:WarnoLiteModdingTool.App.Localisation"
+    xmlns:controls="clr-namespace:WarnoLiteModdingTool.App.Controls">
+<Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="DivisionListColumn" Width="300" MinWidth="240" MaxWidth="520" />
+                            <ColumnDefinition Width="6" />
+                            <ColumnDefinition x:Name="DivisionEditorColumn" Width="*" MinWidth="480" />
+                        </Grid.ColumnDefinitions>
+
+                        <DockPanel Grid.Column="0"><TextBox DockPanel.Dock="Top" Margin="6" Text="{Binding DivisionWorkspace.Search, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Loc Key='搜索师'}"/>
+                        <DataGrid ItemsSource="{Binding DivisionWorkspace.DivisionsView}"
+                                  SelectedItem="{Binding DivisionWorkspace.SelectedDivision}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  BorderThickness="0"
+                                  RowHeaderWidth="0">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="{l:Loc Key='师'}" Binding="{Binding DisplayName}" ElementStyle="{StaticResource IndexPrimaryGridText}" HeaderStyle="{StaticResource IndexGridColumnHeader}" Width="*" />
+                                <DataGridTextColumn Header="{l:Loc Key='国家'}" Binding="{l:GameBinding Path=Country, Kind=country}" Width="58" />
+                                <DataGridTextColumn Header="{l:Loc Key='草稿'}" Binding="{Binding DraftStatus}" Width="58" />
+                            </DataGrid.Columns>
+                        </DataGrid></DockPanel>
+
+                        <GridSplitter x:Name="DivisionPaneSplitter" Grid.Column="1" Style="{StaticResource PaneSplitter}" />
+
+                        <Grid Grid.Column="2" Background="{DynamicResource SurfaceAltBrush}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TabControl Grid.Row="0" Margin="12" IsEnabled="{Binding DivisionWorkspace.CanEditSelected}">
+                                <TabItem Header="{l:Loc Key='单位池'}">
+                                    <Grid Margin="12">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Grid.Row="0"><controls:FacetFilter Tag="rules" Rows="{Binding DivisionWorkspace.RuleFilterRows}" FilterChanged="WorkspaceFilter_Changed"/><DockPanel Margin="0,0,0,10">
+                                            <Button Content="{l:Loc Key='删除选中规则'}" DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Padding="9,5" Click="RemoveDivisionRule_Click" />
+                                            <Button Content="{l:Loc Key='添加 Unit'}" DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Padding="9,5" Margin="8,0" Click="AddDivisionRule_Click" />
+                                            <controls:SearchPicker EnableUnitFilters="True" ItemsSource="{Binding DivisionWorkspace.UnitOptions}" SelectedItem="{Binding DivisionWorkspace.NewRuleUnit}"
+                                                                   DisplayMemberPath="DisplayName" SecondaryMemberPath="Name" Placeholder="按名称任意片段搜索并选择 Unit" />
+                                        </DockPanel></StackPanel>
+                                        <DataGrid Grid.Row="1" IsReadOnly="False" ItemsSource="{Binding DivisionWorkspace.RulesView}" SelectedItem="{Binding DivisionWorkspace.SelectedRule}"
+                                                  AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" RowHeaderWidth="0"
+                                                  HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Unit" Binding="{Binding Unit}" ElementStyle="{StaticResource PrimaryGridText}" IsReadOnly="True" Width="2*" />
+                                                <DataGridCheckBoxColumn Binding="{Binding AvailableWithoutTransport, UpdateSourceTrigger=PropertyChanged}" Width="140" ><DataGridCheckBoxColumn.Header><StackPanel MaxWidth="125"><TextBlock Text="{l:Loc Key='可无运输'}"/><controls:ParameterNote Text="AvailableWithoutTransport"/></StackPanel></DataGridCheckBoxColumn.Header></DataGridCheckBoxColumn>
+                                                <DataGridTextColumn Binding="{Binding MaxPackNumber, UpdateSourceTrigger=PropertyChanged}" Width="115" ><DataGridTextColumn.Header><StackPanel MaxWidth="125"><TextBlock Text="{l:Loc Key='最大卡数'}"/><controls:ParameterNote Text="MaxPackNumber"/></StackPanel></DataGridTextColumn.Header></DataGridTextColumn>
+                                                <DataGridTextColumn Binding="{Binding NumberOfUnitInPack, UpdateSourceTrigger=PropertyChanged}" Width="130" ><DataGridTextColumn.Header><StackPanel MaxWidth="125"><TextBlock Text="{l:Loc Key='单卡数量'}"/><controls:ParameterNote Text="NumberOfUnitInPack"/></StackPanel></DataGridTextColumn.Header></DataGridTextColumn>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                        <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,10,0,0">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="{l:Loc Key='允许的运输 Unit'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="AvailableTransportList"/>
+                                                    <ToggleButton x:Name="DivisionTransportPickerButton" Content="{Binding DivisionWorkspace.TransportPickerButtonText, Mode=OneWay}"
+                                                                  IsChecked="{Binding DivisionWorkspace.IsTransportPickerOpen, Mode=TwoWay}" Padding="10,6" Margin="0,4,0,5" />
+                                                    <Popup x:Name="DivisionTransportPickerPopup" PlacementTarget="{Binding ElementName=DivisionTransportPickerButton}" Placement="Bottom"
+                                                           AllowsTransparency="True" StaysOpen="False" IsOpen="{Binding DivisionWorkspace.IsTransportPickerOpen, Mode=TwoWay}">
+                                                        <Border Width="500" MaxHeight="470" Background="{DynamicResource ControlBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10">
+                                                            <Grid>
+                                                                <Grid.RowDefinitions>
+                                                                    <RowDefinition Height="Auto" />
+                                                                    <RowDefinition Height="Auto" />
+                                                                    <RowDefinition Height="*" />
+                                                                    <RowDefinition Height="Auto" />
+                                                                </Grid.RowDefinitions>
+                                                                <StackPanel><TextBox Text="{Binding DivisionWorkspace.TransportSearchText, UpdateSourceTrigger=PropertyChanged}" Padding="9,7" ToolTip="{l:Loc Key='按显示名或内部名的任意片段搜索运输 Unit'}" /><controls:UnitMiniFilter ItemsSource="{Binding DivisionWorkspace.TransportCandidates}" FilterChanged="TransportFilter_Changed"/><StackPanel Orientation="Horizontal"><Button Content="{l:Loc Key='全选'}" Tag="True" Click="SelectTransports_Click"/><Button Content="{l:Loc Key='取消全选'}" Tag="False" Click="SelectTransports_Click"/></StackPanel></StackPanel>
+                                                                <TextBlock Grid.Row="1" Margin="2,5,2,4" FontSize="10" Foreground="{DynamicResource MutedTextBrush}">
+                                                                    <Run Text="{l:Loc Key='只显示具有运输模块的 Unit · 已勾选 '}" /><Run Text="{Binding DivisionWorkspace.SelectedTransportCandidateCount, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="{l:Loc Key=' 个'}" />
+                                                                </TextBlock>
+                                                                <ListBox Grid.Row="2" ItemsSource="{Binding DivisionWorkspace.TransportCandidatesView}" MaxHeight="340"
+                                                                         ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+                                                                    <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate></ListBox.ItemsPanel>
+                                                                    <ListBox.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="5,4">
+                                                                                <StackPanel>
+                                                                                    <TextBlock Text="{l:GameBinding Path=DisplayName, Kind=division}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                                                    <TextBlock Text="{Binding Name}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" TextTrimming="CharacterEllipsis" />
+                                                                                </StackPanel>
+                                                                            </CheckBox>
+                                                                        </DataTemplate>
+                                                                    </ListBox.ItemTemplate>
+                                                                </ListBox>
+                                                                <DockPanel Grid.Row="3" Margin="0,8,0,0">
+                                                                    <Button Content="{l:Loc Key='取消'}" Style="{StaticResource SecondaryButton}" Padding="10,6" Click="CancelDivisionTransportSelection_Click" />
+                                                                    <Button Content="{l:Loc Key='应用选择'}" DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Padding="12,6" Click="ApplyDivisionTransportSelection_Click" />
+                                                                </DockPanel>
+                                                            </Grid>
+                                                        </Border>
+                                                    </Popup>
+                                                    <ItemsControl ItemsSource="{Binding DivisionWorkspace.SelectedTransportItems}">
+                                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="{DynamicResource SelectionBrush}" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" CornerRadius="12" Padding="7,3" Margin="0,0,5,5" ToolTip="{Binding Detail}">
+                                                                    <StackPanel Orientation="Horizontal"><TextBlock Text="{Binding DisplayText}" /><Button Content="×" Padding="4,0" Margin="4,0,0,0" Click="RemoveDivisionTransport_Click" /></StackPanel>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <TextBox Text="{Binding DivisionWorkspace.SelectedRule.AvailableTransportsText, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,0"
+                                                             Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" ToolTip="{l:Loc Key='专业模式：英文逗号分隔的内部名'}" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="{l:Loc Key='老练度数量倍率（XP0 起，逗号分隔）'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="NumberOfUnitInPackXPMultiplier"/>
+                                                    <TextBox Text="{Binding DivisionWorkspace.SelectedRule.XpMultipliersText, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,0" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </Grid>
+                                </TabItem>
+
+                                <TabItem Header="{l:Loc Key='师级设置与费用'}">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <StackPanel Margin="12">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="{l:Loc Key='总激活点'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="MaxActivationPoints"/><TextBox Text="{Binding DivisionWorkspace.MaxActivationPoints, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,8" />
+                                                    <TextBlock Text="{l:Loc Key='阵营'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="DivisionCoalition"/><ComboBox ItemsSource="{Binding DivisionWorkspace.CoalitionOptions}" SelectedItem="{Binding DivisionWorkspace.Coalition, UpdateSourceTrigger=PropertyChanged}" IsEditable="True" Margin="0,4,0,8" />
+                                                    <TextBlock Text="{l:Loc Key='国家'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="CountryId"/><TextBox Text="{Binding DivisionWorkspace.CountryId, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,8" />
+                                                    <TextBlock Text="{l:Loc Key='标签'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="DivisionTags"/>
+                                                    <ItemsControl ItemsSource="{Binding DivisionWorkspace.TagGroups}"><ItemsControl.ItemTemplate><DataTemplate><StackPanel><TextBlock Text="{l:LocalizedBinding Path=Label}" Margin="0,5,0,4"/><ItemsControl ItemsSource="{Binding Options}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate><Button Content="{Binding Value}" Click="DivisionTag_Click" Margin="0,0,5,5" Padding="9,5"><Button.Style><Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Style.Triggers><DataTrigger Binding="{Binding IsSelected}" Value="True"><Setter Property="Background" Value="{DynamicResource SelectionBrush}"/></DataTrigger></Style.Triggers></Style></Button.Style></Button></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></StackPanel></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+                                                    <TextBox Text="{Binding DivisionWorkspace.TagsText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"
+                                                             Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" ToolTip="{l:Loc Key='专业模式：英文逗号分隔，可保留自定义标签'}" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="{l:Loc Key='展示顺序'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="InterfaceOrder"/><TextBox Text="{Binding DivisionWorkspace.InterfaceOrder, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,8" />
+                                                    <TextBlock Text="{l:Loc Key='师类型（单选）'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /><controls:ParameterNote Text="TypeToken"/>
+                                                    <ItemsControl ItemsSource="{Binding DivisionWorkspace.DivisionTypeOptions}" Margin="0,4,0,4">
+                                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate><DataTemplate><Button Content="{Binding}" Padding="10,5" Margin="0,0,6,6" Click="SelectDivisionType_Click" /></DataTemplate></ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <TextBlock Text="{Binding DivisionWorkspace.TypeToken, StringFormat=当前：{0}}" FontSize="10" Margin="0,0,0,8" />
+                                                    <TextBlock Text="{l:Loc Key='特色单位'}"/><controls:ParameterNote Text="StandoutUnits"/><Button Content="{l:Loc Key='选择单位'}" Click="StandoutUnits_Click"/><ItemsControl ItemsSource="{Binding DivisionWorkspace.StandoutItems}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate><Button Content="{Binding DisplayName, StringFormat='{}{0} ×'}" ToolTip="{Binding Name}" Click="RemoveStandout_Click" Margin="0,4,5,0"/></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+                                                </StackPanel>
+                                            </Grid>
+                                            <TextBlock Text="{l:Loc Key='各栏位激活费用曲线'}" FontWeight="SemiBold" Margin="0,8,0,7" /><controls:ParameterNote Text="CostMatrix → MAP"/>
+                                            <ItemsControl ItemsSource="{Binding DivisionWorkspace.CostCurves}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="9" Margin="0,0,0,8">
+                                                            <StackPanel>
+                                                                <TextBlock Text="{Binding Category}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                                                                <ItemsControl ItemsSource="{Binding CostSlots}">
+                                                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                                    <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <StackPanel Width="62" Margin="0,0,6,6">
+                                                                                <TextBlock Text="{Binding Number, StringFormat=第 {0} 格}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" />
+                                                                                <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" Padding="5" HorizontalContentAlignment="Center" />
+                                                                            </StackPanel>
+                                                                        </DataTemplate>
+                                                                    </ItemsControl.ItemTemplate>
+                                                                </ItemsControl>
+                                                                <TextBox Text="{Binding CostsText, UpdateSourceTrigger=PropertyChanged}" Margin="0,3,0,0"
+                                                                         Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                         ToolTip="{l:Loc Key='专业模式：完整费用数组；第 11 格以后只在这里显示并原样保留'}" />
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </TabItem>
+                            </TabControl>
+
+                            <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="12">
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                        <Button Content="{l:Loc Key='预览并应用全部'}" Style="{StaticResource PrimaryButton}" Padding="10,6" IsEnabled="{Binding UnitWorkspace.CanApply}" Click="PreviewApply_Click" />
+                                        <Button Content="{l:Loc Key='清空全部草稿'}" Style="{StaticResource SecondaryButton}" Padding="9,5" Margin="8,0,0,0" IsEnabled="{Binding UnitWorkspace.CanClearDrafts}" Click="ClearDrafts_Click" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="SemiBold"><Run Text="{l:Loc Key='全部草稿 '}" /><Run Text="{Binding UnitWorkspace.DraftCount, Mode=OneWay}" /><Run Text="{l:Loc Key=' 项'}" /></TextBlock>
+                                        <TextBlock Text="{Binding DivisionWorkspace.ValidationText}" Foreground="{DynamicResource WarningTextBrush}" FontSize="10" TextWrapping="Wrap" MaxWidth="560" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+</UserControl>

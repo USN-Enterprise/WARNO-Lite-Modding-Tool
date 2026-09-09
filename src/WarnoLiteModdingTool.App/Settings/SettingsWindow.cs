@@ -72,7 +72,7 @@ public sealed class SettingsWindow : Window
         opacity.ValueChanged += (_, _) => { _preferences = _preferences with { BackgroundOpacity = opacity.Value / 100 }; if (Save()) BackgroundAppearance.Apply(); }; appearance.Children.Add(opacity);
         var layout = new ComboBox(); foreach (var (key, title) in new[] { ("fill", "铺满裁剪"), ("fit", "完整显示"), ("tile", "平铺") }) { var item = new ComboBoxItem { Tag = key }; UiText.Bind(item, ContentControl.ContentProperty, title); layout.Items.Add(item); if (key == _preferences.BackgroundLayout) layout.SelectedItem = item; }
         layout.SelectionChanged += (_, _) => { _preferences = _preferences with { BackgroundLayout = (string)((ComboBoxItem)layout.SelectedItem).Tag }; if (Save()) BackgroundAppearance.Apply(); }; appearance.Children.Add(layout);
-        var about = Page(tabs, "关于"); Label(about, "WARNO Lite Modding Tool"); Label(about, "1.8.7 · Windows x64 · .NET 8");
+        var about = Page(tabs, "关于"); Label(about, "WARNO Lite Modding Tool"); Label(about, "1.9.1 · Windows x64 · .NET 8");
         Link(about, "发布说明", Path.Combine(AppContext.BaseDirectory, "发布说明.md"));
         Link(about, "打开工具日志目录", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WarnoLiteModdingTool", "logs"));
     }

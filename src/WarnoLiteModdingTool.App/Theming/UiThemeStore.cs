@@ -30,7 +30,7 @@ public sealed class UiThemeStore
         {
         }
 
-        return AppTheme.DarkBlue;
+        return AppTheme.LightBlue;
     }
 
     public void Save(AppTheme theme)

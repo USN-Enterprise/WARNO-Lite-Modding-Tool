@@ -72,6 +72,8 @@ internal static partial class Program
 
         var tests = new (string Name, Func<Task> Run)[]
         {
+            ("1.9.1 内容列宽整条90%覆盖", ContentCoverage191),
+            ("1.9 白蓝默认与七主题偏好兼容", ThemeDefaults19),
             ("185常量扫描与真正语法错误", ScannerConstants185),
             ("184全局规则事务与关联边界", RulesTransaction184),
             ("184视野比例与特性补建", UnitVisionAndSpecialties184),
@@ -1708,7 +1710,7 @@ internal static partial class Program
                     var settings = Path.Combine(root, ".test-settings", "recent-projects.json");
                     var themeSettings = Path.Combine(root, ".test-settings", "theme.txt");
                     ThemeManager.Initialize(new UiThemeStore(themeSettings));
-                    TestAssert.Equal(AppTheme.DarkBlue, ThemeManager.CurrentTheme, "无设置时应使用参考图对应的黑蓝主题");
+                    TestAssert.Equal(AppTheme.LightBlue, ThemeManager.CurrentTheme, "无设置时应默认白蓝主题");
                     var problemLog = new ApplicationProblemLog(Path.Combine(root, ".test-settings", "problem-logs"));
                     var viewModel = new MainViewModel(new RecentProjectStore(settings), problemLog: problemLog);
                     var window = new MainWindow(viewModel);
@@ -1723,9 +1725,9 @@ internal static partial class Program
                     TestAssert.Equal(160, pickerResults.Items.Count, "空搜索应限制首批结果数量");
                     pickerSearch.Text = "krug";
                     TestAssert.Equal(1, pickerResults.Items.Count, "搜索应支持不区分大小写的任意位置匹配");
-                    var themeSelector = window.FindName("ThemeSelector") as ComboBox
+                    var themeSelector = FindWorkspaceName(window, "ThemeSelector") as ComboBox
                         ?? throw new InvalidOperationException("主窗口缺少主题选择器。");
-                    var headerBar = window.FindName("HeaderBar") as Border
+                    var headerBar = FindWorkspaceName(window, "HeaderBar") as Border
                         ?? throw new InvalidOperationException("主窗口缺少主题顶栏。");
                     var primaryText = new TextBlock { Style = (System.Windows.Style)window.FindResource("PrimaryGridText") };
                     var indexPrimaryText = new TextBlock { Style = (System.Windows.Style)window.FindResource("IndexPrimaryGridText") };
@@ -1735,17 +1737,17 @@ internal static partial class Program
                     TestAssert.Equal(10d, secondaryText.FontSize, "内部类型、源文件和位置应使用次要信息字号");
                     TestAssert.Equal(14d, indexPrimaryText.Margin.Left, "主索引名称应增加左侧留白");
                     TestAssert.Equal(1200d, window.MinWidth, "窗口最小宽度应容纳各内部栏位下限");
-                    TestAssert.True(window.FindName("TopGenerateButton") is Button, "生成 / 编译 Mod 应位于顶栏");
-                    TestAssert.True(window.FindName("ModToolsOpenProjectButton") is Button, "打开 Mod 文件夹应移入 Mod 工具菜单");
-                    TestAssert.True(window.FindName("UnitSelectAllButton") is Button && window.FindName("UnitClearSelectionButton") is Button, "Unit 页应常驻全选当前筛选与清空选择按钮");
-                    TestAssert.True(window.FindName("WeaponSelectAllButton") is Button && window.FindName("WeaponClearSelectionButton") is Button, "Weapon 页应常驻全选当前筛选与清空选择按钮");
+                    TestAssert.True(FindWorkspaceName(window, "TopGenerateButton") is Button, "生成 / 编译 Mod 应位于顶栏");
+                    TestAssert.True(FindWorkspaceName(window, "ModToolsOpenProjectButton") is Button, "打开 Mod 文件夹应移入 Mod 工具菜单");
+                    TestAssert.True(FindWorkspaceName(window, "UnitSelectAllButton") is Button && FindWorkspaceName(window, "UnitClearSelectionButton") is Button, "Unit 页应常驻全选当前筛选与清空选择按钮");
+                    TestAssert.True(FindWorkspaceName(window, "WeaponSelectAllButton") is Button && FindWorkspaceName(window, "WeaponClearSelectionButton") is Button, "Weapon 页应常驻全选当前筛选与清空选择按钮");
 
-                    var unitFilters = window.FindName("UnitFilterPanel") as Grid
+                    var unitFilters = FindWorkspaceName(window, "UnitFilterPanel") as Grid
                         ?? throw new InvalidOperationException("主窗口缺少 Unit 筛选栏。");
-                    TestAssert.True(window.FindName("UnitActiveFilterTags") is ItemsControl, "收起时应保留已选标签列表");
-                    TestAssert.True(window.FindName("UnitFilterPopup") is System.Windows.Controls.Primitives.Popup, "筛选选项应放入可呼出面板");
-                    TestAssert.Equal("\uE721", ((TextBlock)window.FindName("UnitSearchIcon")).Text, "Unit 搜索框应显示放大镜");
-                    TestAssert.Equal("\uE721", ((TextBlock)window.FindName("ObjectSearchIcon")).Text, "对象搜索框应显示放大镜");
+                    TestAssert.True(FindWorkspaceName(window, "UnitActiveFilterTags") is ItemsControl, "收起时应保留已选标签列表");
+                    TestAssert.True(FindWorkspaceName(window, "UnitFilterPopup") is System.Windows.Controls.Primitives.Popup, "筛选选项应放入可呼出面板");
+                    TestAssert.Equal("\uE721", ((TextBlock)FindWorkspaceName(window, "UnitSearchIcon")).Text, "Unit 搜索框应显示放大镜");
+                    TestAssert.Equal("\uE721", ((TextBlock)FindWorkspaceName(window, "ObjectSearchIcon")).Text, "对象搜索框应显示放大镜");
 
                     var requiredSplitters = new[]
                     {
@@ -1755,27 +1757,27 @@ internal static partial class Program
                     };
                     foreach (var splitterName in requiredSplitters)
                     {
-                        TestAssert.True(window.FindName(splitterName) is GridSplitter, $"{splitterName} 应提供可拖动分隔条");
+                        TestAssert.True(FindWorkspaceName(window, splitterName) is GridSplitter, $"{splitterName} 应提供可拖动分隔条");
                     }
 
-                    TestAssert.Equal(220d, ((ColumnDefinition)window.FindName("ProjectPaneColumn")).MinWidth, "项目栏应保留可用最小宽度");
-                    TestAssert.Equal(680d, ((ColumnDefinition)window.FindName("WorkspaceColumn")).MinWidth, "主工作区应保留可用最小宽度");
-                    TestAssert.Equal(360d, ((ColumnDefinition)window.FindName("UnitListColumn")).MinWidth, "Unit 列表应保留可用最小宽度");
-                    TestAssert.Equal(300d, ((ColumnDefinition)window.FindName("UnitInspectorColumn")).MinWidth, "Unit 检查器应保留可用最小宽度");
-                    TestAssert.Equal(220d, ((ColumnDefinition)window.FindName("WeaponUnitsColumn")).MinWidth, "Weapon Unit 栏应保留可用最小宽度");
-                    TestAssert.Equal(300d, ((ColumnDefinition)window.FindName("WeaponScopeColumn")).MinWidth, "Weapon 作用域栏应保留可用最小宽度");
-                    TestAssert.Equal(360d, ((ColumnDefinition)window.FindName("WeaponFieldsColumn")).MinWidth, "Weapon 字段栏应保留可用最小宽度");
-                    TestAssert.Equal(300d, ((ColumnDefinition)window.FindName("AmmoListColumn")).MinWidth, "Ammo 列表应保留可用最小宽度");
-                    TestAssert.Equal(500d, ((ColumnDefinition)window.FindName("AmmoFieldsColumn")).MinWidth, "Ammo 字段栏应保留可用最小宽度");
-                    TestAssert.Equal(240d, ((ColumnDefinition)window.FindName("DivisionListColumn")).MinWidth, "战术师列表应保留可用最小宽度");
-                    TestAssert.Equal(480d, ((ColumnDefinition)window.FindName("DivisionEditorColumn")).MinWidth, "战术师编辑器应保留可用最小宽度");
-                    TestAssert.Equal(480d, ((ColumnDefinition)window.FindName("DraftListColumn")).MinWidth, "草稿列表应保留可用最小宽度");
-                    TestAssert.Equal(320d, ((ColumnDefinition)window.FindName("DraftDetailColumn")).MinWidth, "草稿详情应保留可用最小宽度");
-                    TestAssert.Equal(480d, ((ColumnDefinition)window.FindName("ObjectListColumn")).MinWidth, "对象索引应保留可用最小宽度");
+                    TestAssert.Equal(200d, ((ColumnDefinition)FindWorkspaceName(window, "ProjectPaneColumn")).MinWidth, "项目栏应保留可用最小宽度");
+                    TestAssert.Equal(680d, ((ColumnDefinition)FindWorkspaceName(window, "WorkspaceColumn")).MinWidth, "主工作区应保留可用最小宽度");
+                    TestAssert.Equal(320d, ((ColumnDefinition)FindWorkspaceName(window, "UnitListColumn")).MinWidth, "Unit 列表应保留可用最小宽度");
+                    TestAssert.Equal(420d, ((ColumnDefinition)FindWorkspaceName(window, "UnitInspectorColumn")).MinWidth, "Unit 检查器应保留可用最小宽度");
+                    TestAssert.Equal(220d, ((ColumnDefinition)FindWorkspaceName(window, "WeaponUnitsColumn")).MinWidth, "Weapon Unit 栏应保留可用最小宽度");
+                    TestAssert.Equal(300d, ((ColumnDefinition)FindWorkspaceName(window, "WeaponScopeColumn")).MinWidth, "Weapon 作用域栏应保留可用最小宽度");
+                    TestAssert.Equal(360d, ((ColumnDefinition)FindWorkspaceName(window, "WeaponFieldsColumn")).MinWidth, "Weapon 字段栏应保留可用最小宽度");
+                    TestAssert.Equal(300d, ((ColumnDefinition)FindWorkspaceName(window, "AmmoListColumn")).MinWidth, "Ammo 列表应保留可用最小宽度");
+                    TestAssert.Equal(500d, ((ColumnDefinition)FindWorkspaceName(window, "AmmoFieldsColumn")).MinWidth, "Ammo 字段栏应保留可用最小宽度");
+                    TestAssert.Equal(240d, ((ColumnDefinition)FindWorkspaceName(window, "DivisionListColumn")).MinWidth, "战术师列表应保留可用最小宽度");
+                    TestAssert.Equal(480d, ((ColumnDefinition)FindWorkspaceName(window, "DivisionEditorColumn")).MinWidth, "战术师编辑器应保留可用最小宽度");
+                    TestAssert.Equal(480d, ((ColumnDefinition)FindWorkspaceName(window, "DraftListColumn")).MinWidth, "草稿列表应保留可用最小宽度");
+                    TestAssert.Equal(320d, ((ColumnDefinition)FindWorkspaceName(window, "DraftDetailColumn")).MinWidth, "草稿详情应保留可用最小宽度");
+                    TestAssert.Equal(480d, ((ColumnDefinition)FindWorkspaceName(window, "ObjectListColumn")).MinWidth, "对象索引应保留可用最小宽度");
 
-                    var advancedMode = window.FindName("AdvancedModeCheckBox") as CheckBox
+                    var advancedMode = FindWorkspaceName(window, "AdvancedModeCheckBox") as CheckBox
                         ?? throw new InvalidOperationException("主窗口缺少高级模式开关。");
-                    var objectDetailColumn = (ColumnDefinition)window.FindName("ObjectDetailColumn");
+                    var objectDetailColumn = (ColumnDefinition)FindWorkspaceName(window, "ObjectDetailColumn");
                     advancedMode.IsChecked = true;
                     TestAssert.Equal(280d, objectDetailColumn.MinWidth, "高级详情打开后应保留可用最小宽度");
                     TestAssert.True(objectDetailColumn.Width.Value >= 280d, "高级详情打开后应恢复可见宽度");
@@ -1784,11 +1786,12 @@ internal static partial class Program
                     advancedMode.IsChecked = true;
                     TestAssert.True(objectDetailColumn.Width.Value >= 280d, "高级详情再次打开后应恢复宽度");
                     advancedMode.IsChecked = false;
-                    TestAssert.Equal(0, themeSelector.SelectedIndex, "主题选择器应显示当前黑蓝主题");
+                    TestAssert.Equal(1, themeSelector.SelectedIndex, "主题选择器应显示默认白蓝主题");
+                    themeSelector.SelectedIndex = 0;
                     TestAssert.Equal("#FF050608", ((SolidColorBrush)window.FindResource("BackgroundBrush")).Color.ToString(), "黑蓝主题应使用近黑背景");
                     themeSelector.SelectedIndex = 1;
                     TestAssert.Equal(AppTheme.LightBlue, ThemeManager.CurrentTheme, "选择白蓝后应立即切换主题");
-                    TestAssert.Equal("#FFEEF4FA", ((SolidColorBrush)window.FindResource("BackgroundBrush")).Color.ToString(), "白蓝主题应使用浅色背景");
+                    TestAssert.Equal("#FFF1F5FA", ((SolidColorBrush)window.FindResource("BackgroundBrush")).Color.ToString(), "白蓝主题应使用浅色背景");
                     TestAssert.Equal("#FFFFFFFF", ((SolidColorBrush)headerBar.Background).Color.ToString(), "已创建的顶栏也应即时切换到白蓝主题");
                     TestAssert.Equal(AppTheme.LightBlue, new UiThemeStore(themeSettings).Load(), "白蓝选择应持久化");
                     themeSelector.SelectedIndex = 0;
@@ -1827,20 +1830,20 @@ internal static partial class Program
                     viewModel.UnitWorkspace.ClearFilters();
                     TestAssert.Equal(2, viewModel.UnitWorkspace.VisibleUnitCount, "清空标签应恢复完整 Unit 列表");
                     TestAssert.Equal(0, viewModel.UnitWorkspace.ActiveFilterCount, "清空后不应留下已选标签");
-                    TestAssert.Equal("\uE721", ((TextBlock)window.FindName("AmmoSearchIcon")).Text, "Ammo 搜索框应显示放大镜");
-                    TestAssert.True(window.FindName("UnitFieldSections") is ItemsControl, "Unit 页应绑定分组字段容器");
-                    TestAssert.True(window.FindName("WeaponFieldSections") is ItemsControl, "Weapon 页应绑定分组字段容器");
-                    TestAssert.True(window.FindName("AmmoFieldSections") is ItemsControl, "Ammo 页应绑定分组字段容器");
-                    TestAssert.True(window.FindName("ModProblemList") is ListBox && window.FindName("ToolProblemList") is ListBox, "问题中心应分开 Mod 与工具列表");
+                    TestAssert.Equal("\uE721", ((TextBlock)FindWorkspaceName(window, "AmmoSearchIcon")).Text, "Ammo 搜索框应显示放大镜");
+                    TestAssert.True(FindWorkspaceName(window, "UnitFieldSections") is ItemsControl, "Unit 页应绑定分组字段容器");
+                    TestAssert.True(FindWorkspaceName(window, "WeaponFieldSections") is ItemsControl, "Weapon 页应绑定分组字段容器");
+                    TestAssert.True(FindWorkspaceName(window, "AmmoFieldSections") is ItemsControl, "Ammo 页应绑定分组字段容器");
+                    TestAssert.True(FindWorkspaceName(window, "ModProblemList") is ListBox && FindWorkspaceName(window, "ToolProblemList") is ListBox, "问题中心应分开 Mod 与工具列表");
                     TestAssert.Equal(3, viewModel.ObjectsView.SortDescriptions.Count, "对象索引应具有明确且稳定的默认排序");
                     TestAssert.Equal(nameof(NdfObjectInfo.RelativeSourceFile), viewModel.ObjectsView.SortDescriptions[0].PropertyName, "对象索引应先按源文件排序");
                     TestAssert.Equal(ListSortDirection.Ascending, viewModel.ObjectsView.SortDescriptions[0].Direction, "源文件应默认升序");
                     TestAssert.Equal(nameof(NdfObjectInfo.LineNumber), viewModel.ObjectsView.SortDescriptions[1].PropertyName, "同一文件内应再按物理行号排序");
                     TestAssert.Equal(ListSortDirection.Ascending, viewModel.ObjectsView.SortDescriptions[1].Direction, "行号应默认升序");
                     TestAssert.Equal(nameof(NdfObjectInfo.CharacterOffset), viewModel.ObjectsView.SortDescriptions[2].PropertyName, "同一行对象应以字符偏移稳定排序");
-                    var sortLabel = (TextBlock)window.FindName("ObjectSortLabel");
+                    var sortLabel = (TextBlock)FindWorkspaceName(window, "ObjectSortLabel");
                     TestAssert.Equal("排序：源文件 ↑ · 行号 ↑", sortLabel.Text, "界面应直接说明默认排序及方向");
-                    var objectGrid = (DataGrid)window.FindName("ObjectIndexGrid");
+                    var objectGrid = (DataGrid)FindWorkspaceName(window, "ObjectIndexGrid");
                     TestAssert.Equal(ListSortDirection.Ascending, objectGrid.Columns[2].SortDirection, "源文件表头应显示升序上标");
                     TestAssert.Equal(ListSortDirection.Ascending, objectGrid.Columns[3].SortDirection, "行号表头应显示升序上标");
 
@@ -1869,7 +1872,7 @@ internal static partial class Program
                     var draftsModule = viewModel.Modules.Single(item => item.Key == "drafts");
                     viewModel.SelectedModule = draftsModule;
                     TestAssert.True(viewModel.IsDraftModule, "点击草稿总览应进入独立页面");
-                    TestAssert.True(window.FindName("DraftOverviewGrid") is DataGrid, "草稿总览应提供可选择的完整列表");
+                    TestAssert.True(FindWorkspaceName(window, "DraftOverviewGrid") is DataGrid, "草稿总览应提供可选择的完整列表");
                     TestAssert.True(viewModel.SelectedDraft is not null, "进入草稿总览时应默认显示第一项草稿详情");
                     TestAssert.Equal(ammoDraft.Summary, viewModel.SelectedDraft!.Summary, "草稿详情应对应列表选中项");
                     RunWithDispatcher(viewModel.OpenProjectAsync(divisionRoot), window.Dispatcher);
@@ -1917,7 +1920,7 @@ internal static partial class Program
                     var draftItems=viewModel.UnitWorkspace!.DraftItems;var savedItems=draftItems.ToArray();draftItems.Clear();
                     foreach(var item in savedItems)draftItems.Add(new WarnoLiteModdingTool.App.ViewModels.Drafts.DraftItemViewModel(item.Resolved with {Operation=item.Resolved.Operation with {GroupId="qa-batch"}}));
                     DrainDispatcher(window.Dispatcher);SaveUiSnapshot(window,"draft-batch-collapsed.png");
-                    var batchExpander=FindVisualChildren<Expander>((DataGrid)window.FindName("DraftOverviewGrid")).First(e=>e.Name=="BatchExpander");Assert(!batchExpander.IsExpanded,"批次默认折叠");batchExpander.IsExpanded=true;DrainDispatcher(window.Dispatcher);SaveUiSnapshot(window,"draft-batch-expanded.png");draftItems.Clear();foreach(var item in savedItems)draftItems.Add(item);
+                    var batchExpander=FindVisualChildren<Expander>((DataGrid)FindWorkspaceName(window, "DraftOverviewGrid")).First(e=>e.Name=="BatchExpander");Assert(!batchExpander.IsExpanded,"批次默认折叠");batchExpander.IsExpanded=true;DrainDispatcher(window.Dispatcher);SaveUiSnapshot(window,"draft-batch-expanded.png");draftItems.Clear();foreach(var item in savedItems)draftItems.Add(item);
                     var mini=new WarnoLiteModdingTool.App.Controls.UnitMiniFilter {ItemsSource=viewModel.UnitWorkspace.Units,IsExpanded=true};var miniWindow=new System.Windows.Window {Content=mini,Width=600,Height=360};SaveUiSnapshot(miniWindow,"mini-filter.png");
                     var countryChoice=FindVisualChildren<CheckBox>(mini).First(c=>Equals(c.Tag,"US"));countryChoice.IsChecked=true;Assert(viewModel.UnitWorkspace.Units.Where(u=>mini.Matches(u)).All(u=>u.Unit.Country=="US"),"小筛选国家条件生效");miniWindow.Close();
                     viewModel.SelectedModule = viewModel.Modules.Single(m=>m.Key=="units");
@@ -1941,6 +1944,8 @@ internal static partial class Program
                     TestAssert.Equal("ammo", viewModel.SelectedModule?.Key, "Ammo-only 项目应默认进入首个可用的弹药模块");
                     TestAssert.True(viewModel.IsAmmoModule, "Ammo-only 项目不应退回通用只读索引");
                     RunWithDispatcher(viewModel.OpenProjectAsync(root), window.Dispatcher);
+                    Verify19Ui(viewModel, window, root);
+                    Verify191Ui(viewModel, window);
                     Verify186Ui(viewModel, window, root);
                     application.Shutdown();
                     if (failure is not null)
@@ -1960,7 +1965,7 @@ internal static partial class Program
             });
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
-            await completion.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            await completion.Task.WaitAsync(TimeSpan.FromSeconds(60));
             TestAssert.True(thread.Join(TimeSpan.FromSeconds(5)), "WPF 回归线程应正常退出");
         }
         finally

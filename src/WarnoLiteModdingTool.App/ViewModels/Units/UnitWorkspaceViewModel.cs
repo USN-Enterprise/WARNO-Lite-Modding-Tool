@@ -143,7 +143,13 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
 
     public ObservableCollection<UnitBatchCommonFieldViewModel> CommonBatchFields { get; }
 
-    public bool HasBatchInspector => BatchSelectedCount >= 2;
+    private bool _isBatchToolsOpen;
+    public bool IsBatchToolsOpen
+    {
+        get => _isBatchToolsOpen;
+        set { if (SetProperty(ref _isBatchToolsOpen, value)) OnPropertyChanged(nameof(HasBatchInspector)); }
+    }
+    public bool HasBatchInspector => BatchSelectedCount >= 2 || IsBatchToolsOpen;
 
     public ObservableCollection<UnitFilterTagViewModel> ActiveFilterTags { get; }
 
@@ -472,6 +478,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
             _suppressBatchSelectionNotifications = false;
         }
 
+        IsBatchToolsOpen = false;
         BatchSelectionChanged();
     }
 
@@ -544,6 +551,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
 
     public async Task AddCommonBatchFieldAsync(UnitBatchCommonFieldViewModel common)
     {
+        if (!common.CanAddDraft) { common.StatusText = "请输入目标值"; return; }
         var targets = Units.Where(item => item.IsBatchSelected).Select(item => item.Unit).ToArray();
         if (targets.Length < 2)
         {
@@ -1230,8 +1238,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
                     activeDrafts.GetValueOrDefault((unit.Name, definition.Key))?.TargetValue ?? unit.Field(definition.Key)!.DisplayValue)
                 .Distinct(StringComparer.CurrentCultureIgnoreCase)
                 .ToArray();
-            var numeric = definition.ValueKind is UnitValueKind.Integer or UnitValueKind.Decimal or UnitValueKind.EcmPercent;
-            var display = values.Length == 1 ? values[0] : numeric ? "0" : "多种值";
+            var display = values.Length == 1 ? values[0] : string.Empty;
             var choices = targets.SelectMany(unit => unit.Field(definition.Key)!.Choices)
                 .Select(item => item.Display).Distinct(StringComparer.CurrentCultureIgnoreCase).Order(StringComparer.CurrentCultureIgnoreCase).ToArray();
             CommonBatchFields.Add(new UnitBatchCommonFieldViewModel(definition, display, values.Length > 1, choices));
@@ -1423,13 +1430,14 @@ public sealed class UnitBatchCommonFieldViewModel : ObservableObject
     public UnitFieldDefinition Definition { get; }
     public string Label => Definition.Label;
     public string OriginalParameter => Controls.ParameterNote.ForUnit(Definition);
-    public string Hint => IsMixed ? "所选 Unit 当前值不同；0/空白只是输入占位，点击加入草稿前不会修改任何内容" : "所选 Unit 当前值相同";
+    public string Hint => IsMixed ? "所选 Unit 当前值不同；输入目标值后再加入草稿" : "所选 Unit 当前值相同";
     public string DisplayValue { get; }
     public bool IsMixed { get; }
     public IReadOnlyList<string> Choices { get; }
     public bool IsChoiceEditor => Definition.EditorKind == UnitEditorKind.Choice;
     public bool IsTextEditor => !IsChoiceEditor;
-    public string EditValue { get => _editValue; set => SetProperty(ref _editValue, value ?? string.Empty); }
+    public bool CanAddDraft => !string.IsNullOrWhiteSpace(EditValue);
+    public string EditValue { get => _editValue; set { if (SetProperty(ref _editValue, value ?? string.Empty)) OnPropertyChanged(nameof(CanAddDraft)); } }
     public string StatusText { get => _statusText; set => SetProperty(ref _statusText, value); }
 }
 

@@ -163,7 +163,7 @@ internal static partial class Program
         {
             window.Width = size.Width; window.Height = size.Height;
             DrainDispatcher(window.Dispatcher);
-            var moduleList = (ListBox)window.FindName("ModuleList");
+            var moduleList = (ListBox)FindWorkspaceName(window, "ModuleList");
             var scroller = FindVisualChildren<ScrollViewer>(moduleList).First();
             scroller.ScrollToEnd(); DrainDispatcher(window.Dispatcher);
             Assert(scroller.VerticalOffset >= scroller.ScrollableHeight - .1, "侧栏可滚到末尾");
@@ -186,6 +186,8 @@ internal static partial class Program
         window.Width = 1420; window.Height = 860;
         vm.AdvancedMode = false;
         vm.SelectedModule = vm.Modules.Single(m => m.Key == "units");
+        vm.UnitWorkspace!.IsBatchToolsOpen = true;
+        DrainDispatcher(window.Dispatcher);
         var batch = FindVisualChildren<Expander>(window).First(e => e.Header is StackPanel panel &&
             FindVisualChildren<TextBlock>(panel).Any(t => t.Text == "批量编辑"));
         batch.IsExpanded = true;

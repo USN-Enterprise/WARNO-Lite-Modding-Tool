@@ -1,0 +1,151 @@
+<UserControl x:Class="WarnoLiteModdingTool.App.Workspaces.AmmoWorkspaceView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:l="clr-namespace:WarnoLiteModdingTool.App.Localisation"
+    xmlns:controls="clr-namespace:WarnoLiteModdingTool.App.Controls">
+<Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="AmmoListColumn" Width="390" MinWidth="300" MaxWidth="560" />
+                            <ColumnDefinition Width="6" />
+                            <ColumnDefinition x:Name="AmmoFieldsColumn" Width="*" MinWidth="500" />
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="12,10">
+                                <StackPanel>
+                                    <DockPanel Margin="0,0,0,7">
+                                        <TextBlock Text="{l:Loc Key='Ammo 列表'}" FontWeight="SemiBold" />
+                                        <TextBlock DockPanel.Dock="Right" Foreground="{DynamicResource MutedTextBrush}" FontSize="10">
+                                            <Run Text="{l:Loc Key='当前 '}" /><Run Text="{Binding AmmoWorkspace.VisibleAmmoCount, Mode=OneWay}" /><Run Text="{l:Loc Key=' 项'}" />
+                                        </TextBlock>
+                                    </DockPanel>
+                                    <Grid>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                        <TextBox x:Name="AmmoSearchBox" Text="{Binding AmmoWorkspace.SearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Loc Key='搜索弹药名称、内部名、token或源文件'}" Padding="29,6,9,6" /><controls:FacetFilter Grid.Row="1" Tag="ammo" Rows="{Binding AmmoWorkspace.FilterRows}" FilterChanged="WorkspaceFilter_Changed"/>
+                                        <TextBlock Grid.Row="0" x:Name="AmmoSearchIcon" Text="&#xE721;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource MutedTextBrush}" Margin="9,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <DataGrid x:Name="AmmoIndexGrid"
+                                      Grid.Row="1"
+                                      ItemsSource="{Binding AmmoWorkspace.AmmunitionView}"
+                                      SelectedItem="{Binding AmmoWorkspace.SelectedAmmo}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      HeadersVisibility="Column"
+                                      GridLinesVisibility="Horizontal"
+                                      BorderThickness="0"
+                                      RowHeaderWidth="0"
+                                      RowHeight="38">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Ammo" Binding="{Binding DisplayName}" ElementStyle="{StaticResource IndexPrimaryGridText}" HeaderStyle="{StaticResource IndexGridColumnHeader}" Width="2*" MinWidth="180" />
+                                    <DataGridTextColumn Header="{l:Loc Key='引用'}" Binding="{Binding ReferencesText}" ElementStyle="{StaticResource SecondaryGridText}" Width="1.2*" MinWidth="90" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+
+                        <GridSplitter x:Name="AmmoPaneSplitter" Grid.Column="1" Style="{StaticResource PaneSplitter}" />
+
+                        <Grid Grid.Column="2" Margin="14">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <StackPanel>
+                                <TextBlock Text="{Binding AmmoWorkspace.SelectedAmmo.DisplayName, TargetNullValue=尚未选择 Ammo}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding AmmoWorkspace.SelectedAmmo.Name}" Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10"/>
+                                <TextBlock Text="{Binding AmmoWorkspace.SourceText}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                <Border Background="{DynamicResource WarningBackgroundBrush}" BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="9" Margin="0,10,0,10">
+                                    <StackPanel>
+                                        <TextBlock Text="{l:Loc Key='直接修改 Ammo 本体'}" FontWeight="SemiBold" FontSize="11" />
+                                        <TextBlock Text="{Binding AmmoWorkspace.ImpactText}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                        <TextBlock Text="{l:Loc Key='如需只影响某些 Unit，请回到武器页按 Unit 选择作用域；这里的修改会作用于全部引用者。'}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                    </StackPanel>
+                                </Border>
+                                <Expander Header="{l:Loc Key='查看引用'}" IsExpanded="False" Margin="0,0,0,10">
+                                    <StackPanel Margin="0,8,0,0">
+                                        <TextBox Text="{Binding AmmoWorkspace.ReferenceSearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Loc Key='搜索 Weapon 或 Unit 内部名的任意片段'}" />
+                                        <TextBlock Text="{Binding AmmoWorkspace.ReferenceDraftStatus}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" Margin="0,5,0,6" TextWrapping="Wrap" />
+                                        <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto">
+                                            <ItemsControl ItemsSource="{Binding AmmoWorkspace.References}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,6">
+                                                            <StackPanel>
+                                                                <DockPanel><TextBlock Text="{Binding Weapon}" FontWeight="SemiBold" /><TextBlock DockPanel.Dock="Right" Text="{Binding CountText}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" /></DockPanel>
+                                                                <TextBlock Text="{Binding UnitsText}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                </Expander>
+                            </StackPanel>
+
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl x:Name="AmmoFieldSections" ItemsSource="{Binding AmmoWorkspace.FieldSections}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Expander IsExpanded="{Binding IsExpanded, Mode=TwoWay}" Margin="0,0,0,8">
+                                                <Expander.Header>
+                                                    <DockPanel MinWidth="430">
+                                                        <TextBlock DockPanel.Dock="Right" Foreground="{DynamicResource MutedTextBrush}" FontSize="10"><Run Text="{Binding FieldCount, Mode=OneWay}" /><Run Text="{l:Loc Key=' 项'}" /></TextBlock>
+                                                        <TextBlock Text="{l:LocalizedBinding Path=Title}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBrush}" />
+                                                    </DockPanel>
+                                                </Expander.Header>
+                                                <ItemsControl ItemsSource="{Binding Groups}" Margin="0,7,0,0">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <StackPanel Margin="0,0,0,7">
+                                                                <TextBlock Text="{l:LocalizedBinding Path=Title}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" FontWeight="SemiBold" Margin="2,0,0,5" />
+                                                                <ItemsControl ItemsSource="{Binding Fields}">
+                                                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                                    <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <Border HorizontalAlignment="Stretch" Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,0,0,8" ToolTip="{l:LocalizedBinding Path=Hint}">
+                                                                                <StackPanel><controls:FieldRow Header="{l:LocalizedBinding Path=Label}" Parameter="{Binding OriginalParameter}"><StackPanel><Grid><TextBox Text="{Binding EditValue, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsEditable}" Visibility="{Binding IsTextEditor, Converter={StaticResource BooleanToVisibilityConverter}}" /><ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding EditValue, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsEditable}" Visibility="{Binding IsChoiceEditor, Converter={StaticResource BooleanToVisibilityConverter}}" /></Grid></StackPanel></controls:FieldRow><TextBlock Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" Text="{l:LocalizedBinding Path=Hint}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,2,0,6" MaxHeight="30" /><DockPanel Margin="0,5,0,0">
+                                                                                        <Button Content="{l:Loc Key='撤销此项'}" DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Padding="7,3" Visibility="{Binding HasDraft, Converter={StaticResource BooleanToVisibilityConverter}}" Click="UndoAmmoField_Click" />
+                                                                                        <TextBlock Text="{l:LocalizedBinding Path=StatusText}" FontSize="10" Foreground="{DynamicResource PrimaryBrush}" />
+                                                                                    </DockPanel><StackPanel Margin="0,6,0,0" Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                                        <TextBlock Text="{Binding FieldPath, StringFormat=字段：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+                                                                                        <TextBlock Text="{Binding SourceLocation, StringFormat=位置：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+                                                                                        <TextBlock Text="{Binding RawValue, StringFormat=NDF 原值：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+                                                                                        <TextBlock Text="{Binding TargetRaw, StringFormat=草稿目标：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
+                                                                                    </StackPanel></StackPanel>
+                                                                            </Border>
+                                                                        </DataTemplate>
+                                                                    </ItemsControl.ItemTemplate>
+                                                                </ItemsControl>
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </Expander>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+
+                            <Border Grid.Row="2" Background="{DynamicResource InfoBackgroundBrush}" BorderBrush="{DynamicResource InfoBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,8,0,0">
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                        <Button Content="{l:Loc Key='预览并应用全部'}" Style="{StaticResource PrimaryButton}" Padding="10,6" IsEnabled="{Binding UnitWorkspace.CanApply}" Click="PreviewApply_Click" />
+                                        <Button Content="{l:Loc Key='清空全部草稿'}" Style="{StaticResource SecondaryButton}" Padding="9,5" Margin="7,0,0,0" IsEnabled="{Binding UnitWorkspace.CanClearDrafts}" Click="ClearDrafts_Click" />
+                                    </StackPanel>
+                                    <TextBlock VerticalAlignment="Center" FontWeight="SemiBold"><Run Text="{l:Loc Key='全部草稿 '}" /><Run Text="{Binding UnitWorkspace.DraftCount, Mode=OneWay}" /><Run Text="{l:Loc Key=' 项'}" /></TextBlock>
+                                </DockPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+</UserControl>

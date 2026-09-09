@@ -8,7 +8,7 @@ public static class ThemeManager
     private static UiThemeStore _store = new();
 
     public static event Action? ThemeChanged;
-    public static AppTheme CurrentTheme { get; private set; } = AppTheme.DarkBlue;
+    public static AppTheme CurrentTheme { get; private set; } = AppTheme.LightBlue;
 
     public static void Initialize(UiThemeStore? store = null)
     {

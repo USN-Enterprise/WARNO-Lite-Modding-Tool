@@ -85,21 +85,21 @@ public partial class MainWindow : Window
     {
         if (isVisible)
         {
-            ObjectDetailColumn.MinWidth = 280;
-            ObjectDetailColumn.Width = _objectDetailWidth;
+            ObjectPage.ObjectDetailColumn.MinWidth = 280;
+            ObjectPage.ObjectDetailColumn.Width = _objectDetailWidth;
             return;
         }
 
-        if (ObjectDetailColumn.ActualWidth >= 280)
+        if (ObjectPage.ObjectDetailColumn.ActualWidth >= 280)
         {
-            _objectDetailWidth = new GridLength(ObjectDetailColumn.ActualWidth);
+            _objectDetailWidth = new GridLength(ObjectPage.ObjectDetailColumn.ActualWidth);
         }
 
-        ObjectDetailColumn.MinWidth = 0;
-        ObjectDetailColumn.Width = new GridLength(0);
+        ObjectPage.ObjectDetailColumn.MinWidth = 0;
+        ObjectPage.ObjectDetailColumn.Width = new GridLength(0);
     }
 
-    private void ObjectIndex_Sorting(object sender, DataGridSortingEventArgs e)
+    internal void ObjectIndex_Sorting(object sender, DataGridSortingEventArgs e)
     {
         _ = Dispatcher.BeginInvoke(UpdateObjectSortPresentation, DispatcherPriority.Loaded);
     }
@@ -134,11 +134,11 @@ public partial class MainWindow : Window
             .Where(item => !string.Equals(item.PropertyName, "CharacterOffset", StringComparison.Ordinal))
             .Select(item => $"{ObjectSortName(item.PropertyName)} {(item.Direction == ListSortDirection.Ascending ? "↑" : "↓")}")
             .ToArray();
-        ObjectSortLabel.Text = visibleSorts.Length == 0
+        ObjectPage.ObjectSortLabel.Text = visibleSorts.Length == 0
             ? "排序：索引原始顺序"
             : $"排序：{string.Join(" · ", visibleSorts)}";
 
-        foreach (var column in ObjectIndexGrid.Columns)
+        foreach (var column in ObjectPage.ObjectIndexGrid.Columns)
         {
             var sort = _viewModel.ObjectsView.SortDescriptions
                 .Cast<SortDescription?>()
@@ -189,7 +189,7 @@ public partial class MainWindow : Window
 
     private void OpenProblems_Click(object sender, RoutedEventArgs e) => _viewModel.OpenProblems();
 
-    private void RemoveFilterTag_Click(object sender, RoutedEventArgs e)
+    internal void RemoveFilterTag_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: UnitFilterTagViewModel tag })
         {
@@ -197,9 +197,9 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ClearUnitFilters_Click(object sender, RoutedEventArgs e) => _viewModel.UnitWorkspace?.ClearFilters();
+    internal void ClearUnitFilters_Click(object sender, RoutedEventArgs e) => _viewModel.UnitWorkspace?.ClearFilters();
 
-    private void CloseUnitFilters_Click(object sender, RoutedEventArgs e)
+    internal void CloseUnitFilters_Click(object sender, RoutedEventArgs e)
     {
         if (_viewModel.UnitWorkspace is { } workspace)
         {
@@ -238,7 +238,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void CopyProblem_Click(object sender, RoutedEventArgs e)
+    internal void CopyProblem_Click(object sender, RoutedEventArgs e)
     {
         if (_viewModel.SelectedProblem is { } problem)
         {
@@ -249,7 +249,7 @@ public partial class MainWindow : Window
         MessageBox.Show(this, "请先选择一条问题。", "复制诊断", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
-    private void OpenProblemLogs_Click(object sender, RoutedEventArgs e)
+    internal void OpenProblemLogs_Click(object sender, RoutedEventArgs e)
     {
         try
         {
@@ -306,7 +306,7 @@ public partial class MainWindow : Window
         _viewModel.CancelScan();
     }
 
-    private async void UndoField_Click(object sender, RoutedEventArgs e)
+    internal async void UndoField_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: UnitFieldViewModel field } &&
             _viewModel.UnitWorkspace is { } workspace)
@@ -330,7 +330,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void ClearDrafts_Click(object sender, RoutedEventArgs e)
+    internal async void ClearDrafts_Click(object sender, RoutedEventArgs e)
     {
         if (_viewModel.UnitWorkspace is { } workspace)
         {
@@ -344,13 +344,13 @@ public partial class MainWindow : Window
         }
     }
 
-    private void SelectVisibleBatch_Click(object sender, RoutedEventArgs e) =>
+    internal void SelectVisibleBatch_Click(object sender, RoutedEventArgs e) =>
         _viewModel.UnitWorkspace?.SelectVisibleForBatch();
 
-    private void ClearBatchSelection_Click(object sender, RoutedEventArgs e) =>
+    internal void ClearBatchSelection_Click(object sender, RoutedEventArgs e) =>
         _viewModel.UnitWorkspace?.ClearBatchSelection();
 
-    private async void AddCommonBatchField_Click(object sender, RoutedEventArgs e)
+    internal async void AddCommonBatchField_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: UnitBatchCommonFieldViewModel field } && _viewModel.UnitWorkspace is { } workspace)
         {
@@ -358,12 +358,12 @@ public partial class MainWindow : Window
         }
     }
 
-    private void PreviewBatch_Click(object sender, RoutedEventArgs e)
+    internal void PreviewBatch_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.UnitWorkspace?.PreviewBatch();
     }
 
-    private async void AddBatchDrafts_Click(object sender, RoutedEventArgs e)
+    internal async void AddBatchDrafts_Click(object sender, RoutedEventArgs e)
     {
         if (_viewModel.UnitWorkspace is not { } workspace)
         {
@@ -385,26 +385,26 @@ public partial class MainWindow : Window
     }
 
     private void SelectDivisionTags_Click(object sender, RoutedEventArgs e) { if (_viewModel.DivisionWorkspace is { } vm && sender is FrameworkElement b) foreach (var o in vm.TagOptions) o.IsSelected = Equals(b.Tag,"True"); }
-    private void SelectFilterDimension_Click(object sender, RoutedEventArgs e) { if (sender is FrameworkElement { DataContext: UnitFilterDimensionViewModel dimension } b) foreach (var o in dimension.Options.Where(o => o.DimensionKey != "category" || Localisation.GameText.VisibleCategory(o.Value))) o.IsSelected = Equals(b.Tag,"True"); }
-    private void RemoveUnitChoice_Click(object sender, RoutedEventArgs e) { if(sender is FrameworkElement {DataContext:UnitChoiceToggleViewModel choice})choice.IsSelected=false; }
-    private void ReconPreset_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    internal void SelectFilterDimension_Click(object sender, RoutedEventArgs e) { if (sender is FrameworkElement { DataContext: UnitFilterDimensionViewModel dimension } b) foreach (var o in dimension.Options.Where(o => o.DimensionKey != "category" || Localisation.GameText.VisibleCategory(o.Value))) o.IsSelected = Equals(b.Tag,"True"); }
+    internal void RemoveUnitChoice_Click(object sender, RoutedEventArgs e) { if(sender is FrameworkElement {DataContext:UnitChoiceToggleViewModel choice})choice.IsSelected=false; }
+    internal void ReconPreset_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (sender is ComboBox { DataContext: UnitFieldViewModel field, SelectedItem: int value })
             field.EditValue = value.ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
-    private void SelectFieldChoices_Click(object sender, RoutedEventArgs e) { if(sender is FrameworkElement {DataContext:UnitFieldViewModel field} b && field.IsMultiChoiceEditor)field.SelectVisibleChoices(Equals(b.Tag,"True")); }
-    private void TransportFilter_Changed(object? sender, EventArgs e) { if (_viewModel.DivisionWorkspace is { } vm && sender is Controls.UnitMiniFilter filter) { vm.TransportFilter = filter.Matches; vm.TransportCandidatesView.Refresh(); } }
-    private void SelectTransports_Click(object sender, RoutedEventArgs e) { if (_viewModel.DivisionWorkspace is { } vm && sender is FrameworkElement b) foreach (var item in vm.TransportCandidatesView.Cast<DivisionTransportOptionViewModel>()) item.IsSelected = Equals(b.Tag,"True"); }
+    internal void SelectFieldChoices_Click(object sender, RoutedEventArgs e) { if(sender is FrameworkElement {DataContext:UnitFieldViewModel field} b && field.IsMultiChoiceEditor)field.SelectVisibleChoices(Equals(b.Tag,"True")); }
+    internal void TransportFilter_Changed(object? sender, EventArgs e) { if (_viewModel.DivisionWorkspace is { } vm && sender is Controls.UnitMiniFilter filter) { vm.TransportFilter = filter.Matches; vm.TransportCandidatesView.Refresh(); } }
+    internal void SelectTransports_Click(object sender, RoutedEventArgs e) { if (_viewModel.DivisionWorkspace is { } vm && sender is FrameworkElement b) foreach (var item in vm.TransportCandidatesView.Cast<DivisionTransportOptionViewModel>()) item.IsSelected = Equals(b.Tag,"True"); }
 
-    private void SelectAllDrafts_Click(object sender, RoutedEventArgs e) { if (_viewModel.UnitWorkspace is { } vm) foreach (var item in vm.DraftItems) item.IsSelected = true; RefreshDraftChecks(); }
-    private void ClearDraftSelection_Click(object sender, RoutedEventArgs e) { if (_viewModel.UnitWorkspace is { } vm) foreach (var item in vm.DraftItems) item.IsSelected = false; RefreshDraftChecks(); }
-    private void DraftGroupSelect_Click(object sender, RoutedEventArgs e) { if (sender is CheckBox { DataContext: System.Windows.Data.CollectionViewGroup group } box) { foreach (var item in group.Items.OfType<DraftItemViewModel>()) item.IsSelected = box.IsChecked == true; RefreshDraftChecks(); } }
-    private void DraftGroup_Loaded(object sender, RoutedEventArgs e) { if (sender is CheckBox box) UpdateDraftCheck(box); }
+    internal void SelectAllDrafts_Click(object sender, RoutedEventArgs e) { if (_viewModel.UnitWorkspace is { } vm) foreach (var item in vm.DraftItems) item.IsSelected = true; RefreshDraftChecks(); }
+    internal void ClearDraftSelection_Click(object sender, RoutedEventArgs e) { if (_viewModel.UnitWorkspace is { } vm) foreach (var item in vm.DraftItems) item.IsSelected = false; RefreshDraftChecks(); }
+    internal void DraftGroupSelect_Click(object sender, RoutedEventArgs e) { if (sender is CheckBox { DataContext: System.Windows.Data.CollectionViewGroup group } box) { foreach (var item in group.Items.OfType<DraftItemViewModel>()) item.IsSelected = box.IsChecked == true; RefreshDraftChecks(); } }
+    internal void DraftGroup_Loaded(object sender, RoutedEventArgs e) { if (sender is CheckBox box) UpdateDraftCheck(box); }
     private static void UpdateDraftCheck(CheckBox box) { if (box.DataContext is System.Windows.Data.CollectionViewGroup group) { var items = group.Items.OfType<DraftItemViewModel>().ToArray(); box.IsChecked = items.All(i => i.IsSelected) ? true : items.Any(i => i.IsSelected) ? null : false; } }
-    private void DraftSelection_Click(object sender, RoutedEventArgs e) => RefreshDraftChecks();
-    private void RefreshDraftChecks() { foreach (var box in VisualChildren<CheckBox>(DraftOverviewGrid)) UpdateDraftCheck(box); }
+    internal void DraftSelection_Click(object sender, RoutedEventArgs e) => RefreshDraftChecks();
+    private void RefreshDraftChecks() { foreach (var box in VisualChildren<CheckBox>(DraftPage.DraftOverviewGrid)) UpdateDraftCheck(box); }
     private static IEnumerable<T> VisualChildren<T>(DependencyObject parent) where T : DependencyObject { for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++) { var child = System.Windows.Media.VisualTreeHelper.GetChild(parent,i); if (child is T match) yield return match; foreach (var next in VisualChildren<T>(child)) yield return next; } }
-    private async void DeleteSelectedDrafts_Click(object sender, RoutedEventArgs e)
+    internal async void DeleteSelectedDrafts_Click(object sender, RoutedEventArgs e)
     {
         if (_viewModel.UnitWorkspace is not { } vm) return;
         var ids = vm.DraftItems.Where(i => i.IsSelected).Select(i => i.Resolved.Operation.Id).ToHashSet(); if (ids.Count == 0) return;
@@ -414,7 +414,7 @@ public partial class MainWindow : Window
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "删除草稿失败"); }
     }
 
-    private async void PreviewApply_Click(object sender, RoutedEventArgs e)
+    internal async void PreviewApply_Click(object sender, RoutedEventArgs e)
     {
         if (_viewModel.UnitWorkspace is not { } workspace)
         {
@@ -504,16 +504,16 @@ public partial class MainWindow : Window
         }
     }
 
-    private void WeaponScopeCheck_Click(object sender, RoutedEventArgs e) =>
+    internal void WeaponScopeCheck_Click(object sender, RoutedEventArgs e) =>
         _viewModel.WeaponWorkspace?.ScopeSelectionChanged();
 
-    private void SelectVisibleWeaponScope_Click(object sender, RoutedEventArgs e) =>
+    internal void SelectVisibleWeaponScope_Click(object sender, RoutedEventArgs e) =>
         _viewModel.WeaponWorkspace?.SelectVisibleScopeUnits();
 
-    private void ClearWeaponScopeSelection_Click(object sender, RoutedEventArgs e) =>
+    internal void ClearWeaponScopeSelection_Click(object sender, RoutedEventArgs e) =>
         _viewModel.WeaponWorkspace?.ClearScopeSelection();
 
-    private void DeploymentPreset_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    internal void DeploymentPreset_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (sender is ComboBox { DataContext: UnitFieldViewModel field, SelectedItem: DeploymentPresetViewModel preset })
         {
@@ -522,7 +522,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void ReplaceWeapon_Click(object sender, RoutedEventArgs e)
+    internal async void ReplaceWeapon_Click(object sender, RoutedEventArgs e)
     {
         if (_viewModel.WeaponWorkspace is { } workspace)
         {
@@ -538,7 +538,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void UndoWeaponField_Click(object sender, RoutedEventArgs e)
+    internal async void UndoWeaponField_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: WeaponFieldViewModel field } && _viewModel.WeaponWorkspace is { } workspace)
         {
@@ -546,7 +546,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void UndoAmmoField_Click(object sender, RoutedEventArgs e)
+    internal async void UndoAmmoField_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: WeaponFieldViewModel field } && _viewModel.AmmoWorkspace is { } workspace)
         {
@@ -554,22 +554,22 @@ public partial class MainWindow : Window
         }
     }
 
-    private void AddDivisionRule_Click(object sender, RoutedEventArgs e) =>
+    internal void AddDivisionRule_Click(object sender, RoutedEventArgs e) =>
         _viewModel.DivisionWorkspace?.AddRule();
 
-    private void RemoveDivisionRule_Click(object sender, RoutedEventArgs e) =>
+    internal void RemoveDivisionRule_Click(object sender, RoutedEventArgs e) =>
         _viewModel.DivisionWorkspace?.RemoveSelectedRule();
 
     private void AddDivisionTransport_Click(object sender, RoutedEventArgs e) =>
         _viewModel.DivisionWorkspace?.AddTransport();
 
-    private void ApplyDivisionTransportSelection_Click(object sender, RoutedEventArgs e) =>
+    internal void ApplyDivisionTransportSelection_Click(object sender, RoutedEventArgs e) =>
         _viewModel.DivisionWorkspace?.ApplyTransportSelection();
 
-    private void CancelDivisionTransportSelection_Click(object sender, RoutedEventArgs e) =>
+    internal void CancelDivisionTransportSelection_Click(object sender, RoutedEventArgs e) =>
         _viewModel.DivisionWorkspace?.CancelTransportSelection();
 
-    private void RemoveDivisionTransport_Click(object sender, RoutedEventArgs e)
+    internal void RemoveDivisionTransport_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: DivisionSelectedTransportViewModel transport })
         {
@@ -577,7 +577,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void SelectDivisionType_Click(object sender, RoutedEventArgs e)
+    internal void SelectDivisionType_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: string type })
         {
@@ -597,7 +597,7 @@ public partial class MainWindow : Window
     private void MoveDivisionPackDown_Click(object sender, RoutedEventArgs e) =>
         _viewModel.DivisionWorkspace?.MoveSelectedPack(1);
 
-    private async void RestoreBackup_Click(object sender, RoutedEventArgs e)
+    internal async void RestoreBackup_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement { DataContext: BackupItemViewModel item } ||
             _viewModel.UnitWorkspace is not { } workspace)
@@ -693,25 +693,25 @@ public partial class MainWindow : Window
         }
     }
 
-    private void WorkspaceFilter_Changed(object? sender, EventArgs e)
+    internal void WorkspaceFilter_Changed(object? sender, EventArgs e)
     {
         if(sender is not Controls.FacetFilter f)return;
         if(Equals(f.Tag,"weapon") && _viewModel.WeaponWorkspace is {} w){w.UnitFilter=f.Matches;w.UnitsView.Refresh();}
         if(Equals(f.Tag,"ammo") && _viewModel.AmmoWorkspace is {} a){a.AmmoFilter=f.Matches;a.RefreshFilter();}
         if(Equals(f.Tag,"rules") && _viewModel.DivisionWorkspace is {} d){d.RuleFilter=f.Matches;d.RulesView.Refresh();}
     }
-    private void ProblemAction_Click(object sender,RoutedEventArgs e)
+    internal void ProblemAction_Click(object sender,RoutedEventArgs e)
     {
-        var list=ProblemTabs.SelectedIndex==0?ModProblemList:ProblemTabs.SelectedIndex==1?ToolProblemList:IgnoredProblemList;
+        var list=ProblemPage.ProblemTabs.SelectedIndex==0?ProblemPage.ModProblemList:ProblemPage.ProblemTabs.SelectedIndex==1?ProblemPage.ToolProblemList:ProblemPage.IgnoredProblemList;
         var action=(sender as FrameworkElement)?.Tag?.ToString();
         if(action=="all"){list.SelectAll();return;}if(action=="none"){list.UnselectAll();return;}
-        if(action=="restore"&&ProblemTabs.SelectedIndex!=2 || action=="ignore"&&ProblemTabs.SelectedIndex==2)return;
+        if(action=="restore"&&ProblemPage.ProblemTabs.SelectedIndex!=2 || action=="ignore"&&ProblemPage.ProblemTabs.SelectedIndex==2)return;
         try{_viewModel.IgnoreProblems(list.SelectedItems.Cast<ProblemItemViewModel>(),action=="restore");}catch(Exception ex){_viewModel.RecordToolProblem("更新问题状态失败",ex);}
     }
-    private void DivisionTag_Click(object sender,RoutedEventArgs e){if(sender is FrameworkElement {DataContext:DivisionTagOptionViewModel tag})_viewModel.DivisionWorkspace?.ChooseTag(tag.Value);}
-    private void StandoutUnits_Click(object sender,RoutedEventArgs e){if(_viewModel.DivisionWorkspace is not {} vm)return;var picker=new Controls.UnitSelectionWindow(vm.UnitOptions.Select(u=>(u.Name,u.DisplayName)),DivisionUnitRuleViewModel.Split(vm.StandoutUnitsText)){Owner=this};if(picker.ShowDialog()==true)vm.StandoutUnitsText=string.Join(", ",picker.SelectedIds);}
-    private void RemoveStandout_Click(object sender,RoutedEventArgs e){if(_viewModel.DivisionWorkspace is {} vm&&sender is FrameworkElement {DataContext:DivisionUnitOption unit})vm.StandoutUnitsText=string.Join(", ",DivisionUnitRuleViewModel.Split(vm.StandoutUnitsText).Where(id=>id!=unit.Name));}
-    private async void CreateUnit_Click(object sender,RoutedEventArgs e){try{await _viewModel.CreateUnitAsync(this,Equals((sender as FrameworkElement)?.Tag,"edit"));}catch(Exception ex){MessageBox.Show(this,ex.Message,"无法创建单位");}}
+    internal void DivisionTag_Click(object sender,RoutedEventArgs e){if(sender is FrameworkElement {DataContext:DivisionTagOptionViewModel tag})_viewModel.DivisionWorkspace?.ChooseTag(tag.Value);}
+    internal void StandoutUnits_Click(object sender,RoutedEventArgs e){if(_viewModel.DivisionWorkspace is not {} vm)return;var picker=new Controls.UnitSelectionWindow(vm.UnitOptions.Select(u=>(u.Name,u.DisplayName)),DivisionUnitRuleViewModel.Split(vm.StandoutUnitsText)){Owner=this};if(picker.ShowDialog()==true)vm.StandoutUnitsText=string.Join(", ",picker.SelectedIds);}
+    internal void RemoveStandout_Click(object sender,RoutedEventArgs e){if(_viewModel.DivisionWorkspace is {} vm&&sender is FrameworkElement {DataContext:DivisionUnitOption unit})vm.StandoutUnitsText=string.Join(", ",DivisionUnitRuleViewModel.Split(vm.StandoutUnitsText).Where(id=>id!=unit.Name));}
+    internal async void CreateUnit_Click(object sender,RoutedEventArgs e){try{await _viewModel.CreateUnitAsync(this,Equals((sender as FrameworkElement)?.Tag,"edit"));}catch(Exception ex){MessageBox.Show(this,ex.Message,"无法创建单位");}}
     private async Task OpenSelectedProjectAsync(string root)
     {
         if (!_viewModel.CanOpenProject) return;
@@ -733,6 +733,11 @@ public partial class MainWindow : Window
             text.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
             if (Validation.GetHasError(text)) throw new InvalidOperationException("请先修正当前输入。");
         }
+    }
+
+    private void OpenDrafts_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.SelectedModule = _viewModel.Modules.FirstOrDefault(module => module.Key == "drafts");
     }
 
     private bool _closeAfterFlush;

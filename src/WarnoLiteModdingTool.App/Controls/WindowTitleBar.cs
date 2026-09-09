@@ -49,6 +49,7 @@ public sealed class WindowTitleBar : Border
                 CornerRadius = new CornerRadius(0),
                 UseAeroCaptionButtons = false
             });
+            WindowCorners.Attach(window);
             window.StateChanged += (_, _) => maximize.Content = window.WindowState == WindowState.Maximized ? "❐" : "□";
         };
     }

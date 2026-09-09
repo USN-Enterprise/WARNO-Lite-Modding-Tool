@@ -639,7 +639,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                 RulesWorkspace = new RulesWorkspaceViewModel(unitData.Rules!, _draftStore, UnitWorkspace.RefreshExternalDraftState);
                 OnPropertyChanged(nameof(RulesWorkspace)); OnPropertyChanged(nameof(IsRulesModule));
-                ProjectSummary = $"1.8.7 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
+                ProjectSummary = $"1.9.1 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
             }
 
             RefreshMode();

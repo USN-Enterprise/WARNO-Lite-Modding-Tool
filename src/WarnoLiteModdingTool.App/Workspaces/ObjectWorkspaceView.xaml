@@ -1,0 +1,118 @@
+<UserControl x:Class="WarnoLiteModdingTool.App.Workspaces.ObjectWorkspaceView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:l="clr-namespace:WarnoLiteModdingTool.App.Localisation"
+    xmlns:controls="clr-namespace:WarnoLiteModdingTool.App.Controls">
+<Grid
+                         >
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0"
+                                Background="{DynamicResource SurfaceAltBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="0,0,0,1"
+                                Padding="12,7">
+                            <DockPanel>
+                                <TextBlock Text="{l:Loc Key='点击表头可切换排序'}" DockPanel.Dock="Right" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" />
+                                <TextBlock x:Name="ObjectSortLabel" Text="{l:Loc Key='排序：源文件 ↑ · 行号 ↑'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" />
+                            </DockPanel>
+                        </Border>
+
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition x:Name="ObjectListColumn" Width="*" MinWidth="480" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition x:Name="ObjectDetailColumn" Width="0" MinWidth="0" MaxWidth="620" />
+                            </Grid.ColumnDefinitions>
+
+                            <DataGrid x:Name="ObjectIndexGrid"
+                                      Grid.Column="0"
+                                      ItemsSource="{Binding ObjectsView}"
+                                      SelectedItem="{Binding SelectedObject}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      CanUserSortColumns="True"
+                                      Sorting="ObjectIndex_Sorting"
+                                      HeadersVisibility="Column"
+                                      GridLinesVisibility="Horizontal"
+                                      HorizontalGridLinesBrush="{DynamicResource GridLineBrush}"
+                                      BorderThickness="0"
+                                      RowHeaderWidth="0"
+                                      RowHeight="38"
+                                      EnableRowVirtualization="True"
+                                      EnableColumnVirtualization="True"
+                                      VirtualizingPanel.IsVirtualizing="True"
+                                      VirtualizingPanel.VirtualizationMode="Recycling">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="{l:Loc Key='名称'}"
+                                                        Binding="{Binding DisplayName}"
+                                                        SortMemberPath="DisplayName"
+                                                        ElementStyle="{StaticResource IndexPrimaryGridText}"
+                                                        HeaderStyle="{StaticResource IndexGridColumnHeader}"
+                                                        Width="2*" />
+                                    <DataGridTextColumn Header="{l:Loc Key='内部类型'}"
+                                                        Binding="{Binding TypeName}"
+                                                        SortMemberPath="TypeName"
+                                                        ElementStyle="{StaticResource SecondaryGridText}"
+                                                        Width="1.25*" />
+                                    <DataGridTextColumn Header="{l:Loc Key='源文件'}"
+                                                        Binding="{Binding RelativeSourceFile}"
+                                                        SortMemberPath="RelativeSourceFile"
+                                                        ElementStyle="{StaticResource SecondaryGridText}"
+                                                        Width="2.3*" />
+                                    <DataGridTextColumn Header="{l:Loc Key='行号'}"
+                                                        Binding="{Binding LineNumber}"
+                                                        SortMemberPath="LineNumber"
+                                                        ElementStyle="{StaticResource SecondaryGridText}"
+                                                        Width="72" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <GridSplitter x:Name="ObjectDetailSplitter"
+                                          Grid.Column="1"
+                                          Style="{StaticResource PaneSplitter}"
+                                          Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                            <Border Grid.Column="2"
+                                    Background="{DynamicResource SurfaceAltBrush}"
+                                    Padding="16"
+                                    Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <StackPanel>
+                                        <TextBlock Text="{l:Loc Key='高级详情'}" FontWeight="SemiBold" FontSize="15" />
+                                        <TextBlock Text="{l:Loc Key='选中对象'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,14,0,4" />
+                                        <TextBlock Text="{Binding SelectedObject.Name, TargetNullValue=尚未选择对象}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding SelectedObject.TypeName}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+
+                                        <TextBlock Text="{l:Loc Key='源文件'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,14,0,4" />
+                                        <TextBlock Text="{Binding SelectedObject.SourceFile, TargetNullValue=—}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,5,0,0" Foreground="{DynamicResource MutedTextBrush}" FontSize="10">
+                                            <Run Text="{l:Loc Key='行 '}" /><Run Text="{Binding SelectedObject.LineNumber, TargetNullValue=—, Mode=OneWay}" />
+                                            <Run Text="{l:Loc Key=' · 字符偏移 '}" /><Run Text="{Binding SelectedObject.CharacterOffset, TargetNullValue=—, Mode=OneWay}" />
+                                            <Run Text="{l:Loc Key=' · 字节偏移 '}" /><Run Text="{Binding SelectedObject.ByteOffset, TargetNullValue=—, Mode=OneWay}" />
+                                        </TextBlock>
+
+                                        <TextBlock Text="{l:Loc Key='项目诊断'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,18,0,7" />
+                                        <ItemsControl ItemsSource="{Binding Diagnostics}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="9" Margin="0,0,0,7">
+                                                        <StackPanel>
+                                                            <TextBlock Text="{l:LocalizedBinding Path=Title}" FontWeight="SemiBold" FontSize="12" />
+                                                            <TextBlock Text="{Binding Detail}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Border>
+                        </Grid>
+                    </Grid>
+</UserControl>
