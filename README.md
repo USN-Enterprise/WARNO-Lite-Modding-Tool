@@ -21,7 +21,7 @@
 ## 直接使用
 
 1. 解压完整发布 ZIP。
-2. 运行 `WarnoLiteModdingTool.exe`。
+2. 运行 `WarnoLiteModdingTool.exe`。1.8.7 起同一 Windows 登录会话只允许一个实例；重复启动提示“已在运行”。升级时请先关闭旧版。
 3. 点击“自动查找 Mod”，或从“Mod 工具”使用同名入口，选择检测到的 Mod；也可手动打开包含 `GameData` 的 Mod 根目录。
 4. 打开顶栏“设置”，选择跟随系统 / 简体中文 / English、默认编辑模式和七套主题和自定义图片背景；项目栏、Unit 列表与检查器、Weapon 三栏、战术师列表与编辑器，以及对象索引与高级详情之间的分隔条都可拖动，程序会保留各栏最低可用宽度。
 5. 在“单位”模块中使用常驻搜索框；点较大的“筛选”按钮呼出阵营、国家、原子单位类别、生产栏位、角色、所属师和草稿状态。可切换“全部条件 / 任一条件”，收起后只留下带 × 的已选标签。
@@ -39,6 +39,8 @@
 17. “生成 / 编译 Mod”常驻顶栏；“Mod 工具”菜单提供打开项目、启动开发模式和上传入口。官方流程按当前项目能力独立探测、确认后手动运行并保留输出。上传 BAT 还会调用官方备份，应以完整输出为准；编辑器自有事务备份始终是正式写入的安全基础。
 18. 点“创建新 Mod”可调用 WARNO `Mods/CreateNewMod.bat`。选择包含官方脚本和 `ModData/base.zip` 的 `Mods` 目录，名称只能是 1–32 位英文字母/数字，且不得与现有 Mod 重名。
 19. 顶栏“问题”进入诊断中心：“Mod 问题”显示项目、解析、草稿/事务和官方流程问题，“工具问题”显示程序自身异常。可复制带错误编号的完整诊断或打开日志目录；上次致命异常会在下次启动提示。
+
+切换项目或正常关闭窗口前，程序会等待各模块的草稿保存；保存失败时保留当前项目和输入，修正问题后可重试。左侧模块列表可滚动，表格列宽随可用空间调整。
 
 编辑阶段只写 `<目标 Mod>/.warno-editor/draft-v1.json`；正式文件只在应用确认后由事务写入。NDF 使用 UTF-8 无 BOM 精确字段补丁，CSV 保留原编码与换行；预览后发现外部修改、候选校验失败或提交异常时不会静默覆盖。程序另在当前 Windows 用户的本地应用数据目录保存最近项目列表。
 
@@ -116,7 +118,7 @@ Data extracted from WARNO is excluded from the MIT license, including the vanill
 ## Getting started
 
 1. Extract the entire release ZIP.
-2. Run `WarnoLiteModdingTool.exe`.
+2. Run `WarnoLiteModdingTool.exe`. Starting with 1.8.7, only one instance can run in the same Windows login session; duplicate launches display “Already running”. Close the old version before upgrading.
 3. Use the automatic Mod search button, also available in the Mod Tools menu, and select a detected Mod. You can also manually open a Mod root folder containing `GameData`.
 4. Open Settings in the top bar to choose the system language, Simplified Chinese, or English; set the default editing mode; and choose from seven themes or a custom background image. Drag the dividers between the project panel, unit list and inspector, weapon panels, division list and editor, and object index and details. Each panel retains a minimum usable width.
 5. Use the search box in the Units module. Open Filters to select faction, country, unit category, production tab, role, division membership, and draft status. Switch between matching all or any conditions. When collapsed, the panel shows only the selected tags, each with a removal button.
@@ -134,6 +136,8 @@ Data extracted from WARNO is excluded from the MIT license, including the vanill
 17. Generate / Compile Mod is available in the top bar. Mod Tools provides project opening, development launch, and upload actions. Each official workflow is detected independently for the current project and runs manually after confirmation, with output retained. The upload BAT also invokes the official backup process; refer to its full output. The editor's own transaction backups remain the basis for safe file changes.
 18. Create New Mod invokes WARNO's `Mods/CreateNewMod.bat`. Select a `Mods` folder containing the official scripts and `ModData/base.zip`. Names must contain 1–32 English letters or digits and must not duplicate an existing Mod name.
 19. Open Problems in the top bar for diagnostics. Mod Problems covers project data, parsing, drafts, transactions, and official workflows; Tool Problems covers editor exceptions. Copy the full diagnostic with its error ID or open the log folder. A previous fatal exception is reported on the next launch.
+
+Before switching projects or closing the window normally, the editor waits for draft saves in every module. Failed saves keep the current project and input available for retry. The module sidebar scrolls, and table columns adapt to available space.
 
 During editing, only `<target Mod>/.warno-editor/draft-v1.json` is written. Actual Mod files are changed only after application is confirmed. NDF changes use precise UTF-8 field patches without a BOM; CSV files retain their original encoding and line endings. External changes after preview, failed validation, and commit errors do not cause silent overwrites. Recent projects are stored in the current Windows user's local application data folder.
 

@@ -13,7 +13,9 @@
         SourceInitialized="Window_SourceInitialized"
         Loaded="Window_Loaded"
         Closing="Window_Closing">
-    <Grid Background="{DynamicResource BackgroundBrush}">
+    <DockPanel>
+        <controls:WindowTitleBar DockPanel.Dock="Top" Height="40" />
+    <Grid Background="{DynamicResource BackgroundBrush}" IsEnabled="{Binding CanInteract}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -30,7 +32,7 @@
                     </Border>
                     <StackPanel Margin="12,0,0,0">
                         <TextBlock Text="WARNO Lite Modding Tool" FontSize="17" FontWeight="SemiBold" />
-                        <TextBlock Text="{l:Loc Key='1.8.5 · 单位简化与游戏规则'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="12" />
+                        <TextBlock Text="{l:Loc Key='1.8.7 · 单实例运行'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="12" />
                     </StackPanel>
                 </StackPanel>
 
@@ -137,9 +139,9 @@
 
                     <Border Grid.Row="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Margin="0,0,0,12" />
 
-                    <StackPanel Grid.Row="3">
-                        <TextBlock Text="{l:Loc Key='功能模块'}" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,8" />
-                        <ListBox ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemsSource="{Binding Modules}"
+                    <DockPanel Grid.Row="3" LastChildFill="True">
+                        <TextBlock DockPanel.Dock="Top" Text="{l:Loc Key='功能模块'}" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,8" />
+                        <ListBox x:Name="ModuleList" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemsSource="{Binding Modules}"
                                  SelectedItem="{Binding SelectedModule}"
                                  BorderThickness="0"
                                  Background="Transparent"
@@ -182,7 +184,7 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
-                    </StackPanel>
+                    </DockPanel>
 
                     <StackPanel Grid.Row="4" Margin="0,12,0,0">
                         <TextBlock Text="{l:Loc Key='最近项目'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,6" />
@@ -423,8 +425,10 @@
                                             <TextBlock Text="{l:Loc Key='操作'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,0,0,3" />
                                             <ComboBox ItemsSource="{Binding UnitWorkspace.VisibleBatchOperations}" SelectedItem="{Binding UnitWorkspace.SelectedBatchOperation}" DisplayMemberPath="DisplayName" />
                                         </StackPanel>
-                                        <StackPanel Width="175" Margin="0,0,10,8">
-                                            <controls:ParameterNote Text="{Binding UnitWorkspace.SelectedBatchField.OriginalParameter}"/><TextBlock Text="{l:LocalizedBinding Path=UnitWorkspace.BatchOperandHint}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,0,0,3" />
+                                        <Grid Margin="0,0,10,8">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="175"/><ColumnDefinition Width="180"/></Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                            <TextBlock Text="{l:LocalizedBinding Path=UnitWorkspace.BatchOperandHint}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,0,0,3" />
                                             <Grid>
                                                 <TextBox Text="{Binding UnitWorkspace.BatchOperand, UpdateSourceTrigger=PropertyChanged}"
                                                          Visibility="{Binding UnitWorkspace.IsBatchTextEditor, Converter={StaticResource BooleanToVisibilityConverter}}" />
@@ -432,7 +436,9 @@
                                                           SelectedItem="{Binding UnitWorkspace.BatchOperand, UpdateSourceTrigger=PropertyChanged}"
                                                           Visibility="{Binding UnitWorkspace.IsBatchChoiceEditor, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                             </Grid>
-                                        </StackPanel>
+                                            </StackPanel>
+                                            <controls:ParameterNote Grid.Column="1" Text="{Binding UnitWorkspace.SelectedBatchField.OriginalParameter}" Margin="10,16,0,0" VerticalAlignment="Center"/>
+                                        </Grid>
                                         <StackPanel Width="145" Margin="0,0,10,8" Visibility="{Binding UnitWorkspace.ShowsBatchFormulaOptions, Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <TextBlock Text="{l:Loc Key='取整'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,0,0,3" />
                                             <ComboBox ItemsSource="{Binding UnitWorkspace.BatchRoundingOptions}" SelectedItem="{Binding UnitWorkspace.SelectedBatchRounding}" DisplayMemberPath="DisplayName" />
@@ -1263,7 +1269,7 @@
                                       BorderThickness="0"
                                       RowHeaderWidth="0"
                                       RowHeight="42">
-                                <DataGrid.GroupStyle><GroupStyle><GroupStyle.ContainerStyle><Style TargetType="GroupItem"><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="GroupItem"><Expander x:Name="BatchExpander" IsExpanded="False" Margin="4"><Expander.Header><StackPanel x:Name="BatchHeader" Orientation="Horizontal"><CheckBox IsThreeState="True" Click="DraftGroupSelect_Click" Loaded="DraftGroup_Loaded" Margin="0,0,8,0"/><TextBlock Text="{Binding Items[0].BatchSummary}" MaxWidth="540" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding ItemCount, StringFormat=' · {0}'}"/></StackPanel></Expander.Header><ItemsPresenter Margin="20,0,0,0"/></Expander><ControlTemplate.Triggers><DataTrigger Binding="{Binding Items[0].Resolved.Operation.GroupId}" Value="{x:Null}"><Setter TargetName="BatchExpander" Property="IsExpanded" Value="True"/><Setter TargetName="BatchExpander" Property="Template"><Setter.Value><ControlTemplate TargetType="Expander"><ContentPresenter/></ControlTemplate></Setter.Value></Setter></DataTrigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style></GroupStyle.ContainerStyle></GroupStyle></DataGrid.GroupStyle>
+                                <DataGrid.GroupStyle><GroupStyle><GroupStyle.ContainerStyle><Style TargetType="GroupItem"><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="GroupItem"><Expander x:Name="BatchExpander" IsExpanded="False" Margin="0,4"><Expander.Header><StackPanel x:Name="BatchHeader" Orientation="Horizontal"><CheckBox IsThreeState="True" Click="DraftGroupSelect_Click" Loaded="DraftGroup_Loaded" Margin="0,0,8,0"/><TextBlock Text="{Binding Items[0].BatchSummary}" MaxWidth="540" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding ItemCount, StringFormat=' · {0}'}"/></StackPanel></Expander.Header><ItemsPresenter/></Expander><ControlTemplate.Triggers><DataTrigger Binding="{Binding Items[0].Resolved.Operation.GroupId}" Value="{x:Null}"><Setter TargetName="BatchExpander" Property="IsExpanded" Value="True"/><Setter TargetName="BatchExpander" Property="Template"><Setter.Value><ControlTemplate TargetType="Expander"><ContentPresenter/></ControlTemplate></Setter.Value></Setter></DataTrigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style></GroupStyle.ContainerStyle></GroupStyle></DataGrid.GroupStyle>
                                 <DataGrid.Columns><DataGridTemplateColumn Width="40"><DataGridTemplateColumn.CellTemplate><DataTemplate><CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Click="DraftSelection_Click"/></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
                                     <DataGridTextColumn Header="{l:Loc Key='修改内容'}" Binding="{l:LocalizedBinding Path=Summary}" ElementStyle="{StaticResource IndexPrimaryGridText}" HeaderStyle="{StaticResource IndexGridColumnHeader}" Width="3*" MinWidth="260" />
                                     <DataGridTextColumn Header="{l:Loc Key='模块'}" Binding="{l:LocalizedBinding Path=Module}" ElementStyle="{StaticResource SecondaryGridText}" Width="86" />
@@ -1510,4 +1516,5 @@
             </DockPanel>
         </Border>
     </Grid>
+    </DockPanel>
 </Window>

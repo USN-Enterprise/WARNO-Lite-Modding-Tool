@@ -12,6 +12,9 @@ public sealed class WeaponFieldViewModel : ObservableObject
     private string _persistedValue;
     private string _status = string.Empty;
     private bool _locked;
+    private Exception? _saveError;
+    private string? _savingValue;
+    public bool HasUnsavedEdit => !string.Equals(EditValue, _persistedValue, StringComparison.Ordinal) || !_pendingPersistence.IsCompleted;
     private Task _pendingPersistence = Task.CompletedTask;
 
     public WeaponFieldViewModel(WeaponFieldValue field, DraftOperation? draft, Func<WeaponFieldViewModel, Task> persist)
@@ -24,6 +27,7 @@ public sealed class WeaponFieldViewModel : ObservableObject
     }
 
     public WeaponFieldValue Field { get; }
+    public string EditContext { get; init; } = "";
     public DraftOperation? Draft { get; private set; }
     public string Label => Field.Definition.Label + (Field.Definition.Suffix ?? string.Empty);
     public string Section => Field.Definition.Section;
@@ -64,7 +68,7 @@ public sealed class WeaponFieldViewModel : ObservableObject
             _debounce?.Dispose();
             _debounce = new CancellationTokenSource();
             var token = _debounce.Token;
-            _pendingPersistence = PersistLaterAsync(IsChoiceEditor || IsReferenceEditor ? TimeSpan.Zero : TimeSpan.FromMilliseconds(300), token);
+            _pendingPersistence = PersistLaterAsync(IsChoiceEditor || IsReferenceEditor ? TimeSpan.Zero : TimeSpan.FromMilliseconds(300), token, _pendingPersistence);
         }
     }
 
@@ -88,12 +92,14 @@ public sealed class WeaponFieldViewModel : ObservableObject
 
         _pendingPersistence = PersistLaterAsync(TimeSpan.Zero, CancellationToken.None);
         await _pendingPersistence;
+        if (_saveError is not null) throw new InvalidOperationException(StatusText, _saveError);
     }
 
     public void MarkPersisted(DraftOperation? operation, string normalized, string message)
     {
+        _saveError = null;
         Draft = operation;
-        _editValue = normalized;
+        if (_savingValue is null || EditValue == _savingValue) _editValue = normalized;
         _persistedValue = normalized;
         OnPropertyChanged(nameof(EditValue));
         OnPropertyChanged(nameof(SelectedReference));
@@ -104,8 +110,7 @@ public sealed class WeaponFieldViewModel : ObservableObject
 
     public void Revert(string message)
     {
-        _editValue = Draft?.TargetValue ?? Field.DisplayValue;
-        OnPropertyChanged(nameof(EditValue));
+        _saveError = new InvalidOperationException(message);
         OnPropertyChanged(nameof(SelectedReference));
         StatusText = message;
     }
@@ -116,8 +121,9 @@ public sealed class WeaponFieldViewModel : ObservableObject
         OnPropertyChanged(nameof(IsEditable));
     }
 
-    private async Task PersistLaterAsync(TimeSpan delay, CancellationToken token)
+    private async Task PersistLaterAsync(TimeSpan delay, CancellationToken token, Task? previous = null)
     {
+        if (previous is not null) await previous;
         try
         {
             if (delay > TimeSpan.Zero)
@@ -125,6 +131,9 @@ public sealed class WeaponFieldViewModel : ObservableObject
                 await Task.Delay(delay, token);
             }
 
+            token.ThrowIfCancellationRequested();
+            _saveError = null;
+            _savingValue = EditValue;
             await _persist(this);
         }
         catch (OperationCanceledException)
@@ -132,7 +141,9 @@ public sealed class WeaponFieldViewModel : ObservableObject
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
+            _saveError = exception;
             StatusText = $"草稿保存失败：{exception.Message}";
         }
+        finally { _savingValue = null; }
     }
 }

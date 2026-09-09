@@ -30,7 +30,7 @@ internal static partial class Program
         var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)window.Width, (int)window.Height, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
         bitmap.Render(content);
         var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder(); encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
-        var directory = Path.GetFullPath("publish/qa-1.8.5"); Directory.CreateDirectory(directory);
+        var directory = Path.GetFullPath("publish/qa-1.8.6"); Directory.CreateDirectory(directory);
         using var stream = File.Create(Path.Combine(directory, name)); encoder.Save(stream);
     }
     private static async Task StrategicCompositionTransaction()

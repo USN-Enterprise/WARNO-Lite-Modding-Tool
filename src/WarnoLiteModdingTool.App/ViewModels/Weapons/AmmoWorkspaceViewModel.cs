@@ -12,6 +12,7 @@ public sealed class AmmoWorkspaceViewModel : ObservableObject
 {
     private readonly WeaponWorkspaceData _data;
     private readonly DraftStore _draftStore;
+    private readonly PendingFieldEdits<WeaponFieldViewModel> _fieldEdits;
     private readonly UnitWorkspaceViewModel _transactions;
     private readonly Action<string> _setStatus;
     private AmmoListItemViewModel? _selectedAmmo;
@@ -46,6 +47,7 @@ public sealed class AmmoWorkspaceViewModel : ObservableObject
         }).ToArray();
         AmmunitionView = new ListCollectionView(Ammunition);
         Fields = [];
+        _fieldEdits = new(Fields, field => field.FlushAsync(), field => field.HasUnsavedEdit);
         FieldSections = [];
         References = [];
         AmmunitionView.Filter = MatchesSearch;
@@ -129,10 +131,7 @@ public sealed class AmmoWorkspaceViewModel : ObservableObject
 
     public async Task FlushAsync()
     {
-        foreach (var field in Fields.ToArray())
-        {
-            await field.FlushAsync();
-        }
+        await _fieldEdits.FlushAsync();
     }
 
     public async Task UndoFieldAsync(WeaponFieldViewModel field)
@@ -240,6 +239,12 @@ public sealed class AmmoWorkspaceViewModel : ObservableObject
             Fields.Add(viewModel);
         }
 
+        for (var i = 0; i < Fields.Count; i++)
+        {
+            var current = Fields[i];
+            Fields[i] = _fieldEdits.Restore(current, old => old.Field.OwnerObjectName == current.Field.OwnerObjectName &&
+                old.Field.Key == current.Field.Key && old.EditContext == current.EditContext);
+        }
         foreach (var section in FieldSectionBuilder.Build(Fields, field => field.Section, field => field.Group))
         {
             FieldSections.Add(section);

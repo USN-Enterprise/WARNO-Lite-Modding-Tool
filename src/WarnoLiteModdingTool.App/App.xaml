@@ -1,7 +1,7 @@
 <Application x:Class="WarnoLiteModdingTool.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             StartupUri="MainWindow.xaml">
+             xmlns:controls="clr-namespace:WarnoLiteModdingTool.App.Controls">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -303,6 +303,8 @@
             </Style>
 
             <Style TargetType="DataGrid">
+                <EventSetter Event="Loaded" Handler="DataGrid_Loaded"/>
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                 <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
@@ -430,10 +432,40 @@
                 <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
             </Style>
         <Style TargetType="ScrollBar">
-<Setter Property="Background" Value="{DynamicResource ControlBrush}"/><Setter Property="Width" Value="14"/>
-<Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ScrollBar"><Grid Background="{TemplateBinding Background}"><Track x:Name="PART_Track" IsDirectionReversed="True" Orientation="{TemplateBinding Orientation}" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{TemplateBinding Value}" ViewportSize="{TemplateBinding ViewportSize}"><Track.DecreaseRepeatButton><RepeatButton x:Name="PageDecrease" Command="ScrollBar.PageUpCommand" Opacity="0"/></Track.DecreaseRepeatButton><Track.Thumb><Thumb><Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="{DynamicResource MutedTextBrush}" CornerRadius="4" Margin="3"/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb><Track.IncreaseRepeatButton><RepeatButton x:Name="PageIncrease" Command="ScrollBar.PageDownCommand" Opacity="0"/></Track.IncreaseRepeatButton></Track></Grid><ControlTemplate.Triggers><Trigger Property="Orientation" Value="Horizontal"><Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False"/><Setter TargetName="PageDecrease" Property="Command" Value="ScrollBar.PageLeftCommand"/><Setter TargetName="PageIncrease" Property="Command" Value="ScrollBar.PageRightCommand"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
-<Style.Triggers><Trigger Property="Orientation" Value="Horizontal"><Setter Property="Width" Value="Auto"/><Setter Property="Height" Value="14"/></Trigger></Style.Triggers>
-</Style>
+            <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Template"><Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Grid Background="{TemplateBinding Background}">
+                        <Track x:Name="PART_Track" IsDirectionReversed="True" Orientation="{TemplateBinding Orientation}"
+                               Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}"
+                               Value="{TemplateBinding Value}" ViewportSize="{TemplateBinding ViewportSize}">
+                            <Track.Resources>
+                                <sys:Double xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Key="{x:Static SystemParameters.VerticalScrollBarButtonHeightKey}">56</sys:Double>
+                                <sys:Double xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Key="{x:Static SystemParameters.HorizontalScrollBarButtonWidthKey}">56</sys:Double>
+                            </Track.Resources>
+                            <Track.DecreaseRepeatButton><RepeatButton x:Name="PageDecrease" Command="ScrollBar.PageUpCommand" Opacity="0"/></Track.DecreaseRepeatButton>
+                            <Track.Thumb><Thumb x:Name="ScrollThumb"><Thumb.Template><ControlTemplate TargetType="Thumb">
+                                <Border x:Name="Grip" Background="{DynamicResource MutedTextBrush}" CornerRadius="5" Margin="2"/>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Grip" Property="Background" Value="{DynamicResource AccentBrush}"/></Trigger>
+                                    <Trigger Property="IsDragging" Value="True"><Setter TargetName="Grip" Property="Background" Value="{DynamicResource AccentBrush}"/></Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+                            <Track.IncreaseRepeatButton><RepeatButton x:Name="PageIncrease" Command="ScrollBar.PageDownCommand" Opacity="0"/></Track.IncreaseRepeatButton>
+                        </Track>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Orientation" Value="Horizontal">
+                            <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False"/>
+                            <Setter TargetName="PageDecrease" Property="Command" Value="ScrollBar.PageLeftCommand"/>
+                            <Setter TargetName="PageIncrease" Property="Command" Value="ScrollBar.PageRightCommand"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value></Setter>
+            <Style.Triggers><Trigger Property="Orientation" Value="Horizontal"><Setter Property="Width" Value="Auto"/><Setter Property="Height" Value="18"/></Trigger></Style.Triggers>
+        </Style>
 </ResourceDictionary>
     </Application.Resources>
 </Application>

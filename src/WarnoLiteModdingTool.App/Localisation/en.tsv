@@ -651,7 +651,7 @@ Pack 与索引|Packs & Indices
 {0} / {1}|{0} / {1}
 {0}：{1} → {2}|{0}: {1} → {2}
 
-1.8.5 · 单位简化与游戏规则|1.8.5 · Unit editing and game rules
+1.8.7 · 单实例运行|1.8.7 · Single-instance mode
 
 搜索弹药名称、内部名、token或源文件|Search ammo name, internal ID, token or source file
 默认初始资金|Default starting funds
@@ -759,3 +759,14 @@ GDC 显示门槛：0 / 1768 / 2651 / 3535 / 5301 / 7068。原版常见组合（�
 修改保存为草稿；在草稿中心应用。参战名额变化会联动表长，新增列沿用末列值。|Changes are saved as drafts; apply them in the draft center. Battle slot changes resize related tables; new cells repeat the last value.
 元组数量|Tuple count
 元组索引|Tuple index
+
+最小化|Minimize
+最大化 / 还原|Maximize / Restore
+正在保存草稿，请稍候。|Saving drafts. Please wait.
+草稿保存失败，已保留当前项目和输入：{0}|Could not save drafts. Your current project and input have been kept: {0}
+请先修正当前输入。|Please correct the current input first.
+无法切换项目|Could not switch projects
+当前作用域没有有效的 Weapon/Ammo 引用。|The current scope has no valid Weapon/Ammo references.
+
+已在运行|Already running
+WARNO Lite Modding Tool 已在运行。|WARNO Lite Modding Tool is already running.

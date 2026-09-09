@@ -8,14 +8,36 @@ namespace WarnoLiteModdingTool.App;
 
 public partial class App : Application
 {
+    private SingleInstanceGate? _singleInstance;
+    private void DataGrid_Loaded(object sender, RoutedEventArgs e) =>
+        Controls.ResponsiveColumns.SetEnabled((DependencyObject)sender, true);
+
     protected override void OnStartup(StartupEventArgs e)
     {
+        _singleInstance = SingleInstanceGate.TryAcquire();
+        if (_singleInstance is null)
+        {
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            Localisation.UiText.Current.SetLanguage(new Settings.UiSettings().Load().Language);
+            MessageBox.Show("WARNO Lite Modding Tool 已在运行。", "已在运行", MessageBoxButton.OK, MessageBoxImage.Information);
+            Shutdown();
+            return;
+        }
+
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnDomainUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
         ThemeManager.Initialize();
         Localisation.UiText.Current.SetLanguage(new Settings.UiSettings().Load().Language);
         base.OnStartup(e);
+        MainWindow = new MainWindow();
+        MainWindow.Show();
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        try { base.OnExit(e); }
+        finally { _singleInstance?.Dispose(); }
     }
 
     private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

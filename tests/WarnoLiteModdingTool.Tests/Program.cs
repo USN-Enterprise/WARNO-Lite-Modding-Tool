@@ -30,6 +30,8 @@ internal static partial class Program
 
     private static async Task<int> Main(string[] args)
     {
+        if (args is ["--single-instance-probe", var mutexName, var mode]) return SingleInstanceProbe(mutexName, mode);
+        if (args is ["--duplicate-startup-probe"]) return DuplicateStartupProbe();
         if (args is ["--scan-rules", var rulesPath]) { var rules=Core.Rules.RuleWorkspace.Load(rulesPath); foreach(var g in rules.Groups) Console.WriteLine($"{g.Definition.Number}. {g.Definition.Label}: {(g.CanEdit ? string.Join(", ",g.Cells.Select(c=>c.Raw)) : g.Error)}"); return rules.Groups.All(g=>g.CanEdit)?0:1; }
         if (args is ["--scan-strategic", var strategicPath])
         {
@@ -139,6 +141,9 @@ internal static partial class Program
             ("P6 三种取整与上下限顺序稳定", P6AppliesRoundingAndBounds),
             ("P6 已有草稿作为当前值并可批量恢复基线", P6UsesDraftValueAndCanRestoreBaseline),
             ("P6 无效目标原子拒绝且批量草稿一次持久化", P6RejectsInvalidTargetsAndPersistsAtomically),
+            ("1.8.7 单实例进程竞争与启动弹窗", SingleInstance187),
+            ("1.8.6 F3 全模块离开保存与失败重试", DraftLifecycle186),
+            ("1.8.6 表格列宽分配", ColumnAllocation186),
             ("WPF 窗口支持双主题、筛选标注、草稿总览、Ammo 直编与项目打开", WpfWindowSwitchesThemesAndOpensProjects)
         };
 
@@ -1935,7 +1940,8 @@ internal static partial class Program
                     TestAssert.True(viewModel.AmmoWorkspace is not null, "Ammo 源文件独立存在时仍应开放直接编辑器");
                     TestAssert.Equal("ammo", viewModel.SelectedModule?.Key, "Ammo-only 项目应默认进入首个可用的弹药模块");
                     TestAssert.True(viewModel.IsAmmoModule, "Ammo-only 项目不应退回通用只读索引");
-                    window.Close();
+                    RunWithDispatcher(viewModel.OpenProjectAsync(root), window.Dispatcher);
+                    Verify186Ui(viewModel, window, root);
                     application.Shutdown();
                     if (failure is not null)
                     {

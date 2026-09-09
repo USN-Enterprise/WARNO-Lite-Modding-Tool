@@ -330,7 +330,41 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    public bool CanOpenProject => !IsScanning && !IsOfficialCommandBusy;
+    private bool _isSavingBeforeLeave;
+    public bool IsSavingBeforeLeave => _isSavingBeforeLeave;
+    public bool CanInteract => !_isSavingBeforeLeave;
+    public bool CanOpenProject => !IsScanning && !IsOfficialCommandBusy && !_isSavingBeforeLeave;
+
+    public async Task SaveBeforeLeavingAsync()
+    {
+        if (_isSavingBeforeLeave) throw new InvalidOperationException("正在保存草稿，请稍候。");
+        _isSavingBeforeLeave = true;
+        OnPropertyChanged(nameof(IsSavingBeforeLeave));
+        OnPropertyChanged(nameof(CanInteract));
+        OnPropertyChanged(nameof(CanOpenProject));
+        try
+        {
+            if (UnitWorkspace is not null) await UnitWorkspace.FlushAsync();
+            if (WeaponWorkspace is not null) await WeaponWorkspace.FlushAsync();
+            if (AmmoWorkspace is not null) await AmmoWorkspace.FlushAsync();
+            if (DivisionWorkspace is not null) await DivisionWorkspace.FlushAsync();
+            if (RulesWorkspace is not null) await RulesWorkspace.FlushAsync();
+            if (StrategicWorkspace is not null) await StrategicWorkspace.FlushAsync();
+        }
+        catch (Exception exception)
+        {
+            StatusText = $"草稿保存失败，已保留当前项目和输入：{exception.Message}";
+            RecordToolProblem("草稿保存失败", exception);
+            throw;
+        }
+        finally
+        {
+            _isSavingBeforeLeave = false;
+            OnPropertyChanged(nameof(IsSavingBeforeLeave));
+            OnPropertyChanged(nameof(CanInteract));
+            OnPropertyChanged(nameof(CanOpenProject));
+        }
+    }
 
     public bool AdvancedMode
     {
@@ -428,8 +462,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public async Task OpenProjectAsync(string selectedRoot)
     {
-        if (RulesWorkspace is not null) await RulesWorkspace.FlushAsync();
-        if (StrategicWorkspace is not null) await StrategicWorkspace.FlushAsync();
+        await SaveBeforeLeavingAsync();
         CancelScan();
         ResetProjectResults();
 
@@ -606,7 +639,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                 RulesWorkspace = new RulesWorkspaceViewModel(unitData.Rules!, _draftStore, UnitWorkspace.RefreshExternalDraftState);
                 OnPropertyChanged(nameof(RulesWorkspace)); OnPropertyChanged(nameof(IsRulesModule));
-                ProjectSummary = $"1.8.5 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
+                ProjectSummary = $"1.8.7 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
             }
 
             RefreshMode();

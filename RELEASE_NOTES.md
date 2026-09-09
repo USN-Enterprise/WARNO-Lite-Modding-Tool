@@ -6,6 +6,19 @@
 
 仅列出功能更新和影响使用的问题修复。
 
+## 1.8.7 — 2026-09-09
+
+- 禁止同时打开多个程序实例；重复启动时提示“已在运行”，确认后退出。
+
+## 1.8.6 — 2026-09-09
+
+- 批量编辑的原参数备注移到输入框右侧，输入控件保持对齐。
+- 全界面滚动条滑块加粗，长列表中的滑块也更容易看见和拖动。
+- 左侧功能模块列表支持上下滚动，窗口较小时仍可访问底部模块。
+- 主窗口标题栏适当增高，改善最大化时的视觉比例。
+- 表格列宽随可用空间自动调整，优先显示完整表头；窄区域保留最小可读宽度，必要时可横向滚动。
+- 修复修改后立即切换项目或关闭窗口可能丢失最后输入的问题；保存失败时保留当前项目和输入，支持重试。
+
 ## 1.8.5 — 2026-09-08
 
 - 修复合法游戏常量被误报为语法错误的问题。
@@ -111,6 +124,19 @@
 [中文](#chinese) | [English](#english)
 
 Feature updates and fixes that affect everyday use.
+
+## 1.8.7 — 2026-09-09
+
+- Prevents multiple instances from running at once. A duplicate launch displays “Already running” and exits after dismissal.
+
+## 1.8.6 — 2026-09-09
+
+- Moved original parameter notes to the right of batch inputs and aligned the input controls.
+- Made scrollbar thumbs thicker and easier to see and drag, including in long lists.
+- Enabled vertical scrolling in the module sidebar so all modules remain accessible in smaller windows.
+- Increased the main title bar height for more balanced proportions when maximized.
+- Tables now adapt column widths to available space, keeping headers readable and allowing horizontal scrolling when needed.
+- Fixed loss of the last edit when switching projects or closing immediately after typing. Failed saves keep the current project and input available for retry.
 
 ## 1.8.5 — 2026-09-08
 

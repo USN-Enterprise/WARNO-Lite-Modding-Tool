@@ -308,6 +308,8 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
     private readonly Action _draftsChanged;
     private readonly Dictionary<string, CancellationTokenSource> _persistCancellations = new(StringComparer.Ordinal);
     private readonly HashSet<Task> _pendingPersists = [];
+    private readonly SemaphoreSlim _saveGate = new(1, 1);
+    private readonly Dictionary<string, (DivisionListItemViewModel Item, DivisionEditState State)> _unsavedStates = [];
     private DivisionListItemViewModel? _selectedDivision;
     private DivisionUnitRuleViewModel? _selectedRule;
     private DivisionPackViewModel? _selectedPack;
@@ -677,31 +679,12 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
 
     public async Task FlushAsync()
     {
-        if (SelectedDivision is { } selected)
-        {
-            if (_persistCancellations.Remove(selected.InternalName, out var cancellation))
-            {
-                cancellation.Cancel();
-                cancellation.Dispose();
-            }
-
-            var currentRaw = DivisionDraftCodec.Serialize(BuildState());
-            var storedRaw = _draftStore.Operations.FirstOrDefault(item =>
-                    item.TargetKind == DraftTargetKind.DivisionPlan && item.ObjectName == selected.InternalName)?.TargetRaw
-                ?? DivisionDraftCodec.Serialize(selected.Division.Baseline);
-            if (!string.Equals(currentRaw, storedRaw, StringComparison.Ordinal))
-            {
-                await PersistStateAsync(selected, BuildState());
-            }
-        }
-
+        foreach (var cancellation in _persistCancellations.Values) cancellation.Cancel();
         Task[] pending;
-        lock (_pendingPersists)
-        {
-            pending = _pendingPersists.ToArray();
-        }
-
+        lock (_pendingPersists) pending = _pendingPersists.ToArray();
         await Task.WhenAll(pending);
+        foreach (var entry in _unsavedStates.Values.ToArray())
+            await PersistStateAsync(entry.Item, entry.State);
     }
 
     public void RefreshFromDrafts()
@@ -749,6 +732,7 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
                 state = target;
             }
 
+            if (_unsavedStates.TryGetValue(SelectedDivision.InternalName, out var unsaved)) state = unsaved.State;
             _maxActivationPoints = state.MaxActivationPoints;
             _interfaceOrder = state.InterfaceOrder;
             _coalition = state.Coalition;
@@ -864,6 +848,7 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
 
         var selected = SelectedDivision;
         var state = BuildState();
+        _unsavedStates[selected.InternalName] = (selected, state);
         if (_persistCancellations.Remove(selected.InternalName, out var previous))
         {
             previous.Cancel();
@@ -913,6 +898,13 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
 
     private async Task PersistStateAsync(DivisionListItemViewModel selected, DivisionEditState state)
     {
+        await _saveGate.WaitAsync();
+        try { await PersistStateCoreAsync(selected, state); }
+        finally { _saveGate.Release(); }
+    }
+
+    private async Task PersistStateCoreAsync(DivisionListItemViewModel selected, DivisionEditState state)
+    {
         if (!selected.CanEdit)
         {
             return;
@@ -953,6 +945,8 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
             await _draftStore.UpsertAsync(operation);
         }
 
+        if (_unsavedStates.TryGetValue(selected.InternalName, out var saved) && ReferenceEquals(saved.State, state))
+            _unsavedStates.Remove(selected.InternalName);
         RefreshDraftStatuses();
         var errors = DivisionStateValidator.Validate(_data, division, state);
         if (SelectedDivision?.InternalName == selected.InternalName)

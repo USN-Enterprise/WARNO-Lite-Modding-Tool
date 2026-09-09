@@ -21,6 +21,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
     private readonly WeaponWorkspaceData? _weaponData;
     private readonly DivisionWorkspaceData? _divisionData;
     private readonly DraftStore _draftStore;
+    private readonly PendingFieldEdits<UnitFieldViewModel> _fieldEdits;
     private readonly Action<string> _setStatus;
     private readonly Func<Task> _reloadProject;
     private readonly UnitTransactionService _transactions = new();
@@ -62,6 +63,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
         _reloadProject = reloadProject;
         Units = new ObservableCollection<UnitListItemViewModel>(data.Units.Select(unit => new UnitListItemViewModel(unit, BatchSelectionChanged)));
         Fields = [];
+        _fieldEdits = new(Fields, field => field.FlushAsync(), field => field.HasUnsavedEdit);
         FieldSections = [];
         CommonBatchFields = [];
         ActiveFilterTags = [];
@@ -640,6 +642,12 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
         }
     }
 
+    public async Task FlushAsync()
+    {
+        await _fieldEdits.FlushAsync();
+        await WaitForPendingEditsAsync();
+    }
+
     public async Task<ApplyPreview> PrepareApplyAsync(Func<Task>? flushRelatedEditors = null, IReadOnlySet<string>? selectedIds = null)
     {
         if (IsTransactionBusy)
@@ -657,12 +665,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
                 await flushRelatedEditors();
             }
 
-            foreach (var field in Fields)
-            {
-                await field.FlushAsync();
-            }
-
-            await WaitForPendingEditsAsync();
+            await FlushAsync();
             RefreshDraftState();
             if (!HasDrafts || DraftItems.Any(item => (selectedIds == null || selectedIds.Contains(item.Resolved.Operation.Id)) && item.Resolved.Status == DraftResolutionStatus.Conflict))
             {
@@ -783,6 +786,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
             }
             var group="armor:"+Guid.NewGuid().ToString("N");
             await _draftStore.ApplyBatchAsync(upserts.Select(o=>o with {GroupId=group}).ToArray(),removes);
+            if (fieldViewModel.IsCurrentEdit(input)) fieldViewModel.MarkPersisted(_draftStore.Operations.LastOrDefault(o => o.ObjectName == fieldViewModel.Unit.Name && o.FieldKey == fieldViewModel.Key), input, "草稿已保存");
             RefreshDraftState();RebuildFields();return;
         }
         if (!Advanced.EditorMode.IsAdvanced && fieldViewModel.Key is "recon.vision.standard" or "recon.optics.standard")
@@ -791,6 +795,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
             {
                 var preview = VisionRatio.Preview(fieldViewModel.Unit, fieldViewModel.Key, input, _draftStore.Operations);
                 await _draftStore.ApplyBatchAsync(preview.Upserts, preview.RemoveOperationIds);
+                if (fieldViewModel.IsCurrentEdit(input)) fieldViewModel.MarkPersisted(_draftStore.Operations.LastOrDefault(o => o.ObjectName == fieldViewModel.Unit.Name && o.FieldKey == fieldViewModel.Key), input, "草稿已保存");
                 RefreshDraftState(); RebuildFields();
             }
             catch (Exception ex) { fieldViewModel.RevertAfterFailure(ex.Message); }
@@ -1033,6 +1038,11 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
             if(field.Definition.Key=="armor.front.family")Fields.Last().HasMixedArmor=new[]{"front","side","rear","top"}.Select(side=>resolved.FirstOrDefault(r=>r.Status==DraftResolutionStatus.Active&&r.Operation.FieldKey=="armor."+side+".family")?.Operation.TargetValue??unit.Field("armor."+side+".family")?.DisplayValue).Distinct().Count()>1;
         }
 
+        for (var i = 0; i < Fields.Count; i++)
+        {
+            var current = Fields[i];
+            Fields[i] = _fieldEdits.Restore(current, old => old.Unit.Name == current.Unit.Name && old.Key == current.Key);
+        }
         foreach (var section in FieldSectionBuilder.Build(Fields.Where(f=>f.IsVisible), field => field.Section, field => field.Group))
         {
             if(sameUnit&&prior.TryGetValue(section.Title,out var expanded))section.IsExpanded=expanded;

@@ -230,7 +230,7 @@ public partial class MainWindow : Window
         {
             var result = await _viewModel.CreateModAsync(dialog.ModsRoot, dialog.ModName);
             MessageBox.Show(this, $"Mod 已创建：\n{result.ModRoot}", "创建完成", MessageBoxButton.OK, MessageBoxImage.Information);
-            await _viewModel.OpenProjectAsync(result.ModRoot);
+            await OpenSelectedProjectAsync(result.ModRoot);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
@@ -271,7 +271,7 @@ public partial class MainWindow : Window
     {
         if (!_viewModel.CanOpenProject) return;
         var finder = new Controls.ModFinderWindow(new WarnoLiteModdingTool.Core.Projects.WarnoModsRootStore().Load()) { Owner = this };
-        if (finder.ShowDialog() == true && finder.SelectedPath is { } path) await _viewModel.OpenProjectAsync(path);
+        if (finder.ShowDialog() == true && finder.SelectedPath is { } path) { await OpenSelectedProjectAsync(path); }
     }
 
     private async void OpenProject_Click(object sender, RoutedEventArgs e)
@@ -284,7 +284,7 @@ public partial class MainWindow : Window
 
         if (dialog.ShowDialog(this) == true)
         {
-            await _viewModel.OpenProjectAsync(dialog.FolderName);
+            await OpenSelectedProjectAsync(dialog.FolderName);
         }
     }
 
@@ -292,7 +292,7 @@ public partial class MainWindow : Window
     {
         if (_viewModel.SelectedRecentProject is { } project)
         {
-            await _viewModel.OpenProjectAsync(project.Path);
+            await OpenSelectedProjectAsync(project.Path);
         }
     }
 
@@ -712,16 +712,39 @@ public partial class MainWindow : Window
     private void StandoutUnits_Click(object sender,RoutedEventArgs e){if(_viewModel.DivisionWorkspace is not {} vm)return;var picker=new Controls.UnitSelectionWindow(vm.UnitOptions.Select(u=>(u.Name,u.DisplayName)),DivisionUnitRuleViewModel.Split(vm.StandoutUnitsText)){Owner=this};if(picker.ShowDialog()==true)vm.StandoutUnitsText=string.Join(", ",picker.SelectedIds);}
     private void RemoveStandout_Click(object sender,RoutedEventArgs e){if(_viewModel.DivisionWorkspace is {} vm&&sender is FrameworkElement {DataContext:DivisionUnitOption unit})vm.StandoutUnitsText=string.Join(", ",DivisionUnitRuleViewModel.Split(vm.StandoutUnitsText).Where(id=>id!=unit.Name));}
     private async void CreateUnit_Click(object sender,RoutedEventArgs e){try{await _viewModel.CreateUnitAsync(this,Equals((sender as FrameworkElement)?.Tag,"edit"));}catch(Exception ex){MessageBox.Show(this,ex.Message,"无法创建单位");}}
+    private async Task OpenSelectedProjectAsync(string root)
+    {
+        if (!_viewModel.CanOpenProject) return;
+        try
+        {
+            CommitActiveEditor();
+            await _viewModel.OpenProjectAsync(root);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(this, exception.Message, "无法切换项目", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private static void CommitActiveEditor()
+    {
+        if (System.Windows.Input.Keyboard.FocusedElement is TextBox text)
+        {
+            text.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            if (Validation.GetHasError(text)) throw new InvalidOperationException("请先修正当前输入。");
+        }
+    }
+
     private bool _closeAfterFlush;
     private bool _closePending;
     private async void Window_Closing(object? sender, CancelEventArgs e)
     {
-        if (!_closeAfterFlush && (_viewModel.StrategicWorkspace is not null || _viewModel.RulesWorkspace is not null))
+        if (!_closeAfterFlush)
         {
             e.Cancel = true;
             if (_closePending) return;
             _closePending = true;
-            try { if(_viewModel.RulesWorkspace is {} rules) await rules.FlushAsync(); if(_viewModel.StrategicWorkspace is {} strategic) await strategic.FlushAsync(); _closeAfterFlush = true; _ = Dispatcher.BeginInvoke(new Action(() => { _closePending=false; try { Close(); } catch(Exception ex) { _closeAfterFlush=false; _viewModel.RecordToolProblem("关闭窗口失败", ex); } })); }
+            try { CommitActiveEditor(); await _viewModel.SaveBeforeLeavingAsync(); _closeAfterFlush = true; _ = Dispatcher.BeginInvoke(new Action(() => { _closePending=false; try { Close(); } catch(Exception ex) { _closeAfterFlush=false; _viewModel.RecordToolProblem("关闭窗口失败", ex); } })); }
             catch (Exception exception) { _closePending=false; _viewModel.RecordToolProblem("草稿保存失败", exception); }
             return;
         }

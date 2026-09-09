@@ -14,6 +14,7 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
     private readonly IReadOnlyList<WeaponFieldViewModel.ReferenceChoice> _ammoChoicesEnglish;
     private readonly IReadOnlyList<WeaponFieldViewModel.ReferenceChoice> _ammoChoicesChinese;
     private readonly DraftStore _draftStore;
+    private readonly PendingFieldEdits<WeaponFieldViewModel> _fieldEdits;
     private readonly UnitWorkspaceViewModel _transactions;
     private readonly Action<string> _setStatus;
     private UnitListItemViewModel? _selectedUnit;
@@ -41,6 +42,7 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
         Weapons = [];
         Mounts = [];
         Fields = [];
+        _fieldEdits = new(Fields, field => field.FlushAsync(), field => field.HasUnsavedEdit);
         FieldSections = [];
         ScopeOptions = ["仅当前 Unit", "所选 Unit", "全部引用"];
         WeaponChoices = data.Weapons.Select(item => item.Name).Order(StringComparer.Ordinal).ToArray();
@@ -270,10 +272,7 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
 
     public async Task FlushAsync()
     {
-        foreach (var field in Fields.ToArray())
-        {
-            await field.FlushAsync();
-        }
+        await _fieldEdits.FlushAsync();
     }
 
     public async Task ReplaceWeaponAsync()
@@ -349,7 +348,7 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
         OnPropertyChanged(nameof(CanReplaceWeapon));
     }
 
-    private async Task PersistFieldAsync(WeaponFieldViewModel viewModel)
+    private async Task PersistFieldAsync(WeaponFieldViewModel viewModel, string? weaponName, int? mountIndex, DraftEditScope scope, string scopeLabel, IReadOnlyList<string> selectedUnits)
     {
         if (!WeaponValueConverter.TryFormat(viewModel.Field, viewModel.EditValue, out var normalized, out var raw, out var error))
         {
@@ -364,7 +363,12 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
             WeaponFieldOwner.MountedWeapon when viewModel.Field.Definition.FieldName == "Ammunition" => DraftTargetKind.MountedWeaponAmmo,
             _ => DraftTargetKind.WeaponField
         };
-        var scopeUnits = ScopeUnits(SelectedWeapon?.Name, owner == WeaponFieldOwner.Ammo ? viewModel.Field.OwnerObjectName : null);
+        var affected = owner == WeaponFieldOwner.Ammo
+            ? _data.References.AmmoUnits.GetValueOrDefault(viewModel.Field.OwnerObjectName) ?? []
+            : _data.References.WeaponUnits.GetValueOrDefault(weaponName ?? "") ?? [];
+        if (scope != DraftEditScope.AllReferences && (selectedUnits.Count == 0 || selectedUnits.Any(unit => !affected.Contains(unit))))
+            throw new InvalidOperationException("当前作用域没有有效的 Weapon/Ammo 引用。");
+        var scopeUnits = selectedUnits;
         var relative = viewModel.Field.Location.RelativeSourceFile;
         var operation = new DraftOperation(
             DraftOperation.CreateId(kind, relative, viewModel.Field.OwnerObjectName, viewModel.Field.Key),
@@ -381,14 +385,14 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
             viewModel.Field.RawValue,
             normalized,
             raw,
-            $"{viewModel.Field.OwnerObjectName} · {viewModel.Field.Definition.Label}：{viewModel.Field.DisplayValue} → {normalized}（{SelectedScope}）",
+            $"{viewModel.Field.OwnerObjectName} · {viewModel.Field.Definition.Label}：{viewModel.Field.DisplayValue} → {normalized}（{scopeLabel}）",
             null,
             false,
             DateTimeOffset.UtcNow,
-            EditScope: ToScope(),
+            EditScope: scope,
             SelectedUnitNames: scopeUnits,
-            ContextWeaponName: SelectedWeapon?.Name,
-            ContextIndex: SelectedMount?.Mount.Index);
+            ContextWeaponName: weaponName,
+            ContextIndex: mountIndex);
 
         if (normalized == viewModel.Field.DisplayValue)
         {
@@ -500,12 +504,27 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
                 _ => DraftTargetKind.WeaponField
             };
             var id = DraftOperation.CreateId(kind, field.Location.RelativeSourceFile, field.OwnerObjectName, field.Key);
-            var viewModel = new WeaponFieldViewModel(field, resolved.GetValueOrDefault(id), PersistFieldAsync);
+            var weaponName = SelectedWeapon.Name;
+            var mountIndex = SelectedMount.Mount.Index;
+            var scope = ToScope();
+            var scopeLabel = SelectedScope;
+            IReadOnlyList<string> selectedUnits = scope == DraftEditScope.AllReferences ? [] :
+                scope == DraftEditScope.CurrentUnit ? new[] { SelectedUnit?.InternalName ?? "" } :
+                Units.Where(unit => unit.IsWeaponScopeSelected).Select(unit => unit.InternalName).ToArray();
+            var viewModel = new WeaponFieldViewModel(field, resolved.GetValueOrDefault(id),
+                vm => PersistFieldAsync(vm, weaponName, mountIndex, scope, scopeLabel, selectedUnits))
+            { EditContext = weaponName + ":" + mountIndex + ":" + scope + ":" + string.Join(",", selectedUnits) };
             if(field.Definition.FieldName=="Ammunition")viewModel.SetAmmoChoices(Localisation.UiText.Current.English?_ammoChoicesEnglish:_ammoChoicesChinese);
             viewModel.SetLocked(_transactions.IsTransactionBusy);
             Fields.Add(viewModel);
         }
 
+        for (var i = 0; i < Fields.Count; i++)
+        {
+            var current = Fields[i];
+            Fields[i] = _fieldEdits.Restore(current, old => old.Field.OwnerObjectName == current.Field.OwnerObjectName &&
+                old.Field.Key == current.Field.Key && old.EditContext == current.EditContext);
+        }
         foreach (var section in FieldSectionBuilder.Build(Fields, field => field.Section, field => field.Group))
         {
             FieldSections.Add(section);

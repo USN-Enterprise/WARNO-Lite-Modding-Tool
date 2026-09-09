@@ -40,6 +40,7 @@ public sealed class StrategicWorkspaceViewModel : ObservableObject
     private readonly Action<string> _status;
     private Task _pending = Task.CompletedTask;
     private Exception? _saveError;
+    private readonly Dictionary<string, DraftOperation> _unsaved = [];
     private bool _loading;
     private bool _locked;
     private bool _conflict;
@@ -70,7 +71,16 @@ public sealed class StrategicWorkspaceViewModel : ObservableObject
     public void SetPawnValue(string key, string value) { if (_pawn.GetValueOrDefault(key) == value) return; _pawn[key] = value; Save(); }
     public event Action? SelectionRestored;
     public void SetTransactionLocked(bool value) { _locked = value; OnPropertyChanged(nameof(CanEdit)); OnPropertyChanged(nameof(CanEditRoster)); }
-    public async Task FlushAsync() { await _pending; if (_saveError is not null) throw new IOException("战略草稿保存失败", _saveError); }
+    public async Task FlushAsync()
+    {
+        await _pending;
+        foreach (var operation in _unsaved.Values.ToArray())
+        {
+            _pending = PersistAsync(Task.CompletedTask, operation);
+            await _pending;
+            if (_unsaved.ContainsKey(operation.Id)) throw new IOException("战略草稿保存失败", _saveError);
+        }
+    }
 
     public void Restore()
     {
@@ -80,7 +90,7 @@ public sealed class StrategicWorkspaceViewModel : ObservableObject
         Error = Selected?.Error ?? "";
         if (Selected is { } record)
         {
-            var operation = _store.Operations.FirstOrDefault(o => o.TargetKind == DraftTargetKind.StrategicPlan && o.ObjectName == record.Id);
+            var operation = _unsaved.Values.FirstOrDefault(o => o.ObjectName == record.Id) ?? _store.Operations.FirstOrDefault(o => o.TargetKind == DraftTargetKind.StrategicPlan && o.ObjectName == record.Id);
             var state = record.Baseline;
             if (operation is not null)
             {
@@ -180,6 +190,7 @@ public sealed class StrategicWorkspaceViewModel : ObservableObject
         if(Roots.Count>0)Roots[0].Name=PawnName;
         _originalRoster = System.Text.Json.JsonSerializer.Serialize(state.Companies) == System.Text.Json.JsonSerializer.Serialize(Selected.Baseline.Companies);
         var operation = StrategicCodec.Operation(Selected, state);
+        _unsaved[operation.Id] = operation;
         var previous = _pending;
         _pending = PersistAsync(previous, operation);
     }
@@ -190,6 +201,7 @@ public sealed class StrategicWorkspaceViewModel : ObservableObject
         {
             if (operation.BaselineValue == operation.TargetValue) await _store.RemoveAsync(operation.Id);
             else await _store.UpsertAsync(operation);
+            if (_unsaved.TryGetValue(operation.Id, out var saved) && ReferenceEquals(saved, operation)) _unsaved.Remove(operation.Id);
             _saveError = null;
             Error = StrategicPlanner.Resolve(Data, operation).Reason;
             RefreshList(); _refresh(); _status(Error.Length == 0 ? "战略草稿已保存" : Error);

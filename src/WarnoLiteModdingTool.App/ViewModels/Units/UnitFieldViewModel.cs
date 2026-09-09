@@ -8,6 +8,8 @@ public sealed class UnitFieldViewModel : ObservableObject
 {
     private readonly Func<UnitFieldViewModel, Task> _changed;
     private readonly Action<Task> _trackPending;
+    private Exception? _saveError;
+    public bool HasUnsavedEdit => !string.Equals(EditValue, _persistedValue, StringComparison.Ordinal) || !_pendingPersistence.IsCompleted;
     private readonly bool _baseEditable;
     private string _editValue;
     private string _persistedValue;
@@ -298,10 +300,12 @@ public sealed class UnitFieldViewModel : ObservableObject
         _pendingPersistence = PersistChangedValueAsync(cancellation, false);
         _trackPending(_pendingPersistence);
         await _pendingPersistence;
+        if (_saveError is not null) throw new InvalidOperationException(StatusText, _saveError);
     }
 
     public void MarkPersisted(DraftOperation? operation, string normalizedValue, string message)
     {
+        _saveError = null;
         ActiveDraft = operation;
         _persistedValue = normalizedValue;
         SetEditValue(normalizedValue);
@@ -313,7 +317,7 @@ public sealed class UnitFieldViewModel : ObservableObject
 
     public void RevertAfterFailure(string message)
     {
-        SetEditValue(_persistedValue);
+        _saveError = new InvalidOperationException(message);
         StatusText = message;
     }
 
@@ -326,12 +330,14 @@ public sealed class UnitFieldViewModel : ObservableObject
         _debounceCancellation?.Dispose();
         var cancellation = new CancellationTokenSource();
         _debounceCancellation = cancellation;
-        _pendingPersistence = PersistChangedValueAsync(cancellation, true);
+        _pendingPersistence = PersistChangedValueAsync(cancellation, true, _pendingPersistence);
         _trackPending(_pendingPersistence);
     }
 
-    private async Task PersistChangedValueAsync(CancellationTokenSource cancellation, bool useDelay)
+    private async Task PersistChangedValueAsync(CancellationTokenSource cancellation, bool useDelay, Task? previous = null)
     {
+        if (previous is not null) await previous;
+        if (cancellation.IsCancellationRequested) return;
         try
         {
             if (useDelay && !IsChoiceEditor)
@@ -344,6 +350,8 @@ public sealed class UnitFieldViewModel : ObservableObject
             return;
         }
 
+        if (cancellation.IsCancellationRequested) return;
+        _saveError = null;
         IsBusy = true;
         StatusText = "正在保存草稿…";
         var attemptedValue = EditValue;
