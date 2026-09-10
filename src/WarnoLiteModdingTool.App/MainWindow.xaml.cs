@@ -537,22 +537,6 @@ public partial class MainWindow : Window
         }
     }
 
-    internal async void ReplaceWeapon_Click(object sender, RoutedEventArgs e)
-    {
-        if (_viewModel.WeaponWorkspace is { } workspace)
-        {
-            try
-            {
-                await workspace.ReplaceWeaponAsync();
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
-            {
-                _viewModel.RecordModProblem("无法保存 Weapon 替换", exception.Message, exception, _viewModel.ProjectPath);
-                MessageBox.Show(this, exception.Message, "无法保存 Weapon 替换", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-    }
-
     internal async void UndoWeaponField_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: WeaponFieldViewModel field } && _viewModel.WeaponWorkspace is { } workspace)

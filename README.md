@@ -4,7 +4,7 @@
 
 <a id="chinese"></a>
 
-当前版本：**1.9.3**。新增上次 Mod 的本机加载缓存；设置→常规可开关或清除缓存，默认开启，下次打开生效。首次完整加载后，再次打开未变化的 Mod 可复用对象索引、单位字段与武器关系。
+当前版本：**1.9.4**。移除武器页整套 Weapon 替换入口；Ammo 替换继续使用右侧“使用的 Ammo”字段。
 
 这是一款面向 WARNO Mod 新手和不熟悉代码的玩家、易于上手的 Windows 图形化数值编辑器。通过可视化界面调整单位、武器、弹药等数值与相关参数，无需手写代码。编辑范围以数值和规则配置为主，不涉及模型、贴图、动画等美术资源的制作或编辑。
 
@@ -105,7 +105,7 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 <a id="english"></a>
 
-Current version: **1.9.3**. Cache the last opened Mod locally for faster reopening. Enable, disable or clear the cache under Settings → General; enabled by default and applied on the next open. Unchanged Mods reuse object indexes, unit fields and weapon relationships after the first load.
+Current version: **1.9.4**. Removed the whole-Weapon replacement controls. Ammo replacement remains available through the existing ammunition field in the right pane.
 
 # WARNO Lite Modding Tool — English
 

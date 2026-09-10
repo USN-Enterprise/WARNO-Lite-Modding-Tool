@@ -6,6 +6,10 @@
 
 仅列出功能更新和影响使用的问题修复。
 
+## 1.9.4 — 2026-09-10
+
+- 移除武器页“替换为已有 Weapon”选择框与保存按钮；保留当前 Weapon、挂载选择及右侧已有 Ammo 替换字段。
+
 ## 1.9.3 — 2026-09-10
 
 - 新增上次成功打开 Mod 的本机解析缓存，加快再次打开；缓存只保留最近一个 Mod，文件变化、程序更新或缓存损坏时自动重新加载。
@@ -151,6 +155,10 @@
 [中文](#chinese) | [English](#english)
 
 Feature updates and fixes that affect everyday use.
+
+## 1.9.4 — 2026-09-10
+
+- Removed the whole-Weapon replacement picker and save button. Current Weapon and mount selection, and the existing Ammo replacement field, remain available.
 
 ## 1.9.3 — 2026-09-10
 

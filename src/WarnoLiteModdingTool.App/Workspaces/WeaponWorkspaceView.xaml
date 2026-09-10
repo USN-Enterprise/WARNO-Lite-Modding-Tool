@@ -70,11 +70,6 @@
                                         </StackPanel>
                                     </Border>
 
-                                    <TextBlock Text="{l:Loc Key='替换为已有 Weapon'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,12,0,4" />
-                                    <controls:SearchPicker ItemsSource="{Binding WeaponWorkspace.WeaponChoices}" SelectedItem="{Binding WeaponWorkspace.ReplacementWeapon}" Placeholder="搜索替换 Weapon" />
-                                    <Button Content="{l:Loc Key='保存 Weapon 替换草稿'}" Style="{StaticResource SecondaryButton}" Margin="0,7,0,0" Padding="9,5"
-                                            IsEnabled="{Binding WeaponWorkspace.CanReplaceWeapon}" Click="ReplaceWeapon_Click" />
-
                                     <Expander Header="{l:Loc Key='表现链（只读）'}" Margin="0,14,0,0" IsExpanded="False">
                                         <TextBlock Text="{Binding WeaponWorkspace.PresentationText}" FontSize="10" TextWrapping="Wrap" Margin="0,7,0,0" />
                                     </Expander>

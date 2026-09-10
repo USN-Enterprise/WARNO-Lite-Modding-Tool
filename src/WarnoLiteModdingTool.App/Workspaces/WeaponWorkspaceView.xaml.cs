@@ -11,7 +11,6 @@ public partial class WeaponWorkspaceView : UserControl
     private void ClearDrafts_Click(object sender, RoutedEventArgs e) => Host.ClearDrafts_Click(sender, e);
     private void ClearWeaponScopeSelection_Click(object sender, RoutedEventArgs e) => Host.ClearWeaponScopeSelection_Click(sender, e);
     private void PreviewApply_Click(object sender, RoutedEventArgs e) => Host.PreviewApply_Click(sender, e);
-    private void ReplaceWeapon_Click(object sender, RoutedEventArgs e) => Host.ReplaceWeapon_Click(sender, e);
     private void SelectVisibleWeaponScope_Click(object sender, RoutedEventArgs e) => Host.SelectVisibleWeaponScope_Click(sender, e);
     private void UndoWeaponField_Click(object sender, RoutedEventArgs e) => Host.UndoWeaponField_Click(sender, e);
     private void WeaponScopeCheck_Click(object sender, RoutedEventArgs e) => Host.WeaponScopeCheck_Click(sender, e);

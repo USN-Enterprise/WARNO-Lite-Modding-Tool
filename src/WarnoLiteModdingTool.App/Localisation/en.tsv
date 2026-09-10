@@ -93,7 +93,6 @@ WARNO Mods 文件夹|WARNO Mods folder
 上传 Mod|Upload Mod
 事务备份与恢复|Transaction backups and restore
 位置：|Location: 
-保存 Weapon 替换草稿|Save weapon replacement draft
 修改作用域|Edit scope
 修改值|Value
 修改内容|Changes
@@ -176,7 +175,6 @@ WARNO Mods 文件夹|WARNO Mods folder
 撤销此项|Undo this edit
 操作|Operation
 收起|Collapse
-替换为已有 Weapon|Replace with an existing Weapon
 最大值（可空）|Maximum (optional)
 最大卡数|Maximum cards
 最小值（可空）|Minimum (optional)

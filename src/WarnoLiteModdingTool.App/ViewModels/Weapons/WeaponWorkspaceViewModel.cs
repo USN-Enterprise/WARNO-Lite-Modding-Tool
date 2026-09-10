@@ -21,7 +21,6 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
     private WeaponRecord? _selectedWeapon;
     private WeaponMountItemViewModel? _selectedMount;
     private string _selectedScope = "仅当前 Unit";
-    private string _replacementWeapon = string.Empty;
     private string _unitSearchText = string.Empty;
 
     public WeaponWorkspaceViewModel(
@@ -45,7 +44,6 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
         _fieldEdits = new(Fields, field => field.FlushAsync(), field => field.HasUnsavedEdit);
         FieldSections = [];
         ScopeOptions = ["仅当前 Unit", "所选 Unit", "全部引用"];
-        WeaponChoices = data.Weapons.Select(item => item.Name).Order(StringComparer.Ordinal).ToArray();
         SelectedUnit = Units.FirstOrDefault();
     }
 
@@ -66,7 +64,6 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
         OnPropertyChanged(nameof(VisibleScopeOptions));
         foreach (var field in Fields) field.RefreshMode();
     }
-    public IReadOnlyList<string> WeaponChoices { get; }
 
     public string UnitSearchText
     {
@@ -105,7 +102,6 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
         {
             if (SetProperty(ref _selectedWeapon, value))
             {
-                ReplacementWeapon = value?.Name ?? string.Empty;
                 RebuildMounts();
                 OnPropertyChanged(nameof(ImpactText));
                 OnPropertyChanged(nameof(SelectedUnitsText));
@@ -140,20 +136,6 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
             }
         }
     }
-
-    public string ReplacementWeapon
-    {
-        get => _replacementWeapon;
-        set
-        {
-            if (SetProperty(ref _replacementWeapon, value ?? string.Empty))
-            {
-                OnPropertyChanged(nameof(CanReplaceWeapon));
-            }
-        }
-    }
-
-    public bool CanReplaceWeapon => SelectedWeapon is not null && ReplacementWeapon.Length > 0 && ReplacementWeapon != SelectedWeapon.Name && !_transactions.IsTransactionBusy;
 
     public string ImpactText
     {
@@ -275,55 +257,6 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
         await _fieldEdits.FlushAsync();
     }
 
-    public async Task ReplaceWeaponAsync()
-    {
-        if (!CanReplaceWeapon || SelectedWeapon is null)
-        {
-            return;
-        }
-
-        var selected = ToScope() == DraftEditScope.AllReferences
-            ? _data.References.WeaponUnits.GetValueOrDefault(SelectedWeapon.Name) ?? []
-            : ScopeUnits(SelectedWeapon.Name, null);
-        if (selected.Count == 0)
-        {
-            throw new InvalidOperationException("当前 Weapon 没有可替换的 Unit 引用。");
-        }
-        var group = $"weapon-replace:{Guid.NewGuid():N}";
-        foreach (var unitName in selected)
-        {
-            var unit = _data.Units.Single(item => item.Name == unitName);
-            var relative = unit.Source.RelativeSourceFile;
-            var key = $"weapon.reference.{SelectedWeapon.Name}";
-            var operation = new DraftOperation(
-                DraftOperation.CreateId(DraftTargetKind.UnitWeaponReference, relative, unit.Name, key),
-                group,
-                DraftTargetKind.UnitWeaponReference,
-                "units",
-                relative,
-                unit.Name,
-                unit.Source.TypeName,
-                key,
-                "ModulesDescriptors.WeaponDescriptor",
-                "Reference",
-                SelectedWeapon.Name,
-                $"$/GFX/Weapon/{SelectedWeapon.Name}",
-                ReplacementWeapon,
-                $"$/GFX/Weapon/{ReplacementWeapon}",
-                $"{unit.DisplayName} · Weapon：{SelectedWeapon.Name} → {ReplacementWeapon}",
-                null,
-                false,
-                DateTimeOffset.UtcNow,
-                EditScope: ToScope(),
-                SelectedUnitNames: selected,
-                ContextWeaponName: SelectedWeapon.Name);
-            await _draftStore.UpsertAsync(operation);
-        }
-
-        _transactions.RefreshExternalDraftState();
-        _setStatus($"已保存 {selected.Count} 个 Unit 的 Weapon 替换草稿；正式文件未改变");
-    }
-
     public async Task UndoFieldAsync(WeaponFieldViewModel field)
     {
         var operation = _draftStore.Operations.FirstOrDefault(item => item.Id == field.Draft?.Id);
@@ -345,7 +278,6 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
             field.SetLocked(locked);
         }
 
-        OnPropertyChanged(nameof(CanReplaceWeapon));
     }
 
     private async Task PersistFieldAsync(WeaponFieldViewModel viewModel, string? weaponName, int? mountIndex, DraftEditScope scope, string scopeLabel, IReadOnlyList<string> selectedUnits)
@@ -410,33 +342,6 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
 
         _transactions.RefreshExternalDraftState();
         _setStatus($"Weapon/Ammo 草稿已保存 · {_draftStore.Operations.Count} 项 · 正式 Mod 文件未改变");
-    }
-
-    private IReadOnlyList<string> ScopeUnits(string? weaponName, string? ammoName)
-    {
-        if (ToScope() == DraftEditScope.AllReferences)
-        {
-            return [];
-        }
-
-        var selected = ToScope() == DraftEditScope.CurrentUnit
-            ? new[] { SelectedUnit?.InternalName ?? string.Empty }
-            : Units.Where(item => item.IsWeaponScopeSelected).Select(item => item.InternalName).ToArray();
-        selected = selected.Where(item => item.Length > 0).Distinct(StringComparer.Ordinal).ToArray();
-        var affected = ammoName is not null
-            ? _data.References.AmmoUnits.GetValueOrDefault(ammoName) ?? []
-            : _data.References.WeaponUnits.GetValueOrDefault(weaponName ?? string.Empty) ?? [];
-        var valid = selected.Where(item => affected.Contains(item, StringComparer.Ordinal)).Order(StringComparer.Ordinal).ToArray();
-        if (valid.Length != selected.Length)
-        {
-            throw new InvalidOperationException("所选 Unit 中存在不引用当前 Weapon/Ammo 的对象，请取消这些勾选。");
-        }
-        if (valid.Length == 0)
-        {
-            throw new InvalidOperationException("当前作用域没有引用该 Weapon/Ammo 的 Unit。");
-        }
-
-        return valid;
     }
 
     private DraftEditScope ToScope() => SelectedScope switch
