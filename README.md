@@ -8,8 +8,6 @@
 
 这是一款面向 WARNO Mod 新手和不熟悉代码的玩家、易于上手的 Windows 图形化数值编辑器。通过可视化界面调整单位、武器、弹药等数值与相关参数，无需手写代码。编辑范围以数值和规则配置为主，不涉及模型、贴图、动画等美术资源的制作或编辑。
 
-作者也是一名正在摸索的 WARNO Mod 新手。如果使用中遇到问题，或发现说明、参数理解有不准确的地方，欢迎指出，也欢迎提出改进建议。
-
 **QQ 交流群：1013181135**
 
 欢迎进群交流使用心得、反馈问题，一起探讨 Mod 制作。
@@ -112,8 +110,6 @@ Current version: **1.9.4**. Removed the whole-Weapon replacement controls. Ammo 
 [中文](#chinese) | [English](#english)
 
 A beginner-friendly Windows graphical editor for WARNO Mod creators and players who are unfamiliar with code. Use visual controls to adjust unit, weapon, and ammunition stats and related parameters without writing code. The editor focuses on numerical values and game rules; it does not create or edit models, textures, animations, or other art assets.
-
-The author is also a WARNO Mod beginner learning along the way. If you encounter a problem or notice an inaccurate explanation or interpretation of a parameter, please point it out. Suggestions for improvement are welcome, too.
 
 **QQ community group: 1013181135**
 
