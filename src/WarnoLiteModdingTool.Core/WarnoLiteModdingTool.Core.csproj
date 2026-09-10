@@ -3,6 +3,6 @@
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>WarnoLiteModdingTool.Core</RootNamespace>
   </PropertyGroup>
-  <ItemGroup><EmbeddedResource Include="Localisation/vanilla-names.json" /></ItemGroup>
+
 </Project>
 

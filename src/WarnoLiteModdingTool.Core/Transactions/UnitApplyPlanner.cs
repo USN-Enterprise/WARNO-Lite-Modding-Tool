@@ -446,6 +446,9 @@ public sealed class UnitApplyPlanner(
                 throw new TransactionValidationException($"NameToken 基线已变化：{operation.Summary}");
             }
 
+            WarnoLiteModdingTool.Core.Localisation.VanillaNames.RequireAvailable();
+            if (operation.RequiresNameTokenChange && WarnoLiteModdingTool.Core.Localisation.VanillaNames.Lookup("UNITS", targetToken) is not null)
+                throw new TransactionValidationException("名称token已占用");
             var mustReplace = unit.NameTokenRequiresReplacement;
             if ((mustReplace && !operation.RequiresNameTokenChange) || targetToken.Length != 10 ||
                 (operation.RequiresNameTokenChange == string.Equals(targetToken, baselineToken, StringComparison.Ordinal)))

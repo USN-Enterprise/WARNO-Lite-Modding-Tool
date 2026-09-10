@@ -8,12 +8,17 @@ namespace WarnoLiteModdingTool.App;
 
 public partial class App : Application
 {
+    private readonly bool _launchWorkspace;
+    public App() : this(true) { }
+    // Desktop fixtures supply their own window and isolated settings.
+    public App(bool launchWorkspace) => _launchWorkspace = launchWorkspace;
     private SingleInstanceGate? _singleInstance;
     private void DataGrid_Loaded(object sender, RoutedEventArgs e) =>
         Controls.ResponsiveColumns.SetEnabled((DependencyObject)sender, true);
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        if (!_launchWorkspace) return;
         _singleInstance = SingleInstanceGate.TryAcquire();
         if (_singleInstance is null)
         {

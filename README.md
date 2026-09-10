@@ -4,7 +4,7 @@
 
 <a id="chinese"></a>
 
-当前版本：**1.9.1**。优化列表疏密、内容自动列宽、模块备注与窗口圆角。
+当前版本：**1.9.3**。新增上次 Mod 的本机加载缓存；设置→常规可开关或清除缓存，默认开启，下次打开生效。首次完整加载后，再次打开未变化的 Mod 可复用对象索引、单位字段与武器关系。
 
 这是一款面向 WARNO Mod 新手和不熟悉代码的玩家、易于上手的 Windows 图形化数值编辑器。通过可视化界面调整单位、武器、弹药等数值与相关参数，无需手写代码。编辑范围以数值和规则配置为主，不涉及模型、贴图、动画等美术资源的制作或编辑。
 
@@ -18,7 +18,13 @@
 
 本项目原创代码与文档采用 [MIT 许可证](LICENSE)，允许修改、分发和商用，需保留版权与许可声明。
 
-从 WARNO 提取的游戏资料不在 MIT 授权范围内，包括 `src/WarnoLiteModdingTool.Core/Localisation/vanilla-names.json` 中的原版名称数据；相关权利归各自权利人所有，本项目不授予这些资料的再分发许可。
+1.9.2 起源码和新发布包不再内嵌游戏名称词典。名称从用户本机 WARNO 安装读取，仅在本机缓存；游戏资料不属于本项目 MIT 授权范围。
+
+## 原版名称
+
+打开 Mod 时自动查找 WARNO 并在后台提取中英文名称，无需安装解包工具。缓存保存在 `%LOCALAPPDATA%/WarnoLiteModdingTool/names/cache-v1.json`；游戏包变化时重建。找不到游戏时，在“设置 → 常规 → 原版名称”选择游戏安装目录；“刷新名称”在关闭设置后执行并重载当前项目，原草稿会先保存。
+
+当前 Mod 的 CSV 名称优先。没有可用词典时保留内部标识与普通参数编辑；创建或修改名称前需先加载词典以完成 token 冲突检查。营“类型”取自当前 Mod 的战略地图图标分类，未知分类保留原值。
 
 ## 直接使用
 
@@ -99,7 +105,7 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 <a id="english"></a>
 
-Current version: **1.9.1**. More spacious lists, content-aware column widths, module notes and rounded window corners.
+Current version: **1.9.3**. Cache the last opened Mod locally for faster reopening. Enable, disable or clear the cache under Settings → General; enabled by default and applied on the next open. Unchanged Mods reuse object indexes, unit fields and weapon relationships after the first load.
 
 # WARNO Lite Modding Tool — English
 
@@ -117,7 +123,13 @@ Join us to share tips, report issues, and discuss Mod creation.
 
 The project's original code and documentation are licensed under the [MIT License](LICENSE). Modification, redistribution, and commercial use are permitted, provided the copyright and license notices are retained.
 
-Data extracted from WARNO is excluded from the MIT license, including the vanilla names in `src/WarnoLiteModdingTool.Core/Localisation/vanilla-names.json`. Rights to that material remain with its respective rights holders; this project grants no redistribution permission for it.
+Starting with 1.9.2, the source tree and new release packages no longer embed extracted game-name dictionaries. Names are read from the user’s WARNO installation and cached locally. Game data is not covered by this project’s MIT license.
+
+## Original game names
+
+Opening a Mod locates WARNO and reads the English/Chinese name dictionaries in the background. No extraction tools are required. The cache lives at `%LOCALAPPDATA%/WarnoLiteModdingTool/names/cache-v1.json` and rebuilds when game archives change. If needed, choose the game installation under Settings → General → Original game names. Refresh names takes effect when settings closes and reloads the project after saving its drafts.
+
+Mod CSV names take priority. Without a valid dictionary, identifiers and ordinary parameter editing remain available; load names before creating or changing names so token collisions can be checked. Battalion types use the current Mod’s strategic map-symbol category; unknown categories keep their original values.
 
 ## Getting started
 

@@ -776,3 +776,19 @@ WARNO Lite Modding Tool 已在运行。|WARNO Lite Modding Tool is already runni
 请输入目标值|Enter a target value
 打开你的Mod，开始编辑|Open your Mod to start editing
 所选 Unit 当前值不同；输入目标值后再加入草稿|Selected units have different values. Enter a target value before adding a draft.
+
+原版名称|Original game names
+自动查找 WARNO|Find WARNO automatically
+选择游戏目录|Choose game folder
+刷新名称|Refresh names
+关闭设置后加载名称|Names will load when settings closes
+打开项目时自动加载原版名称|Original names load when opening a project
+原版名称已加载|Original names loaded
+原版名称不可用，请在设置中选择游戏目录|Original names unavailable; choose the game folder in settings
+所选目录缺少 WARNO Data/PC。|The selected folder has no WARNO Data/PC directory.
+正在加载原版名称…|Loading original game names…
+请先在设置中加载原版名称，再创建或修改名称。|Load original game names in settings before creating or changing names.
+
+缓存上次打开的 Mod，加快再次打开|Cache the last opened Mod for faster reopening
+下次打开生效。文件变化时重新加载，草稿仍从当前 Mod 恢复。|Takes effect on next open. Changed files are reloaded; drafts are restored from the current Mod.
+清除 Mod 缓存|Clear Mod cache

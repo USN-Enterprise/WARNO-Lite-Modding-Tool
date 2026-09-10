@@ -59,8 +59,8 @@ internal static partial class Program
             TestAssert.True(preview.CanAddToDrafts,"固定减法可生成草稿");
             var before=decimal.Parse(tank.Field("survival.health")!.DisplayValue,System.Globalization.CultureInfo.InvariantCulture);
             TestAssert.Equal((before-2).ToString(System.Globalization.CultureInfo.InvariantCulture),preview.Upserts.Single().TargetValue,"固定减法与百分比无关");
-            TestAssert.Equal("11ste Smaldeel",VanillaNames.Lookup("UNITS","OXFSVPGOSO"),"真实 EDat/TRAD 名称解码");
-            TestAssert.True(VanillaNames.Lookup("COMPANIES","VJUGOBWUEI") is not null,"原版连名称内置");
+            TestAssert.Equal("Test name",VanillaNames.Lookup("UNITS","TESTNAME01"),"人工词典名称解码");
+            TestAssert.True(VanillaNames.Lookup("COMPANIES","TESTNAME01") is not null,"人工连名称词典");
             WarnoLiteModdingTool.App.Advanced.EditorMode.IsAdvanced=false;UiText.Current.SetLanguage("zh-CN");
             TestAssert.Equal("火箭炮",GameText.Display("role","mlrs"),"角色中文确认版");TestAssert.Equal("苏联 近卫第79坦克师〔剧情〕",GameText.Display("division","SOV 79 Gds Tank multi HB Rule"),"近卫词序及剧情后缀");
             TestAssert.True(!GameText.VisibleCategory("TAcknowUnitType_Tank_Legion_CZ"),"普通模式移除外籍标签");TestAssert.True(GameText.VisibleCategory("TAcknowUnitType_Tank"),"基础标签保留");

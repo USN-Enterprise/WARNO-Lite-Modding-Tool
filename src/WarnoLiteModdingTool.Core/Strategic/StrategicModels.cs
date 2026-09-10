@@ -16,6 +16,7 @@ public sealed record StrategicField(string Key, string Label, string Constructor
 public sealed record StrategicRecord(string Id, string DisplayName, StrategicSource Deck, StrategicSource? Pawn,
     StrategicState Baseline, IReadOnlyDictionary<string, string> Templates, string? Error)
 {
+    public string BattalionType { get; init; } = "";
     public bool HasCustomName { get; init; }
     public string Country {get;init;}="";
     public string Coalition {get;init;}="";

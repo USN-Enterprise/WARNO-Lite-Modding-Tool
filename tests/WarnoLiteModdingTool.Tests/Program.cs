@@ -30,6 +30,13 @@ internal static partial class Program
 
     private static async Task<int> Main(string[] args)
     {
+        VanillaNames.Replace(SyntheticNames());
+        if (args is ["--benchmark-cache", var modRoot193, var cache193]) { await BenchmarkCache193(modRoot193, cache193); return 0; }
+        if (args is ["--verify-local-names", var gameDirectory, var cacheFile])
+        {
+            var timer=Stopwatch.StartNew(); var snapshot=new GameNameCache(cacheFile).Load(gameDirectory,true);
+            Console.WriteLine($"Sources={snapshot.Sources.Length}; rows={string.Join(",",snapshot.Names.Select(k=>$"{k.Key}:{k.Value.Count}"))}; milliseconds={timer.ElapsedMilliseconds}");return 0;
+        }
         if (args is ["--single-instance-probe", var mutexName, var mode]) return SingleInstanceProbe(mutexName, mode);
         if (args is ["--duplicate-startup-probe"]) return DuplicateStartupProbe();
         if (args is ["--scan-rules", var rulesPath]) { var rules=Core.Rules.RuleWorkspace.Load(rulesPath); foreach(var g in rules.Groups) Console.WriteLine($"{g.Definition.Number}. {g.Definition.Label}: {(g.CanEdit ? string.Join(", ",g.Cells.Select(c=>c.Raw)) : g.Error)}"); return rules.Groups.All(g=>g.CanEdit)?0:1; }
@@ -72,6 +79,11 @@ internal static partial class Program
 
         var tests = new (string Name, Func<Task> Run)[]
         {
+            ("1.9.3 缓存不绕过事务校验", ProjectCacheTransaction193),
+            ("1.9.3 Mod缓存与失效", ProjectCache193),
+            ("1.9.3 武器缓存与隔离", ProjectCacheWeapons193),
+            ("1.9.2 本机名称缓存与损坏包", LocalNames192),
+            ("1.9.2 营类型解析", BattalionTypes192),
             ("1.9.1 内容列宽整条90%覆盖", ContentCoverage191),
             ("1.9 白蓝默认与七主题偏好兼容", ThemeDefaults19),
             ("185常量扫描与真正语法错误", ScannerConstants185),
@@ -1705,14 +1717,17 @@ internal static partial class Program
                 WpfApplication? application = null;
                 try
                 {
-                    application = new WpfApplication();
+                    application = new WpfApplication(launchWorkspace: false);
                     application.InitializeComponent();
                     var settings = Path.Combine(root, ".test-settings", "recent-projects.json");
                     var themeSettings = Path.Combine(root, ".test-settings", "theme.txt");
                     ThemeManager.Initialize(new UiThemeStore(themeSettings));
                     TestAssert.Equal(AppTheme.LightBlue, ThemeManager.CurrentTheme, "无设置时应默认白蓝主题");
                     var problemLog = new ApplicationProblemLog(Path.Combine(root, ".test-settings", "problem-logs"));
-                    var viewModel = new MainViewModel(new RecentProjectStore(settings), problemLog: problemLog);
+                    var cacheSettings193 = new WarnoLiteModdingTool.App.Settings.UiSettings(Path.Combine(root, ".test-settings", "ui193.json"));
+                    var cacheFile193 = Path.Combine(root, ".test-settings", "cache193.gz");
+                    var viewModel = new MainViewModel(new RecentProjectStore(settings), problemLog: problemLog)
+                    { OpenLoadCache = path => ProjectLoadCache.Open(path, cacheSettings193.Load().CacheLastMod, cacheFile193) };
                     var window = new MainWindow(viewModel);
                     var picker = new WarnoLiteModdingTool.App.Controls.SearchPicker
                     {
@@ -1800,6 +1815,9 @@ internal static partial class Program
                     SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(window.Dispatcher));
                     RunWithDispatcher(viewModel.OpenProjectAsync(root), window.Dispatcher);
                     DrainDispatcher(window.Dispatcher);
+                    TestAssert.False(viewModel.LastOpenUsedCache, "首次窗口打开未命中缓存");
+                    RunWithDispatcher(viewModel.OpenProjectAsync(root), window.Dispatcher);
+                    TestAssert.True(viewModel.LastOpenUsedCache, "再次窗口打开实际命中缓存");
                     TestAssert.True(viewModel.UnitWorkspace is not null, "打开完整 Unit Mod 后应建立工作区");
                     TestAssert.Equal(2, viewModel.UnitWorkspace!.Units.Count, "WPF 回归应加载两条 Unit");
                     TestAssert.True(viewModel.WeaponWorkspace is not null, "完整 Unit Mod 应建立 Weapon 工作区");
@@ -1863,6 +1881,9 @@ internal static partial class Program
                     directField.EditValue = "11";
                     RunWithDispatcher(directField.FlushAsync(), window.Dispatcher);
                     TestAssert.Equal(1, viewModel.UnitWorkspace.DraftCount, "Ammo 直编应生成一项语义草稿");
+                    RunWithDispatcher(viewModel.OpenProjectAsync(root), window.Dispatcher);
+                    TestAssert.True(viewModel.LastOpenUsedCache, "新增草稿后仍命中正式数据缓存");
+                    TestAssert.Equal(1, viewModel.UnitWorkspace!.DraftCount, "缓存打开从磁盘恢复最新草稿");
                     var ammoDraft = viewModel.UnitWorkspace.DraftItems.Single();
                     TestAssert.Equal("弹药", ammoDraft.Module, "草稿总览应标明 Ammo 模块");
                     TestAssert.Equal("全部引用", ammoDraft.Scope, "Ammo 直编应明确采用全部引用作用域");
@@ -1903,8 +1924,14 @@ internal static partial class Program
                     if (strategicTree.ItemContainerGenerator.ContainerFromIndex(0) is TreeViewItem firstCompany) { firstCompany.IsExpanded = true; firstCompany.IsSelected = true; }
                     DrainDispatcher(window.Dispatcher);
                     SaveUiSnapshot(window, "strategic-en.png");
-                    var settingsWindow = new WarnoLiteModdingTool.App.Settings.SettingsWindow();
-                    DrainDispatcher(window.Dispatcher); SaveUiSnapshot(settingsWindow, "settings-en.png"); FindVisualChildren<TabControl>((System.Windows.DependencyObject)settingsWindow.Content).Single().SelectedIndex=1;DrainDispatcher(window.Dispatcher);SaveUiSnapshot(settingsWindow,"settings-appearance.png");settingsWindow.Close();
+                    var settingsWindow = new WarnoLiteModdingTool.App.Settings.SettingsWindow(store: cacheSettings193);
+                    SaveUiSnapshot(settingsWindow, "settings-en.png");
+                    var cacheToggle193 = FindVisualChildren<CheckBox>((System.Windows.DependencyObject)settingsWindow.Content)
+                        .Single(c => c.Content?.ToString()?.Contains("Cache the last opened", StringComparison.Ordinal) == true);
+                    cacheToggle193.IsChecked = false;
+                    cacheToggle193.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                    TestAssert.False(cacheSettings193.Load().CacheLastMod, "设置页面开关持久化");
+                    DrainDispatcher(window.Dispatcher); FindVisualChildren<TabControl>((System.Windows.DependencyObject)settingsWindow.Content).Single().SelectedIndex=1;DrainDispatcher(window.Dispatcher);SaveUiSnapshot(settingsWindow,"settings-appearance.png");settingsWindow.Close();
                     WarnoLiteModdingTool.App.Localisation.UiText.Current.SetLanguage("zh-CN");
                     DrainDispatcher(window.Dispatcher);
                     SaveUiSnapshot(window, "strategic-zh.png");
@@ -1946,6 +1973,7 @@ internal static partial class Program
                     RunWithDispatcher(viewModel.OpenProjectAsync(root), window.Dispatcher);
                     Verify19Ui(viewModel, window, root);
                     Verify191Ui(viewModel, window);
+                    viewModel.AdvancedMode=false;WarnoLiteModdingTool.App.Localisation.UiText.Current.SetLanguage("zh-CN");Verify192Ui(viewModel, window);
                     Verify186Ui(viewModel, window, root);
                     application.Shutdown();
                     if (failure is not null)

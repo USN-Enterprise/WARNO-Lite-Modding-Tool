@@ -3,11 +3,16 @@ namespace WarnoLiteModdingTool.Core.Localisation;
 
 public static class VanillaNames
 {
-    private static readonly Lazy<Dictionary<string, Dictionary<string,string>>> Data = new(() =>
+    private static Dictionary<string, Dictionary<string,string>> Data = new();
+    public static bool Available => GameNameCache.Keys.All(k => Data.ContainsKey(k));
+    public static void Replace(Dictionary<string, Dictionary<string,string>> names)
     {
-        using var stream = typeof(VanillaNames).Assembly.GetManifestResourceStream("WarnoLiteModdingTool.Core.Localisation.vanilla-names.json");
-        return stream is null ? [] : JsonSerializer.Deserialize<Dictionary<string, Dictionary<string,string>>>(stream) ?? [];
-    });
+        lock (Translations) { Data = names; Translations.Clear(); }
+    }
+    public static void RequireAvailable()
+    {
+        if (!Available) throw new InvalidOperationException("请先在设置中加载原版名称，再创建或修改名称。");
+    }
     public static string? Lookup(string kind, string token, string language = "US")
     {
         ulong key = 0;
@@ -18,7 +23,7 @@ public static class VanillaNames
             if (value < 0) return null;
             key = (key << 6) | (uint)value;
         }
-        return Data.Value.GetValueOrDefault(language + "/" + kind)?.GetValueOrDefault(key.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        return Data.GetValueOrDefault(language + "/" + kind)?.GetValueOrDefault(key.ToString(System.Globalization.CultureInfo.InvariantCulture));
     }
     private static readonly Dictionary<string, Dictionary<string,string>> Translations = new();
     public static string Chinese(string kind, string english)
@@ -27,7 +32,7 @@ public static class VanillaNames
         {
             if (!Translations.TryGetValue(kind, out var map))
             {
-                var en = Data.Value.GetValueOrDefault("US/"+kind) ?? []; var zh = Data.Value.GetValueOrDefault("SC/"+kind) ?? [];
+                var en = Data.GetValueOrDefault("US/"+kind) ?? []; var zh = Data.GetValueOrDefault("SC/"+kind) ?? [];
                 map = en.GroupBy(p => p.Value).Where(g => g.Select(p => zh.GetValueOrDefault(p.Key, p.Value)).Distinct().Count() == 1)
                     .ToDictionary(g => g.Key, g => zh.GetValueOrDefault(g.First().Key, g.Key)); Translations[kind] = map;
             }

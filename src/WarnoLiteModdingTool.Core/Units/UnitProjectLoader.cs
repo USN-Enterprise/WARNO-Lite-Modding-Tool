@@ -16,13 +16,14 @@ public sealed class UnitProjectLoader(
     public Task<UnitWorkspaceData> LoadAsync(
         ModProjectContext context,
         ProjectIndexResult index,
-        CancellationToken cancellationToken = default) =>
-        Task.Run(() => Load(context, index, cancellationToken), cancellationToken);
+        CancellationToken cancellationToken = default,
+        ProjectLoadCache? cache = null) =>
+        Task.Run(() => Load(context, index, cancellationToken, cache), cancellationToken);
 
     private UnitWorkspaceData Load(
         ModProjectContext context,
         ProjectIndexResult index,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, ProjectLoadCache? cache)
     {
         var diagnostics = new List<string>();
         var sources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -40,13 +41,23 @@ public sealed class UnitProjectLoader(
         }
 
         var unitObjects = index.Objects.Where(item => item.ModuleKey == "units").ToArray();
-        var units = _catalogBuilder.Build(unitObjects, sources, cancellationToken).ToArray();
+        var restored = cache?.RestoreUnits(sources);
+        var units = restored ?? _catalogBuilder.Build(unitObjects, sources, cancellationToken).ToArray();
         var damageResistance = DamageResistanceCatalog.Load(context);
         diagnostics.AddRange(damageResistance.Diagnostics);
         var localisation = _localisationLoader.Load(context);
         diagnostics.AddRange(localisation.Diagnostics);
         ReadNames(units, sources, localisation);
         UnitCatalogBuilder.ApplyChoices(units, damageResistance);
+
+        if (restored is not null)
+        {
+            return new UnitWorkspaceData(units, new UnitReferenceIndex(
+                units.ToDictionary(u => u.Name, u => u.Weapons, StringComparer.Ordinal),
+                units.ToDictionary(u => u.Name, u => u.Ammunition, StringComparer.Ordinal),
+                units.ToDictionary(u => u.Name, u => u.Divisions, StringComparer.Ordinal)),
+                localisation, damageResistance, diagnostics) { Rules = Rules.RuleWorkspace.Load(context.Layout.RootPath) };
+        }
 
         var weaponAmmo = BuildWeaponAmmo(index, sources, cancellationToken);
         var unitWeapons = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
@@ -93,6 +104,7 @@ public sealed class UnitProjectLoader(
             unitDivisions[unit.Name] = matching;
         }
 
+        if (diagnostics.Count == 0) cache?.SetUnits(units);
         return new UnitWorkspaceData(
             units,
             new UnitReferenceIndex(unitWeapons, unitAmmo, unitDivisions),

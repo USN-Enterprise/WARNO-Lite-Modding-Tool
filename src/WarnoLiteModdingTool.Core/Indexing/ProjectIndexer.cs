@@ -10,8 +10,16 @@ public sealed class ProjectIndexer(NdfTopLevelScanner? scanner = null)
     public Task<ProjectIndexResult> IndexAsync(
         ModProjectContext context,
         IProgress<IndexProgress>? progress = null,
-        CancellationToken cancellationToken = default) =>
-        Task.Run(() => Index(context, progress, cancellationToken), cancellationToken);
+        CancellationToken cancellationToken = default,
+        ProjectLoadCache? cache = null) =>
+        Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (cache?.Index is { } saved) return saved;
+            var result = Index(context, progress, cancellationToken);
+            cache?.SetIndex(result);
+            return result;
+        }, cancellationToken);
 
     private ProjectIndexResult Index(
         ModProjectContext context,

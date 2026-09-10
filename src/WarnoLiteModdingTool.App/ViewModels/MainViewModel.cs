@@ -460,9 +460,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    public Func<Task>? PrepareNamesAsync { get; set; }
+    // Injectable so desktop fixtures never read or write personal caches/settings.
+    public Func<string, ProjectLoadCache?>? OpenLoadCache { get; set; }
+    public bool LastOpenUsedCache { get; private set; }
+    public long LastOpenMilliseconds { get; private set; }
+
     public async Task OpenProjectAsync(string selectedRoot)
     {
         await SaveBeforeLeavingAsync();
+        var loadTimer = System.Diagnostics.Stopwatch.StartNew();
+        LastOpenUsedCache = false;
         CancelScan();
         ResetProjectResults();
 
@@ -534,10 +542,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         try
         {
+            if (PrepareNamesAsync is not null)
+            {
+                StatusText = "正在加载原版名称…";
+                await PrepareNamesAsync();
+                scanCancellation.Token.ThrowIfCancellationRequested();
+            }
+            var loadCache = await Task.Run(() => OpenLoadCache?.Invoke(context.Layout.RootPath), scanCancellation.Token);
             var result = await _indexer.IndexAsync(
                 context,
                 progress,
-                scanCancellation.Token);
+                scanCancellation.Token, loadCache);
             if (_scanCancellation != scanCancellation)
             {
                 return;
@@ -554,7 +569,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 divisionCapability?.CanScan == true || result.Modules.Any(m => m.Key is "strategic" or "rules" && m.CanScan))
             {
                 StatusText = "正在建立项目字段、名称与引用索引";
-                var unitData = await _unitLoader.LoadAsync(context, result, scanCancellation.Token);
+                var unitData = await _unitLoader.LoadAsync(context, result, scanCancellation.Token, loadCache);
                 foreach (var diagnostic in unitData.Diagnostics)
                 {
                     Diagnostics.Add(new DiagnosticItemViewModel("P2 单位工作区", diagnostic));
@@ -573,7 +588,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 if (weaponCapability?.CanScan == true || ammoCapability?.CanScan == true)
                 {
                     StatusText = "正在建立 Weapon/Ammo 关系与共享影响索引";
-                    weaponData = await _weaponLoader.LoadAsync(context, result, unitData, scanCancellation.Token);
+                    weaponData = await _weaponLoader.LoadAsync(context, result, unitData, scanCancellation.Token, loadCache);
                     foreach (var diagnostic in weaponData.Diagnostics)
                     {
                         Diagnostics.Add(new DiagnosticItemViewModel("P4 Weapon/Ammo 工作区", diagnostic));
@@ -639,10 +654,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                 RulesWorkspace = new RulesWorkspaceViewModel(unitData.Rules!, _draftStore, UnitWorkspace.RefreshExternalDraftState);
                 OnPropertyChanged(nameof(RulesWorkspace)); OnPropertyChanged(nameof(IsRulesModule));
-                ProjectSummary = $"1.9.1 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
+                ProjectSummary = $"1.9.3 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
             }
 
             RefreshMode();
+            if (loadCache is not null && !result.Diagnostics.Any(d => d.Severity == NdfDiagnosticSeverity.Error))
+                await Task.Run(() => loadCache.Save(scanCancellation.Token), scanCancellation.Token);
+            LastOpenUsedCache = loadCache?.IsHit == true;
+            LastOpenMilliseconds = loadTimer.ElapsedMilliseconds;
             ScanPercent = 100;
             StatusText = UnitWorkspace is null
                 ? $"扫描完成 · {result.Objects.Count:N0} 个对象 · {result.Diagnostics.Count:N0} 条诊断"

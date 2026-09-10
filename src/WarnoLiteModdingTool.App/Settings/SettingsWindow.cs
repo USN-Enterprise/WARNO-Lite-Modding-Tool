@@ -10,10 +10,12 @@ namespace WarnoLiteModdingTool.App.Settings;
 
 public sealed class SettingsWindow : Window
 {
-    private readonly UiSettings _store = new();
+    private readonly UiSettings _store;
     private UiPreferences _preferences;
-    public SettingsWindow(Action<bool>? onModeChanged = null)
+    public bool NamesChanged { get; private set; }
+    public SettingsWindow(Action<bool>? onModeChanged = null, UiSettings? store = null)
     {
+        _store = store ?? new();
         _preferences = _store.Load();
         UiText.Bind(this, TitleProperty, "设置");
         Width = 700; Height = 490; MinWidth = 620; MinHeight = 420; WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -40,6 +42,42 @@ public sealed class SettingsWindow : Window
         mode.SelectedIndex = _preferences.AdvancedMode ? 1 : 0;
         mode.SelectionChanged += (_, _) => { _preferences = _preferences with { AdvancedMode = mode.SelectedIndex == 1 }; if (Save()) onModeChanged?.Invoke(_preferences.AdvancedMode); }; general.Children.Add(mode);
         Label(general, "修改后立即生效并自动保存");
+        var cacheMod = new CheckBox { IsChecked = _preferences.CacheLastMod, Margin = new Thickness(0, 8, 0, 6) };
+        UiText.Bind(cacheMod, ContentControl.ContentProperty, "缓存上次打开的 Mod，加快再次打开");
+        UiText.Bind(cacheMod, ToolTipProperty, "下次打开生效。文件变化时重新加载，草稿仍从当前 Mod 恢复。");
+        cacheMod.Click += (_, _) =>
+        {
+            _preferences = _preferences with { CacheLastMod = cacheMod.IsChecked == true };
+            Save();
+        };
+        general.Children.Add(cacheMod);
+        var clearModCache = new Button { HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(10, 6, 10, 6) };
+        UiText.Bind(clearModCache, ContentControl.ContentProperty, "清除 Mod 缓存");
+        clearModCache.Click += (_, _) =>
+        {
+            try { WarnoLiteModdingTool.Core.Projects.ProjectLoadCache.Clear(); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            { MessageBox.Show(this, ex.Message, UiText.T("清除 Mod 缓存")); }
+        };
+        general.Children.Add(clearModCache);
+        Label(general, "原版名称");
+        var gamePath = new TextBlock { Text = _preferences.GameDirectory ?? UiText.T("自动查找 WARNO"), TextWrapping = TextWrapping.Wrap };
+        general.Children.Add(gamePath);
+        var nameStatus = new TextBlock { Text = UiText.T(LocalGameNames.Status), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 6) };
+        general.Children.Add(nameStatus);
+        var nameButtons = new StackPanel { Orientation = Orientation.Horizontal }; general.Children.Add(nameButtons);
+        var chooseGame = new Button { Padding = new Thickness(10,6,10,6) }; UiText.Bind(chooseGame, ContentControl.ContentProperty, "选择游戏目录"); nameButtons.Children.Add(chooseGame);
+        chooseGame.Click += (_, _) =>
+        {
+            var dialog = new Microsoft.Win32.OpenFolderDialog { InitialDirectory = _preferences.GameDirectory ?? "" };
+            if (dialog.ShowDialog(this) != true) return;
+            if (!Directory.Exists(Path.Combine(dialog.FolderName, "Data", "PC")))
+            { MessageBox.Show(this, UiText.T("所选目录缺少 WARNO Data/PC。"), UiText.T("原版名称")); return; }
+            _preferences = _preferences with { GameDirectory = dialog.FolderName };
+            if (Save()) { gamePath.Text = dialog.FolderName; NamesChanged = true; nameStatus.Text = UiText.T("关闭设置后加载名称"); }
+        };
+        var refreshNames = new Button { Margin = new Thickness(8,0,0,0), Padding = new Thickness(10,6,10,6) }; UiText.Bind(refreshNames, ContentControl.ContentProperty, "刷新名称"); nameButtons.Children.Add(refreshNames);
+        refreshNames.Click += (_, _) => { NamesChanged = true; LocalGameNames.ForceRefresh = true; nameStatus.Text = UiText.T("关闭设置后加载名称"); };
         var appearance = Page(tabs, "外观"); Label(appearance, "主题");
         var themes = new ComboBox { MinWidth = 240, HorizontalAlignment = HorizontalAlignment.Left };
         foreach (var theme in Enum.GetValues<AppTheme>()) { var item = new ComboBoxItem { Tag = theme }; UiText.Bind(item, ContentControl.ContentProperty, ThemeManager.Name(theme)); themes.Items.Add(item); if (theme == ThemeManager.CurrentTheme) themes.SelectedItem = item; }
@@ -72,7 +110,7 @@ public sealed class SettingsWindow : Window
         opacity.ValueChanged += (_, _) => { _preferences = _preferences with { BackgroundOpacity = opacity.Value / 100 }; if (Save()) BackgroundAppearance.Apply(); }; appearance.Children.Add(opacity);
         var layout = new ComboBox(); foreach (var (key, title) in new[] { ("fill", "铺满裁剪"), ("fit", "完整显示"), ("tile", "平铺") }) { var item = new ComboBoxItem { Tag = key }; UiText.Bind(item, ContentControl.ContentProperty, title); layout.Items.Add(item); if (key == _preferences.BackgroundLayout) layout.SelectedItem = item; }
         layout.SelectionChanged += (_, _) => { _preferences = _preferences with { BackgroundLayout = (string)((ComboBoxItem)layout.SelectedItem).Tag }; if (Save()) BackgroundAppearance.Apply(); }; appearance.Children.Add(layout);
-        var about = Page(tabs, "关于"); Label(about, "WARNO Lite Modding Tool"); Label(about, "1.9.1 · Windows x64 · .NET 8");
+        var about = Page(tabs, "关于"); Label(about, "WARNO Lite Modding Tool"); Label(about, "1.9.3 · Windows x64 · .NET 8");
         Link(about, "发布说明", Path.Combine(AppContext.BaseDirectory, "发布说明.md"));
         Link(about, "打开工具日志目录", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WarnoLiteModdingTool", "logs"));
     }

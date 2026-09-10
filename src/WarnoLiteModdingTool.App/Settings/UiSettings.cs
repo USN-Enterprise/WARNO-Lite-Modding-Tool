@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace WarnoLiteModdingTool.App.Settings;
 
-public sealed record UiPreferences(string Language = "system", bool AdvancedMode = false, string? BackgroundImage = null, bool BackgroundEnabled = true, double BackgroundOpacity = 0.10, string BackgroundLayout = "fill");
+public sealed record UiPreferences(string Language = "system", bool AdvancedMode = false, string? BackgroundImage = null, bool BackgroundEnabled = true, double BackgroundOpacity = 0.10, string BackgroundLayout = "fill", string? GameDirectory = null, bool CacheLastMod = true);
 public sealed class UiSettings(string? path = null)
 {
     private readonly string _path = path ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WarnoLiteModdingTool", "settings.json");

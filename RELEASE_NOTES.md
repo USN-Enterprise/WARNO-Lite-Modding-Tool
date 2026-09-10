@@ -6,6 +6,18 @@
 
 仅列出功能更新和影响使用的问题修复。
 
+## 1.9.3 — 2026-09-10
+
+- 新增上次成功打开 Mod 的本机解析缓存，加快再次打开；缓存只保留最近一个 Mod，文件变化、程序更新或缓存损坏时自动重新加载。
+- 设置→常规增加缓存开关和清除入口，默认开启，下次打开生效。游戏名称缓存独立保留。
+- 最新草稿仍从当前 Mod 恢复；正式预览与应用继续重新读取、校验原文件。
+
+## 1.9.2 — 2026-09-10
+
+- 原版名称改为从本机 WARNO 安装提取并缓存，支持 EDat v2/v3；新版不再内嵌游戏名称快照，也不需要外部解包工具。
+- 自动查找游戏，设置中可选择游戏目录及刷新名称；原版词典不可用时保留普通参数编辑，名称创建/修改需先加载词典。
+- 将军模式列表统一名称样式、留白和对齐，列序为名称、国家、类型；类型来自当前 Mod 的战略地图图标，支持中英文，未知值保留。
+
 ## 1.9.1 — 2026-09-09
 
 - 列表增加行高和留白，文字垂直居中，改善单位页拥挤。
@@ -139,6 +151,18 @@
 [中文](#chinese) | [English](#english)
 
 Feature updates and fixes that affect everyday use.
+
+## 1.9.3 — 2026-09-10
+
+- Cache parsed data for the last successfully opened Mod. File changes, application updates or a damaged cache trigger a normal reload.
+- Enable, disable or clear the cache under Settings → General. Enabled by default; changes apply on next open. The original-name cache remains separate.
+- Restore current drafts from the selected Mod. Formal preview and apply continue to reread and validate source files.
+
+## 1.9.2 — 2026-09-10
+
+- Read and cache original names from the local WARNO installation, supporting EDat v2/v3. New packages no longer embed game-name snapshots or require extraction tools.
+- Locate the game automatically, or choose its folder and refresh names in settings. Ordinary parameter editing remains available without dictionaries; load names before creating or changing names.
+- Align Army General list styling and add a Type column after Country. Types follow the Mod’s strategic map-symbol categories, with Chinese/English labels and unknown values preserved.
 
 ## 1.9.1 — 2026-09-09
 

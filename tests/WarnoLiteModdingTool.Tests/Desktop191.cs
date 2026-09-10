@@ -27,7 +27,7 @@ internal static partial class Program
             Assert(BitBlt191(memory, 0, 0, width, height, screen, rect.Left, rect.Top, 0x00CC0020), "复制真实窗口桌面图像");
             var source = Imaging.CreateBitmapSourceFromHBitmap(bitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
             var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(source));
-            using var output = File.Create(Path.GetFullPath("publish/qa-1.9.1/native-window.png")); encoder.Save(output);
+            using var output = File.Create(Path.GetFullPath("publish/qa-1.9.3/native-window.png")); encoder.Save(output);
         }
         finally { SelectObject191(memory, previous); DeleteObject191(bitmap); DeleteDC191(memory); ReleaseDC191(IntPtr.Zero, screen); }
         window.Left = -10000; window.Top = -10000;

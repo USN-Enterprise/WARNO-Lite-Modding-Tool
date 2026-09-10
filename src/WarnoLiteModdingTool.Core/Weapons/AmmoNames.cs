@@ -18,6 +18,7 @@ public static class AmmoNames
     public static void Plan(string root,UnitWorkspaceData units,WeaponWorkspaceData weapons,IReadOnlyList<DraftOperation> operations,List<PlannedFileChange> files)
     {
         var names=operations.Where(o=>o.TargetKind==DraftTargetKind.AmmoName).ToArray();if(names.Length==0)return;
+        WarnoLiteModdingTool.Core.Localisation.VanillaNames.RequireAvailable();
         var csv=Path.GetRelativePath(root,units.Localisation.UniqueUnitsCsvPath!).Replace('\\','/');
         var snapshots=new Dictionary<string,(TextFileSnapshot Snapshot,string Text)>(StringComparer.OrdinalIgnoreCase);
         string Get(string path,FormalTextFileKind kind){path=path.Replace('\\','/');if(!snapshots.ContainsKey(path)){var snap=TextFileSnapshot.Load(root,path,kind,allowMissing:kind==FormalTextFileKind.Csv);var prior=files.FirstOrDefault(f=>f.RelativePath.Equals(path,StringComparison.OrdinalIgnoreCase));snapshots[path]=(snap,prior is null?snap.Text:kind==FormalTextFileKind.Ndf?Encoding.UTF8.GetString(prior.CandidateBytes):new StreamReader(new MemoryStream(prior.CandidateBytes),true).ReadToEnd());}return snapshots[path].Text;}

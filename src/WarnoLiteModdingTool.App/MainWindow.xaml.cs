@@ -30,7 +30,11 @@ public partial class MainWindow : Window
     private bool _themeSelectorReady;
 
     public MainWindow()
-        : this(new MainViewModel())
+        : this(new MainViewModel
+        {
+            PrepareNamesAsync = Settings.LocalGameNames.PrepareAsync,
+            OpenLoadCache = root => WarnoLiteModdingTool.Core.Projects.ProjectLoadCache.Open(root, new Settings.UiSettings().Load().CacheLastMod)
+        })
     {
     }
 
@@ -60,7 +64,18 @@ public partial class MainWindow : Window
 
     private void OpenAdvanced_Click(object sender, RoutedEventArgs e) { if (_viewModel.AdvancedMode) new Advanced.AdvancedWindow(_viewModel) { Owner = this }.ShowDialog(); }
 
-    private void OpenSettings_Click(object sender, RoutedEventArgs e) => new Settings.SettingsWindow(value => _viewModel.AdvancedMode = value) { Owner = this }.ShowDialog();
+    private async void OpenSettings_Click(object sender, RoutedEventArgs e)
+    {
+        var settings = new Settings.SettingsWindow(value => _viewModel.AdvancedMode = value) { Owner = this };
+        settings.ShowDialog();
+        if (!settings.NamesChanged) return;
+        try
+        {
+            await Settings.LocalGameNames.PrepareAsync();
+            if (_viewModel.HasOpenProject) await _viewModel.OpenProjectAsync(_viewModel.ProjectPath);
+        }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, Localisation.UiText.T("原版名称")); }
+    }
 
     private void ThemeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {

@@ -48,6 +48,7 @@ public sealed class UnitLocalisationCatalog
 
     public string GenerateToken()
     {
+        VanillaNames.RequireAvailable();
         string token;
         do
         {

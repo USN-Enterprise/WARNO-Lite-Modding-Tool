@@ -19,8 +19,16 @@ public sealed class WeaponProjectLoader
         ModProjectContext context,
         ProjectIndexResult index,
         UnitWorkspaceData units,
-        CancellationToken cancellationToken = default) =>
-        Task.Run(() => Load(context, index, units, cancellationToken), cancellationToken);
+        CancellationToken cancellationToken = default,
+        ProjectLoadCache? cache = null) =>
+        Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (cache?.RestoreWeapons(units) is { } restored) return restored;
+            var result = Load(context, index, units, cancellationToken);
+            if (result.Diagnostics.Count == 0) cache?.SetWeapons(result);
+            return result;
+        }, cancellationToken);
 
     private static WeaponWorkspaceData Load(
         ModProjectContext context,

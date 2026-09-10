@@ -233,6 +233,7 @@ public sealed class StrategicPlanner
         }
         string AddName(string kind, string name)
         {
+            Localisation.VanillaNames.RequireAvailable();
             if (!workspace.CsvPaths.TryGetValue(kind, out var path)) throw new TransactionValidationException($"{kind}.csv 声明缺失或不唯一");
             var snapshot = Snapshot(path, FormalTextFileKind.Csv);
             if (!csvTexts.TryGetValue(path, out var text))
@@ -242,7 +243,7 @@ public sealed class StrategicPlanner
             }
             string token;
             do { token = Guid.NewGuid().ToString("N")[..10].ToUpperInvariant(); }
-            while (!usedTokens.Add(token) || text.Contains(token, StringComparison.Ordinal));
+            while (!usedTokens.Add(token) || text.Contains(token, StringComparison.Ordinal) || Localisation.VanillaNames.Lookup(kind, token) is not null);
             if (text.Length == 0) text = "\"TOKEN\";\"REFTEXT\"" + snapshot.NewLine;
             if (!text.EndsWith('\n') && !text.EndsWith('\r')) text += snapshot.NewLine;
             csvTexts[path] = text + SemicolonCsvDocument.Quote(token) + ";" + SemicolonCsvDocument.Quote(name) + snapshot.NewLine;

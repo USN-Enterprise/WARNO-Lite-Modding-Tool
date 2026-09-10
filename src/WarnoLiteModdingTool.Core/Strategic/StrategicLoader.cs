@@ -79,7 +79,7 @@ public sealed class StrategicLoader
                 var name = workspace.Name("UNITS", token);
                 var displayName = name == token ? Localisation.VanillaNames.Lookup("UNITS", token) ?? identifier.Replace("pion_", "").Replace('_', ' ') : name;
                 workspace.Records.Add(new(pawn?.Info.Name ?? deck.Info.Name, displayName, deck, pawn,
-                    new(companies, values, name), templates, error) { Country=pawn is null?"":NdfSyntaxDocument.Unquote(Read(pawn.Text,"TTypeUnitModuleDescriptor","MotherCountry")), Coalition=pawn is null?"":Leaf(Read(pawn.Text,"TTypeUnitModuleDescriptor","Coalition")), Division=Leaf(Read(deck.Text,"TDeckDescriptor","DeckDivision")), HasCustomName = workspace.Names.GetValueOrDefault("UNITS")?.ContainsKey(token) == true });
+                    new(companies, values, name), templates, error) { BattalionType=StrategicType.Read(pawn?.Text), Country=pawn is null?"":NdfSyntaxDocument.Unquote(Read(pawn.Text,"TTypeUnitModuleDescriptor","MotherCountry")), Coalition=pawn is null?"":Leaf(Read(pawn.Text,"TTypeUnitModuleDescriptor","Coalition")), Division=Leaf(Read(deck.Text,"TDeckDescriptor","DeckDivision")), HasCustomName = workspace.Names.GetValueOrDefault("UNITS")?.ContainsKey(token) == true });
             }
         }
         return workspace;

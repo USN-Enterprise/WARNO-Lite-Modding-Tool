@@ -42,7 +42,7 @@ internal static partial class Program
         var bitmap = new RenderTargetBitmap((int)Math.Ceiling(surface.ActualWidth), (int)Math.Ceiling(surface.ActualHeight), 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(surface);
         var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        var directory = Path.GetFullPath("publish/qa-1.9.1"); Directory.CreateDirectory(directory);
+        var directory = Path.GetFullPath("publish/qa-1.9.2"); Directory.CreateDirectory(directory);
         using var file = File.Create(Path.Combine(directory, name + ".png")); encoder.Save(file);
     }
 

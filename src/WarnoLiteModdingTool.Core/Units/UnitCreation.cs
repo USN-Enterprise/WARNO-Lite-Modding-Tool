@@ -28,18 +28,21 @@ public static class UnitCreation
             var s=Read(op);var mother=data.Units.SingleOrDefault(u=>u.Name==s.Mother);
             if(mother is null||Source(mother)!=op.BaselineRaw)throw new InvalidDataException("母版已变化或不存在");
             if(s.Id!=op.ObjectName||!Regex.IsMatch(s.Id,@"^Descriptor_Unit_[A-Za-z0-9_]+$")||!Guid.TryParse(s.Guid,out _)||!Regex.IsMatch(s.Token,@"^[A-Z0-9]{10}$")||s.SerializerId<0||string.IsNullOrWhiteSpace(s.Name))throw new InvalidDataException("新单位身份无效");
-            if(data.Units.Any(u=>u.Name==s.Id||u.NameToken==s.Token))throw new InvalidDataException("新单位名称或token已占用");
+            if(data.Units.Any(u=>u.Name==s.Id||u.NameToken==s.Token) || Localisation.VanillaNames.Lookup("UNITS",s.Token) is not null)throw new InvalidDataException("新单位名称或token已占用");
             return new(op,DraftResolutionStatus.Active,"");
         }catch(Exception ex)when(ex is IOException or InvalidDataException or InvalidOperationException or JsonException or ArgumentException){return new(op,DraftResolutionStatus.Conflict,ex.Message);}
     }
     public static UnitCreationState New(UnitRecord mother,UnitWorkspaceData data,IEnumerable<DraftOperation> drafts)
     {
+        Localisation.VanillaNames.RequireAvailable();
         var root=data.Localisation.ProjectRoot;
         var text=File.ReadAllText(Path.Combine(root,SerializerPath));var doc=new NdfSyntaxDocument(text);
         var used=doc.ReadMapEntries(doc.FindDirectAssignments(doc.FindConstructors("TDeckSerializerEntries").Single(),"UnitIds").Single()).Select(e=>int.Parse(doc.Raw(e.Value))).ToHashSet();
         foreach(var op in drafts.Where(o=>o.TargetKind==DraftTargetKind.UnitCreate))used.Add(Read(op).SerializerId);
         var next=used.Count==0?0:checked(used.Max()+1);
-        var suffix=Guid.NewGuid().ToString("N")[..10].ToUpperInvariant();
+        string suffix;
+        do { suffix=Guid.NewGuid().ToString("N")[..10].ToUpperInvariant(); }
+        while (Localisation.VanillaNames.Lookup("UNITS",suffix) is not null || data.Units.Any(u=>u.NameToken==suffix));
         return new(mother.Name,"Descriptor_Unit_WL_"+suffix,Guid.NewGuid().ToString(),suffix,next,mother.DisplayName+" 新单位",[],false,[],[],[]);
     }
     private static string Patch(string text,IReadOnlyList<TextReplacement> edits)=>SemicolonCsvDocument.ApplyReplacements(text,edits);
@@ -80,6 +83,7 @@ public static class UnitCreation
     public static void Plan(string root,UnitWorkspaceData units,WeaponWorkspaceData weapons,DivisionWorkspaceData? divisions,ProjectIndexResult index,IReadOnlyList<DraftOperation> operations,List<PlannedFileChange> files)
     {
         var creates=operations.Where(o=>o.TargetKind==DraftTargetKind.UnitCreate).ToArray();if(creates.Length==0)return;
+        Localisation.VanillaNames.RequireAvailable();
         var csv=units.Localisation.UniqueUnitsCsvPath??throw new TransactionValidationException("无法唯一定位UNITS.csv声明，不能新增单位");
         var existingNames=index.Objects.Select(o=>o.Name).ToHashSet();var tokens=units.Units.Select(u=>u.NameToken).ToHashSet();var ids=new HashSet<int>();
         var guids=units.Units.Select(u=>u.SourceSnapshot).Where(s=>s is not null).Distinct(ReferenceEqualityComparer.Instance).Cast<string>().SelectMany(text=>{var doc=new NdfSyntaxDocument(text);return doc.FindAssignmentsAnywhere("DescriptorId").Select(doc.Raw).ToArray();}).ToHashSet(StringComparer.OrdinalIgnoreCase);

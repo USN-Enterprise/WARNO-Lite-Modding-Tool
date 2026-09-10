@@ -10,6 +10,7 @@ public static class GameText
 {
     private static readonly Dictionary<string, (string Zh, string En)> Countries = Parse("SOV|苏联;DDR|东德;RDA|东德;POL|波兰;TCH|捷克斯洛伐克;US|美国;UK|英国;RFA|西德;FR|法国;CAN|加拿大;BEL|比利时;NL|荷兰;DK|丹麦;ESP|西班牙");
     private static readonly Dictionary<string, (string Zh, string En)> Roles = Parse("AA|防空|Air Defense;AT|反坦克|Anti-Tank;appui|火力支援|Fire Support;armor|装甲|Armor;engineer|工兵|Engineers;howitzer|榴弹炮|Howitzer;mortar|迫击炮|Mortar;mlrs|火箭炮|MLRS;infantry|步兵|Infantry;ifv|步兵战车|IFV;reco|侦察|Recon;supply|补给|Supply;transport|运输|Transport;sead|防空压制|SEAD;uav|无人机|Drone;hq_helo|指挥直升机|CMD Helo;hq_inf|指挥步兵|CMD Infantry;hq_tank|指挥坦克|CMD Tank;hq_veh|指挥车辆|CMD Vehicle");
+    private static readonly Dictionary<string, (string Zh, string En)> BattalionTypes = Parse("howitzer|榴弹炮|Howitzer;apc|摩托化步兵|Motorized Infantry;ifv|机械化步兵|Mechanized Infantry;Armor_heavy|重型坦克|Heavy Armor;Armor|坦克|Armor;AA|防空|Air Defense;HQ|指挥部|HQ;Infantry|步兵|Infantry;reco|侦察|Recon;assault|突击步兵|Assault Infantry;hel|直升机|Helicopters;mlrs|火箭炮|MLRS;AT|反坦克|Anti-Tank;Support_air|对地支援航空|Ground Support Aircraft;AA_air|制空航空|Air Superiority Aircraft;ATGM_air|反坦克航空|Anti-Tank Aircraft;SEAD_air|防空压制航空|SEAD Aircraft");
     private static readonly Dictionary<string, (string Zh, string En)> Factories = Parse("Logistic|后勤|Logistics;Infantry|步兵|Infantry;Art|火炮|Artillery;Tanks|坦克|Tanks;Recons|侦察|Recon;DCA|防空|Air Defense;Helis|直升机|Helicopters;Planes|飞机|Aircraft");
     private static readonly Dictionary<string, (string Zh, string En)> Categories = Parse("Air_CAS|近距空中支援;AirSup|制空战机;ArtShell|炮兵;CanonAA|高射炮;Command|指挥单位;Command_Infantry|指挥步兵;CommandVehicle|指挥车辆;Engineer|工兵;Gendarme|宪兵;GroundAtk|对地攻击机;GunArtillery|身管炮兵;HeliAttack|攻击直升机;HeliTransport|运输直升机;Inf|步兵;Inf_Elite|精锐步兵;Inf_Militia|民兵;KaJaPa|坦克歼击车;Logistic|后勤;MLRS|火箭炮;Multirole|多用途战机;Reco|侦察单位;Recon_INF|侦察步兵;Recon_Vehicle|侦察车辆;SAM|防空导弹;Tank|坦克;TankDestroyer|坦克歼击车;TankDestroyerMissile|反坦克导弹车;Transport|运输单位;Vehicle|车辆");
     private static Dictionary<string, (string Zh, string En)> Parse(string text) => text.Split(';').Select(x => x.Split('|')).ToDictionary(x => x[0], x => (x[1], x.Length > 2 ? x[2] : x[0]), StringComparer.OrdinalIgnoreCase);
@@ -24,7 +25,7 @@ public static class GameText
         if (kind == "category" && !raw.Contains(" · ") && !VisibleCategory(raw)) return "";
         if (raw.Contains(" · ")) return string.Join(" · ", raw.Split(" · ").Where(v => kind != "category" || VisibleCategory(v)).Select(v=>Display(kind,v)));
         var key = kind == "category" ? CategoryKey(raw) : raw.Split('/').Last();
-        var map = kind switch { "country" => Countries, "role" => Roles, "factory" => Factories, "category" => Categories, _ => null };
+        var map = kind switch { "battalion" => BattalionTypes, "country" => Countries, "role" => Roles, "factory" => Factories, "category" => Categories, _ => null };
         if (kind == "category" && UiText.Current.English) return raw;
         return map?.TryGetValue(key, out var value) == true ? UiText.Current.English ? value.En : value.Zh : raw;
     }

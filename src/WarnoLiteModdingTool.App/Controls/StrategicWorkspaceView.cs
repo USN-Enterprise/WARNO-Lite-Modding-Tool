@@ -35,7 +35,7 @@ public sealed class StrategicWorkspaceView : UserControl
         var error = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(10) };
         error.SetResourceReference(TextBlock.ForegroundProperty, "ErrorTextBrush");
         error.SetBinding(TextBlock.TextProperty, new Binding("Error")); DockPanel.SetDock(error, Dock.Bottom); root.Children.Add(error);
-        _body.ColumnDefinitions.Add(new() { Width = new GridLength(230), MinWidth = 170 });
+        _body.ColumnDefinitions.Add(new() { Width = new GridLength(340), MinWidth = 250 });
         _body.ColumnDefinitions.Add(new() { Width = new GridLength(5) });
         _body.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star), MinWidth = 250 });
         _body.ColumnDefinitions.Add(new() { Width = new GridLength(5) });
@@ -46,10 +46,14 @@ public sealed class StrategicWorkspaceView : UserControl
         search.SetBinding(TextBox.TextProperty, new Binding("Search") { UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged });
         DockPanel.SetDock(search, Dock.Top); left.Children.Add(search);
         var filter=new FacetFilter { UseTags=true };filter.SetBinding(FacetFilter.RowsProperty,new Binding("FilterRows"));filter.FilterChanged+=(_,_)=>{if(DataContext is StrategicWorkspaceViewModel vm){vm.ListFilter=filter.Matches;vm.RefreshList();}};DockPanel.SetDock(filter,Dock.Top);left.Children.Add(filter);DockPanel.SetDock(filter.SelectionSummary,Dock.Top);left.Children.Add(filter.SelectionSummary);
-        var list = new DataGrid { AutoGenerateColumns=false, IsReadOnly=true, SelectionMode=DataGridSelectionMode.Single, EnableRowVirtualization=true };
+        var list = new DataGrid { AutoGenerateColumns=false, IsReadOnly=true, SelectionMode=DataGridSelectionMode.Single, EnableRowVirtualization=true, CanUserAddRows=false, HeadersVisibility=DataGridHeadersVisibility.Column, GridLinesVisibility=DataGridGridLinesVisibility.Horizontal, SelectionUnit=DataGridSelectionUnit.FullRow };
         var recordTemplate=new DataTemplate();var labelFactory=new FrameworkElementFactory(typeof(TextBlock));
-        var recordBinding=new MultiBinding { Converter=new StrategicRecordNameConverter() };recordBinding.Bindings.Add(new Binding());recordBinding.Bindings.Add(new Binding(nameof(UiText.Version)){Source=UiText.Current});labelFactory.SetBinding(TextBlock.TextProperty,recordBinding);labelFactory.SetBinding(ToolTipProperty,recordBinding);recordTemplate.VisualTree=labelFactory;list.Columns.Add(new DataGridTemplateColumn { Header=UiText.T("名称"),CellTemplate=recordTemplate,Width=new DataGridLength(1,DataGridLengthUnitType.Star),MinWidth=95 });
-        var countryBinding=new MultiBinding {Converter=new GameConverter("country",false)};countryBinding.Bindings.Add(new Binding("Country"));countryBinding.Bindings.Add(new Binding(nameof(UiText.Version)){Source=UiText.Current});list.Columns.Add(new DataGridTextColumn {Header=UiText.T("国家"),Binding=countryBinding,Width=85});
+        labelFactory.SetResourceReference(FrameworkElement.StyleProperty, "PrimaryGridText");
+        var recordBinding=new MultiBinding { Converter=new StrategicRecordNameConverter() };recordBinding.Bindings.Add(new Binding());recordBinding.Bindings.Add(new Binding(nameof(UiText.Version)){Source=UiText.Current});labelFactory.SetBinding(TextBlock.TextProperty,recordBinding);labelFactory.SetBinding(ToolTipProperty,recordBinding);recordTemplate.VisualTree=labelFactory;list.Columns.Add(new DataGridTemplateColumn { Header="名称",CellTemplate=recordTemplate,Width=new DataGridLength(1,DataGridLengthUnitType.Star),MinWidth=95 });
+        var countryBinding=new MultiBinding {Converter=new GameConverter("country",false)};countryBinding.Bindings.Add(new Binding("Country"));countryBinding.Bindings.Add(new Binding(nameof(UiText.Version)){Source=UiText.Current});list.Columns.Add(new DataGridTextColumn {Header="国家",Binding=countryBinding,Width=85});
+        var typeBinding = new MultiBinding { Converter = new GameConverter("battalion", false) }; typeBinding.Bindings.Add(new Binding("BattalionType")); typeBinding.Bindings.Add(new Binding(nameof(UiText.Version)) { Source = UiText.Current });
+        list.Columns.Add(new DataGridTextColumn { Header = "类型", Binding = typeBinding, Width = 110 });
+        foreach (var column in list.Columns) UiText.Bind(column, DataGridColumn.HeaderProperty, (string)column.Header);
         list.SetBinding(ItemsControl.ItemsSourceProperty, new Binding("VisibleRecords"));
         list.SetBinding(DataGrid.SelectedItemProperty, new Binding("Selected") { Mode = BindingMode.TwoWay });
         VirtualizingPanel.SetIsVirtualizing(list, true); VirtualizingPanel.SetVirtualizationMode(list, VirtualizationMode.Recycling);
