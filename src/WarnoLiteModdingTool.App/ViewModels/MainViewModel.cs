@@ -129,6 +129,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if(UnitWorkspace is {} workspace)workspace.SelectedUnit=workspace.Units.FirstOrDefault(u=>u.InternalName==operation.ObjectName);
         StatusText="新增单位已加入草稿";
     }
+    public async Task EditDivisionIdentityAsync(Window owner,bool create)
+    {
+        if(_draftStore is null||_creationDivisions is null)throw new InvalidOperationException("请先打开战术师模块");
+        var selected=DivisionWorkspace?.SelectedDivision?.Division;
+        if(!create&&selected is null)throw new InvalidOperationException("请选择战术师");
+        var window=new Controls.DivisionIdentityWindow(_creationDivisions,_draftStore.Operations,create,selected){Owner=owner};
+        if(window.ShowDialog()!=true||window.Result is not {} operation)return;
+        StatusText="正在校验战术师…";
+        await new WarnoLiteModdingTool.Core.Transactions.UnitTransactionService().PrepareApplyAsync(_creationDivisions.ProjectRoot,[operation]);
+        await _draftStore.UpsertAsync(operation);UnitWorkspace?.RefreshExternalDraftState();StatusText="战术师已加入草稿";
+    }
     private static string IgnoredPath=>Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"WarnoLiteModdingTool","ignored-problems.json");
     public ObservableCollection<ProblemItemViewModel> IgnoredProblems {get;}=LoadIgnored();
     private static ObservableCollection<ProblemItemViewModel> LoadIgnored(){try{return new(System.Text.Json.JsonSerializer.Deserialize<ProblemReport[]>(File.ReadAllText(IgnoredPath))!.Select(r=>new ProblemItemViewModel(r)));}catch{return [];}}
@@ -654,7 +665,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                 RulesWorkspace = new RulesWorkspaceViewModel(unitData.Rules!, _draftStore, UnitWorkspace.RefreshExternalDraftState);
                 OnPropertyChanged(nameof(RulesWorkspace)); OnPropertyChanged(nameof(IsRulesModule));
-                ProjectSummary = $"1.9.4 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
+                ProjectSummary = $"1.9.5 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
             }
 
             RefreshMode();

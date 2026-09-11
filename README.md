@@ -4,7 +4,7 @@
 
 <a id="chinese"></a>
 
-当前版本：**1.9.4**。移除武器页整套 Weapon 替换入口；Ammo 替换继续使用右侧“使用的 Ammo”字段。
+当前版本：**1.9.5**。新增单位图片、战术师模板创建与名称/已有师徽修改、新单位固定槽位 Ammo 选择，并修复新单位联合应用报错。
 
 这是一款面向 WARNO Mod 新手和不熟悉代码的玩家、易于上手的 Windows 图形化数值编辑器。通过可视化界面调整单位、武器、弹药等数值与相关参数，无需手写代码。编辑范围以数值和规则配置为主，不涉及模型、贴图、动画等美术资源的制作或编辑。
 
@@ -24,6 +24,15 @@
 
 当前 Mod 的 CSV 名称优先。没有可用词典时保留内部标识与普通参数编辑；创建或修改名称前需先加载词典以完成 token 冲突检查。营“类型”取自当前 Mod 的战略地图图标分类，未知分类保留原值。
 
+## 单位图片与战术师
+
+单位检查器宽栏显示小图，窄栏显示“查看图片”，点击可放大。图片按当前 Mod 引用读取，优先自定义 PNG；官方图片使用设置中的 WARNO 目录并缓存至 `%LOCALAPPDATA%/WarnoLiteModdingTool/images/v1/`。本工具不分发游戏图片，缺图仍可编辑参数。
+
+战术师页“新建战术师”选择模板、名称和已有师徽；同一入口可继续编辑待创建草稿。“名称与徽章”修改所选已有师。应用后，新师可在普通师编辑页修改单位池、费用与默认牌组。简介/历史及模型等沿用模板，本版不提供自定义师徽图片导入。
+
+新单位创建向导第3页可逐槽更换已有 Ammo，自动复制改动的 Weapon，保留槽位/炮塔/挂架。引用替换不会自动创建新模型或适配发射动画。
+
+图片解码使用随包提供的 [ZstdSharp.Port（MIT）](licenses/ZstdSharp-MIT.txt)，无需用户安装额外工具。
 ## 直接使用
 
 1. 解压完整发布 ZIP；本机未压缩目录可直接运行其中的 EXE。
@@ -70,10 +79,10 @@
 
 ## 开发与验证
 
-需要 Microsoft .NET 8 x64 SDK。项目不使用第三方 NuGet 包。
+需要 Microsoft .NET 8 x64 SDK。项目使用 ZstdSharp.Port 0.8.8（MIT）解码本机游戏图片；首次还原需访问 NuGet.org。
 
 ```powershell
-dotnet restore WarnoLiteModdingTool.sln --configfile NuGet.Config
+dotnet restore WarnoLiteModdingTool.sln --source https://api.nuget.org/v3/index.json
 dotnet build WarnoLiteModdingTool.sln -c Release --no-restore
 dotnet run --project tests/WarnoLiteModdingTool.Tests/WarnoLiteModdingTool.Tests.csproj -c Release --no-build
 ```
@@ -103,7 +112,7 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 <a id="english"></a>
 
-Current version: **1.9.4**. Removed the whole-Weapon replacement controls. Ammo replacement remains available through the existing ammunition field in the right pane.
+Current version: **1.9.5**. Unit portraits, tactical division creation and name/emblem editing, per-slot Ammo selection for new units, and a fix for combined unit-creation transactions.
 
 # WARNO Lite Modding Tool — English
 
@@ -121,6 +130,15 @@ The project's original code and documentation are licensed under the [MIT Licens
 
 Starting with 1.9.2, the source tree and new release packages no longer embed extracted game-name dictionaries. Names are read from the user’s WARNO installation and cached locally. Game data is not covered by this project’s MIT license.
 
+## Images and tactical divisions
+
+The unit inspector shows a small portrait in wide panes or a View image button in narrow panes. Click to enlarge. Mod PNGs take priority; official images are loaded from the configured WARNO directory and cached in `%LOCALAPPDATA%/WarnoLiteModdingTool/images/v1/`. Game images are not distributed with this tool.
+
+Use Create tactical division to choose a template, name and existing emblem. Pending creations can be reopened there. Name and emblem edits the selected existing division. Apply the draft before editing the new division roster, costs or default deck. Summary/history text is inherited; custom emblem imports are outside this release.
+
+New-unit creation supports existing Ammo selection per fixed slot. Changed Weapons are copied automatically. Replacing Ammo does not create or adapt models, mounts or animations.
+
+Image decompression uses bundled [ZstdSharp.Port (MIT)](licenses/ZstdSharp-MIT.txt); no extra tools are required.
 ## Original game names
 
 Opening a Mod locates WARNO and reads the English/Chinese name dictionaries in the background. No extraction tools are required. The cache lives at `%LOCALAPPDATA%/WarnoLiteModdingTool/names/cache-v1.json` and rebuilds when game archives change. If needed, choose the game installation under Settings → General → Original game names. Refresh names takes effect when settings closes and reloads the project after saving its drafts.
@@ -173,10 +191,10 @@ The editor does not depend on the development sample named `Exp` and does not ne
 
 ## Development and validation
 
-Requires the Microsoft .NET 8 x64 SDK. The project uses no third-party NuGet packages.
+Requires the Microsoft .NET 8 x64 SDK. The project uses ZstdSharp.Port 0.8.8 (MIT) to decode local game images; initial restore requires access to NuGet.org.
 
 ```powershell
-dotnet restore WarnoLiteModdingTool.sln --configfile NuGet.Config
+dotnet restore WarnoLiteModdingTool.sln --source https://api.nuget.org/v3/index.json
 dotnet build WarnoLiteModdingTool.sln -c Release --no-restore
 dotnet run --project tests/WarnoLiteModdingTool.Tests/WarnoLiteModdingTool.Tests.csproj -c Release --no-build
 ```

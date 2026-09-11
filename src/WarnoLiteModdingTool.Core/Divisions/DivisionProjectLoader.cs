@@ -98,9 +98,12 @@ public sealed class DivisionProjectLoader
                 var ruleName = NdfSyntaxDocument.Leaf(ReadRaw(document, constructor, descriptor, "DivisionRule", fields));
                 var matrixName = NdfSyntaxDocument.Leaf(ReadRaw(document, constructor, descriptor, "CostMatrix", fields));
                 var cfgName = NdfSyntaxDocument.Unquote(ReadRaw(document, constructor, descriptor, "CfgName", null));
+                var nameFields=document.FindDirectAssignments(constructor,"DivisionName");
+                var token=nameFields.Count==1?NdfSyntaxDocument.Unquote(document.Raw(nameFields[0])):"";
+                var display=units.Localisation.TryResolve(token,out var localName)?localName:WarnoLiteModdingTool.Core.Localisation.VanillaNames.Lookup("UNITS",token);
                 preliminaries.Add(new PreliminaryDivision(
                     descriptor,
-                    cfgName.Length == 0 ? descriptor.DisplayName : NameHumanizer.Humanize(cfgName),
+                    display ?? (cfgName.Length == 0 ? descriptor.DisplayName : NameHumanizer.Humanize(cfgName)),
                     maxActivation,
                     interfaceOrder,
                     coalition,

@@ -56,7 +56,8 @@ public enum DraftTargetKind
     StrategicPlan,
     UnitCreate,
     AmmoName,
-    GlobalRule
+    GlobalRule,
+    DivisionIdentity
 }
 
 public enum DraftEditScope

@@ -37,7 +37,7 @@
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="290" Margin="0,0,12,0">
                     <TextBlock Text="{Binding ProjectName}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding ProjectPath}"/>
-                    <TextBlock Text="1.9.4" Foreground="{DynamicResource MutedTextBrush}" FontSize="11"/>
+                    <TextBlock Text="1.9.5" Foreground="{DynamicResource MutedTextBrush}" FontSize="11"/>
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">

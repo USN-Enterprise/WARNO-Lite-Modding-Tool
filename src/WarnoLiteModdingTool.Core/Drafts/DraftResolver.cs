@@ -30,6 +30,7 @@ public static class DraftResolver
         {
             if (operation.TargetKind == DraftTargetKind.GlobalRule) { result.Add(workspace.Rules?.Resolve(operation) ?? new(operation, DraftResolutionStatus.Conflict, "游戏规则模块未加载")); continue; }
             if(operation.TargetKind==DraftTargetKind.AmmoName){result.Add(AmmoNames.Resolve(workspace,weapons,operation));continue;}
+            if(operation.TargetKind==DraftTargetKind.DivisionIdentity){result.Add(DivisionIdentity.Resolve(divisions,operation));continue;}
             if(operation.TargetKind==DraftTargetKind.UnitCreate){result.Add(UnitCreation.Resolve(workspace,operation));continue;}
             if (operation.TargetKind == DraftTargetKind.StrategicPlan)
             {

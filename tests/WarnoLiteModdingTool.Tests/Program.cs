@@ -79,6 +79,8 @@ internal static partial class Program
 
         var tests = new (string Name, Func<Task> Run)[]
         {
+            ("1.9.5 战术师创建改名师徽事务", DivisionIdentity195),
+            ("1.9.5 图片解码裁切与边界", ImageDecoder195),
             ("1.9.3 缓存不绕过事务校验", ProjectCacheTransaction193),
             ("1.9.3 Mod缓存与失效", ProjectCache193),
             ("1.9.3 武器缓存与隔离", ProjectCacheWeapons193),
@@ -93,6 +95,9 @@ internal static partial class Program
             ("战略显式索引映射与重叠拒绝", StrategicExplicitIndexMapping),
             ("固定减法与原版词典及显示规则", FixedSubtractAndNames),
             ("新增单位身份、独立武器及师规则事务",UnitCreationTransaction),
+            ("新增单位独立武器与P4联合应用",UnitCreationWithP4),
+            ("新增单位拒绝真实悬空Ammo",UnitCreationRejectsMissingAmmo),
+            ("新增单位固定槽位替换与共享隔离",UnitCreationFixedSlots),
             ("共用名称token独立改名及部分应用", SharedNameIsolation),
             ("182弹药名称独立事务",AmmoNameTransaction182),
             ("182战略可读差异",StrategicDiff182),
@@ -1956,6 +1961,7 @@ internal static partial class Program
                     var pixels = new byte[32*24*4];for(var x=0;x<pixels.Length;x+=4){pixels[x]=240;pixels[x+1]=120;pixels[x+2]=20;pixels[x+3]=255;}
                     var bitmap=System.Windows.Media.Imaging.BitmapSource.Create(32,24,96,96,PixelFormats.Bgra32,null,pixels,128);var encoder=new System.Windows.Media.Imaging.PngBitmapEncoder();encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));using(var file=File.Create(backdrop))encoder.Save(file);
                     VerifyBatch18Ui(viewModel,window,root);
+                    Verify195Ui(window,root,divisionRoot);
                     Verify181Ui(viewModel);
                     Verify182Ui(viewModel,window);
                     Verify184Ui(viewModel,window);

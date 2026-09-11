@@ -176,8 +176,10 @@
                                 <Border.Style><Style TargetType="Border"><Style.Triggers><DataTrigger Binding="{Binding UnitWorkspace.HasBatchInspector}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Border.Style>
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                                     <StackPanel Margin="16">
+                                        <DockPanel LastChildFill="True"><controls:UnitPortrait DockPanel.Dock="Right" Unit="{Binding UnitWorkspace.SelectedUnit.Unit}" Root="{Binding UnitWorkspace.Data.Localisation.ProjectRoot}"/><StackPanel>
                                         <TextBlock Text="{l:Loc Key='单位检查器'}" FontWeight="SemiBold" FontSize="16" />
                                         <TextBlock Text="{Binding UnitWorkspace.SelectedUnit.DisplayName, TargetNullValue=尚未选择单位}" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0" TextWrapping="Wrap" />
+                                        </StackPanel></DockPanel>
                                         <TextBlock Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}" Text="{Binding UnitWorkspace.SelectedUnit.InternalName}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,12" />
 
                                         <Border Background="{DynamicResource InfoBackgroundBrush}" BorderBrush="{DynamicResource InfoBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,0,0,10"

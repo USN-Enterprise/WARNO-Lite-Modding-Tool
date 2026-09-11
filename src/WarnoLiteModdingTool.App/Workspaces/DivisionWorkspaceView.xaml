@@ -10,7 +10,7 @@
                             <ColumnDefinition x:Name="DivisionEditorColumn" Width="*" MinWidth="480" />
                         </Grid.ColumnDefinitions>
 
-                        <DockPanel Grid.Column="0"><TextBox DockPanel.Dock="Top" Margin="6" Text="{Binding DivisionWorkspace.Search, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Loc Key='搜索师'}"/>
+                        <DockPanel Grid.Column="0"><WrapPanel DockPanel.Dock="Top" Margin="6"><Button Content="{l:Loc Key='新建战术师'}" Click="CreateDivision_Click" Padding="10,6"/><Button Content="{l:Loc Key='名称与徽章'}" Click="EditDivisionIdentity_Click" Padding="10,6" Margin="6,0,0,0"/></WrapPanel><TextBox DockPanel.Dock="Top" Margin="6" Text="{Binding DivisionWorkspace.Search, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Loc Key='搜索师'}"/>
                         <DataGrid ItemsSource="{Binding DivisionWorkspace.DivisionsView}"
                                   SelectedItem="{Binding DivisionWorkspace.SelectedDivision}"
                                   AutoGenerateColumns="False"

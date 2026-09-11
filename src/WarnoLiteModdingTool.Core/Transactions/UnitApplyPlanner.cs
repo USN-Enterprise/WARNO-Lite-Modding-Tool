@@ -75,7 +75,7 @@ public sealed class UnitApplyPlanner(
             weaponWorkspace = await _weaponLoader.LoadAsync(context, index, workspace, cancellationToken);
         }
         DivisionWorkspaceData? divisionWorkspace = null;
-        if (operations.Any(item => item.TargetKind == DraftTargetKind.DivisionPlan || item.TargetKind==DraftTargetKind.UnitCreate && UnitCreation.Read(item).Divisions.Count>0))
+        if (operations.Any(item => item.TargetKind is DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity || item.TargetKind==DraftTargetKind.UnitCreate && UnitCreation.Read(item).Divisions.Count>0))
         {
             var divisionCapability = index.Modules.FirstOrDefault(item => item.Key == "divisions");
             if (divisionCapability?.CanScan != true || divisionCapability.Availability == ModuleAvailability.ParseError)
@@ -283,13 +283,15 @@ public sealed class UnitApplyPlanner(
         }
         workspace.Rules?.Plan(operations, plannedFiles);
         divisionPlanner.ValidateCandidates(divisionWorkspace, divisionPlan, plannedFiles);
+        DivisionIdentity.Plan(root,divisionWorkspace,index,operations,plannedFiles);
         if(operations.Any(o=>o.TargetKind==DraftTargetKind.UnitCreate))UnitCreation.Plan(root,workspace,weaponWorkspace!,divisionWorkspace,index,operations,plannedFiles);
         if(weaponWorkspace is not null)AmmoNames.Plan(root,workspace,weaponWorkspace,operations,plannedFiles);
         var backupId = CreateBackupId("apply");
         var preparedUtc = DateTimeOffset.UtcNow;
-        if (weaponWorkspace is not null)
+        if (weaponWorkspace is not null &&
+            (weaponPlan.ValidationMessages.Count > 0 || operations.Any(o => o.TargetKind == DraftTargetKind.UnitCreate)))
         {
-            ValidateP4ReferenceClosure(index, plannedFiles, weaponWorkspace, weaponPlan);
+            ValidateCandidateReferenceClosure(index, plannedFiles, weaponWorkspace);
         }
         var validation = new List<string>
         {
@@ -346,7 +348,7 @@ public sealed class UnitApplyPlanner(
             {
                 DraftTargetKind.WeaponField or DraftTargetKind.MountedWeaponAmmo => "weapons",
                 DraftTargetKind.AmmoField or DraftTargetKind.AmmoName => "ammo",
-                DraftTargetKind.DivisionPlan => "divisions",
+                DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity => "divisions",
                 DraftTargetKind.StrategicPlan => "strategic",
                 DraftTargetKind.GlobalRule => "rules",
                 _ => "units"
@@ -592,54 +594,51 @@ public sealed class UnitApplyPlanner(
         }
     }
 
-    private void ValidateP4ReferenceClosure(
+    private void ValidateCandidateReferenceClosure(
         ProjectIndexResult index,
         IReadOnlyList<PlannedFileChange> files,
-        WeaponWorkspaceData workspace,
-        WeaponApplyPlan plan)
+        WeaponWorkspaceData workspace)
     {
-        if (plan.ValidationMessages.Count == 0)
+        var candidates = files.Where(file => file.Kind == FormalTextFileKind.Ndf).Select(file =>
         {
-            return;
+            var text = new UTF8Encoding(false, true).GetString(file.CandidateBytes);
+            var module = index.Objects.FirstOrDefault(o => string.Equals(o.SourceFile, file.FullPath, StringComparison.OrdinalIgnoreCase))?.ModuleKey ?? "units";
+            var scan = _scanner.Scan(text, file.FullPath, module,
+                Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(file.FullPath))) ?? string.Empty);
+            return (File: file, Text: text, Objects: scan.Objects);
+        }).ToArray();
+        var changedPaths = candidates.Select(c => c.File.FullPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var weaponTypes = workspace.Weapons.Select(w => w.Source.TypeName).ToHashSet(StringComparer.Ordinal);
+        var ammoTypes = workspace.Ammunition.Select(a => a.Source.TypeName).ToHashSet(StringComparer.Ordinal);
+        // Use every final candidate declaration, including objects produced by UnitCreation.
+        // Declarations in a replaced file must not survive solely through the old index.
+        var declarations = index.Objects.Where(o => !changedPaths.Contains(o.SourceFile))
+            .Concat(candidates.SelectMany(c => c.Objects)).ToArray();
+        HashSet<string> Names(HashSet<string> types)
+        {
+            var groups = declarations.Where(o => types.Contains(o.TypeName)).GroupBy(o => o.Name, StringComparer.Ordinal).ToArray();
+            var duplicate = groups.FirstOrDefault(g => g.Count() > 1);
+            if (duplicate is not null) throw new TransactionValidationException($"候选武器/弹药对象重复：{duplicate.Key}");
+            return groups.Select(g => g.Key).ToHashSet(StringComparer.Ordinal);
         }
-
-        var weaponNames = workspace.Weapons.Select(item => item.Name).ToHashSet(StringComparer.Ordinal);
-        var ammoNames = workspace.Ammunition.Select(item => item.Name).ToHashSet(StringComparer.Ordinal);
-        foreach (var names in plan.NewObjectsByFile)
+        var weaponNames = Names(weaponTypes);
+        var ammoNames = Names(ammoTypes);
+        foreach (var candidate in candidates)
         {
-            if (Path.GetFileName(names.Key).Equals("WeaponDescriptor.ndf", StringComparison.OrdinalIgnoreCase))
+            foreach (var descriptor in candidate.Objects)
             {
-                weaponNames.UnionWith(names.Value);
-            }
-            else
-            {
-                ammoNames.UnionWith(names.Value);
-            }
-        }
-
-        foreach (var file in files.Where(item => item.Kind == FormalTextFileKind.Ndf))
-        {
-            var candidate = new UTF8Encoding(false, true).GetString(file.CandidateBytes);
-            var module = Path.GetFileName(file.RelativePath).Equals("WeaponDescriptor.ndf", StringComparison.OrdinalIgnoreCase) ? "weapons" : "units";
-            var scan = _scanner.Scan(candidate, file.FullPath, module, Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(file.FullPath))) ?? string.Empty);
-            foreach (var descriptor in scan.Objects)
-            {
-                var document = new NdfSyntaxDocument(candidate, descriptor.CharacterOffset, descriptor.CharacterLength);
-                if (descriptor.ModuleKey == "units")
-                {
-                    var missing = document.FindReferenceLeaves("WeaponDescriptor_").Where(name => !weaponNames.Contains(name)).ToArray();
-                    if (missing.Length > 0)
-                    {
-                        throw new TransactionValidationException($"候选 Unit 存在悬空 Weapon 引用：{string.Join(", ", missing.Take(3))}");
-                    }
-                }
-                else if (descriptor.ModuleKey == "weapons")
+                var document = new NdfSyntaxDocument(candidate.Text, descriptor.CharacterOffset, descriptor.CharacterLength);
+                if (weaponTypes.Contains(descriptor.TypeName))
                 {
                     var missing = document.FindReferenceLeaves("Ammo_").Where(name => !ammoNames.Contains(name)).ToArray();
                     if (missing.Length > 0)
-                    {
                         throw new TransactionValidationException($"候选 Weapon 存在悬空 Ammo 引用：{string.Join(", ", missing.Take(3))}");
-                    }
+                }
+                else if (descriptor.ModuleKey == "units")
+                {
+                    var missing = document.FindReferenceLeaves("WeaponDescriptor_").Where(name => !weaponNames.Contains(name)).ToArray();
+                    if (missing.Length > 0)
+                        throw new TransactionValidationException($"候选 Unit 存在悬空 Weapon 引用：{string.Join(", ", missing.Take(3))}");
                 }
             }
         }

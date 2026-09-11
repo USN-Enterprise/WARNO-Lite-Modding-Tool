@@ -790,3 +790,26 @@ WARNO Lite Modding Tool 已在运行。|WARNO Lite Modding Tool is already runni
 缓存上次打开的 Mod，加快再次打开|Cache the last opened Mod for faster reopening
 下次打开生效。文件变化时重新加载，草稿仍从当前 Mod 恢复。|Takes effect on next open. Changed files are reloaded; drafts are restored from the current Mod.
 清除 Mod 缓存|Clear Mod cache
+
+槽位固定，可选择当前 Mod 的 Ammo。替换会自动复制对应武器；勾选上方选项则复制全部武器。模型、动画和挂架保持母版设置。|Slots are fixed. Select Ammo from this Mod; changed weapons are copied automatically. Check above to copy all weapons. Models, animations and mounts retain the template settings.
+共用弹药箱|Shared ammo box
+恢复母版|Reset to template
+对象不可用|Object unavailable
+无法推导|Unknown
+按当前弹药计算|Calculated ammunition
+草稿槽位已不存在，请重新选择母版创建。|Draft slots no longer exist. Create a new draft from a template.
+母版没有可识别的武器槽位。|No recognizable weapon slots in this template.
+替换槽位|Changed slots
+
+查看图片|View image
+加载图片…|Loading image…
+暂无图片|Image unavailable
+新建战术师|Create tactical division
+名称与徽章|Name and emblem
+新师|New division
+无师徽|No emblem
+继续编辑待创建师|Resume pending division
+母版师|Template division
+师徽|Emblem
+沿用模板单位池、费用和默认牌组；应用后可在师页面继续调整。简介与历史文字沿用模板。|Inherits the template roster, costs and default deck. Edit them on the division page after applying. Summary and history text are inherited.
+修改师名称和已有徽章，名称及标题一起更新。简介与历史文字保持原内容。|Edit the name and existing emblem. The name and title update together; summary and history text remain unchanged.

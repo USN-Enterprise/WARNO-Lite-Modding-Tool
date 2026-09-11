@@ -6,6 +6,12 @@
 
 仅列出功能更新和影响使用的问题修复。
 
+## 1.9.5 — 2026-09-11
+
+- 单位检查器显示肖像：宽栏小图、窄栏查看按钮，点击放大；优先当前 Mod 图片，其余从本机 WARNO 读取并缓存，缺图不影响编辑。
+- 新增战术师模板创建及名称/已有师徽修改；新师独立注册规则、费用和默认牌组，名称与资源引用统一进入草稿事务。新师草稿可从创建窗口继续编辑，应用后可调整单位池等参数。
+- 新建单位支持固定槽位逐槽选择当前 Mod 已有 Ammo、恢复母版，并显示共享弹药箱及可推导弹量；自动隔离改动的 Weapon，保留模型、动画与挂架。
+- 修复新建单位独立 Weapon 与其他武器草稿一起应用时被误报为悬空引用的问题。
 ## 1.9.4 — 2026-09-10
 
 - 移除武器页“替换为已有 Weapon”选择框与保存按钮；保留当前 Weapon、挂载选择及右侧已有 Ammo 替换字段。
@@ -156,6 +162,12 @@
 
 Feature updates and fixes that affect everyday use.
 
+## 1.9.5 — 2026-09-11
+
+- Unit portraits appear beside the inspector heading, with a compact button in narrow panes and click-to-enlarge. Mod images take priority; official images are read and cached locally from WARNO. Missing images do not block editing.
+- Create tactical divisions from templates and edit names or existing emblems. New divisions receive independent rules, costs and default decks; identity changes are saved as transactional drafts. Reopen pending creations in the creation window, then edit roster parameters after applying.
+- New units can select existing Ammo for each fixed template slot, reset individual slots and see shared ammo boxes and calculated ammunition. Changed Weapons are isolated automatically; models, animations and mounts are preserved.
+- Fix false dangling-Weapon errors when applying newly created units together with other weapon drafts.
 ## 1.9.4 — 2026-09-10
 
 - Removed the whole-Weapon replacement picker and save button. Current Weapon and mount selection, and the existing Ammo replacement field, remain available.
