@@ -32,6 +32,7 @@ public static class DraftResolver
             if(operation.TargetKind==DraftTargetKind.AmmoName){result.Add(AmmoNames.Resolve(workspace,weapons,operation));continue;}
             if(operation.TargetKind==DraftTargetKind.DivisionIdentity){result.Add(DivisionIdentity.Resolve(divisions,operation));continue;}
             if(operation.TargetKind==DraftTargetKind.UnitCreate){result.Add(UnitCreation.Resolve(workspace,operation));continue;}
+            if(operation.TargetKind==DraftTargetKind.StrategicPack){result.Add(StrategicPackEditing.Resolve(strategic,operation));continue;}
             if (operation.TargetKind == DraftTargetKind.StrategicPlan)
             {
                 result.Add(StrategicPlanner.Resolve(strategic, operation));

@@ -79,6 +79,9 @@ internal static partial class Program
 
         var tests = new (string Name, Func<Task> Run)[]
         {
+            ("1.9.6 空军布局联动与失败恢复", AirLayout196),
+            ("1.9.6 SP命名与全引用事务", PackEditing196),
+            ("1.9.6 挂载数量隔离", MountedCount196),
             ("1.9.5 战术师创建改名师徽事务", DivisionIdentity195),
             ("1.9.5 图片解码裁切与边界", ImageDecoder195),
             ("1.9.3 缓存不绕过事务校验", ProjectCacheTransaction193),
@@ -1953,8 +1956,8 @@ internal static partial class Program
                     foreach(var item in savedItems)draftItems.Add(new WarnoLiteModdingTool.App.ViewModels.Drafts.DraftItemViewModel(item.Resolved with {Operation=item.Resolved.Operation with {GroupId="qa-batch"}}));
                     DrainDispatcher(window.Dispatcher);SaveUiSnapshot(window,"draft-batch-collapsed.png");
                     var batchExpander=FindVisualChildren<Expander>((DataGrid)FindWorkspaceName(window, "DraftOverviewGrid")).First(e=>e.Name=="BatchExpander");Assert(!batchExpander.IsExpanded,"批次默认折叠");batchExpander.IsExpanded=true;DrainDispatcher(window.Dispatcher);SaveUiSnapshot(window,"draft-batch-expanded.png");draftItems.Clear();foreach(var item in savedItems)draftItems.Add(item);
-                    var mini=new WarnoLiteModdingTool.App.Controls.UnitMiniFilter {ItemsSource=viewModel.UnitWorkspace.Units,IsExpanded=true};var miniWindow=new System.Windows.Window {Content=mini,Width=600,Height=360};SaveUiSnapshot(miniWindow,"mini-filter.png");
-                    var countryChoice=FindVisualChildren<CheckBox>(mini).First(c=>Equals(c.Tag,"US"));countryChoice.IsChecked=true;Assert(viewModel.UnitWorkspace.Units.Where(u=>mini.Matches(u)).All(u=>u.Unit.Country=="US"),"小筛选国家条件生效");miniWindow.Close();
+                    var mini=new WarnoLiteModdingTool.App.Controls.UnitMiniFilter {ItemsSource=viewModel.UnitWorkspace.Units};var miniWindow=new System.Windows.Window {Content=mini.Content,Width=600,Height=360};SaveUiSnapshot(miniWindow,"mini-filter.png");
+                    var countryChoice=FindVisualChildren<CheckBox>((System.Windows.DependencyObject)mini.Content!).First(c=>Equals(c.Tag,"US"));countryChoice.IsChecked=true;Assert(viewModel.UnitWorkspace.Units.Where(u=>mini.Matches(u)).All(u=>u.Unit.Country=="US"),"小筛选国家条件生效");miniWindow.Close();
                     viewModel.SelectedModule = viewModel.Modules.Single(m=>m.Key=="units");
                     Assert(viewModel.UnitWorkspace!.Fields.Where(f=>f.Key=="structure.country" || f.Key=="structure.coalition").All(f=>f.IsEditable),"基本身份字段不因模式锁定");
                     var backdrop=Path.Combine(root,"test-background.png");
@@ -1980,6 +1983,7 @@ internal static partial class Program
                     Verify19Ui(viewModel, window, root);
                     Verify191Ui(viewModel, window);
                     viewModel.AdvancedMode=false;WarnoLiteModdingTool.App.Localisation.UiText.Current.SetLanguage("zh-CN");Verify192Ui(viewModel, window);
+                    Verify196Ui(viewModel, window, root,divisionRoot);
                     Verify186Ui(viewModel, window, root);
                     application.Shutdown();
                     if (failure is not null)

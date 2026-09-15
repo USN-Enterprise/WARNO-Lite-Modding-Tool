@@ -47,7 +47,7 @@ StrategicConstantes is TStrategicTunableConstante (
     }
     private static async Task RulesTransaction184()
     {
-        Assert(RuleCatalog.All.Count==50&&RuleCatalog.All.Count(d=>d.Basic)==32,"严格限定50/32项");
+        Assert(RuleCatalog.All.Count(d=>d.Number<=50)==50&&RuleCatalog.All.Count(d=>d.Number<=50&&d.Basic)==32,"原50项模式范围保持");
         foreach(var nl in new[]{"\n","\r\n"})
         {
             var root=Path.Combine(Path.GetTempPath(),"wl-rules184-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
@@ -119,7 +119,7 @@ StrategicConstantes is TStrategicTunableConstante (
         Assert(units.Fields.Count(f=>f.Key.StartsWith("recon.vision.")&&f.IsVisible)==1&&units.Fields.Count(f=>f.Key.StartsWith("recon.optics.")&&f.IsVisible)==1,"基础模式两组各一个输入");
         Assert(units.Fields.Single(f=>f.Key=="structure.specialties").IsPillEditor,"特性标签化");
         var rules=vm.RulesWorkspace!;vm.SelectedModule=vm.Modules.Single(m=>m.Key=="rules");
-        Assert(rules.View.Cast<object>().Count()==32,"基础界面32项");
+        Assert(rules.View.Cast<object>().Count()==33,"基础界面增加空军布局");
         DrainDispatcher(window.Dispatcher);
         var view=FindVisualChildren<WarnoLiteModdingTool.App.Controls.RulesView>((System.Windows.DependencyObject)window.Content).Single();
         var expanders=FindVisualChildren<System.Windows.Controls.Expander>(view).Take(2).ToArray();foreach(var ex in expanders)ex.IsExpanded=true;
@@ -129,7 +129,7 @@ StrategicConstantes is TStrategicTunableConstante (
         Assert(units.DraftItems.Any(d=>d.Resolved.Operation.TargetKind==DraftTargetKind.GlobalRule&&d.Resolved.Operation.FieldKey=="7"),"规则UI进入草稿");
         RunWithDispatcher(income.UndoAsync(),window.Dispatcher);
         Assert(income.Cells.Single().Value=="260","规则撤销恢复值");
-        vm.AdvancedMode=true;Assert(rules.View.Cast<object>().Count()==50,"专业界面50项");
+        vm.AdvancedMode=true;Assert(rules.View.Cast<object>().Count()==54,"专业界面增加空军四组");
         var workbench=new WarnoLiteModdingTool.App.Advanced.AdvancedWindow(vm);
         typeof(WarnoLiteModdingTool.App.Advanced.AdvancedWindow).GetMethod("LoadFields",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.Invoke(workbench,null);
         ((System.Windows.Controls.TabControl)workbench.Content).SelectedIndex=1;SaveUiSnapshot(workbench,"184-workbench.png");

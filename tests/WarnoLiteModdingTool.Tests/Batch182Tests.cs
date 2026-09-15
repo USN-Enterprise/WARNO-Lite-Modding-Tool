@@ -37,11 +37,11 @@ internal static partial class Program
         var nameField=ammoVm.Fields.Single(f=>f.Field.Key=="ammo.name");Assert(nameField.IsTextEditor&&nameField.IsEditable,"弹药游戏内名称编辑器可用");vm.SelectedModule=vm.Modules.Single(m=>m.Key=="ammo");SaveUiSnapshot(main,"182-ammo-name.png");
         nameField.EditValue="弹药测试名称";RunWithDispatcher(nameField.FlushAsync(),main.Dispatcher);var token=nameField.Draft?.NameToken;Assert(token?.Length==10&&ammoVm.SelectedAmmo.DisplayName=="弹药测试名称","无需预览持久化改名并刷新列表");
         nameField.EditValue="弹药测试名称二";RunWithDispatcher(nameField.FlushAsync(),main.Dispatcher);Assert(nameField.Draft?.NameToken==token,"重编辑复用token");RunWithDispatcher(ammoVm.UndoFieldAsync(nameField),main.Dispatcher);Assert(nameField.Draft is null,"撤销名称草稿");
-        var f=new WarnoLiteModdingTool.App.Controls.FacetFilter {UseTags=true,IsExpanded=true,Rows=[new("a",new Dictionary<string,string[]>{{"国家",["SOV"]},{"所属师",["师A"]},{"战斗角色",["Fighter"]}})]};
+        var f=new WarnoLiteModdingTool.App.Controls.FacetFilter {UseTags=true,Rows=[new("a",new Dictionary<string,string[]>{{"国家",["SOV"]},{"所属师",["师A"]},{"战斗角色",["Fighter"]}})]};
         var body=new System.Windows.Controls.StackPanel();body.Children.Add(f);body.Children.Add(f.SelectionSummary);var w=new System.Windows.Window {Content=body,Width=420,Height=600};
-        var until=DateTime.UtcNow.AddSeconds(5);while(f.Content is null&&DateTime.UtcNow<until){DrainDispatcher(main.Dispatcher);System.Threading.Thread.Sleep(10);}SaveUiSnapshot(w,"182-tags.png");
-        Assert(FindVisualChildren<System.Windows.Controls.Expander>(f).Where(e=>e!=f&&e.Header?.ToString()?.StartsWith("所属师")==true).All(e=>!e.IsExpanded),"所属师默认折叠");
-        FindVisualChildren<System.Windows.Controls.CheckBox>(f).Single(c=>Equals(c.Content,"苏联")).IsChecked=true;Assert(f.SelectionSummary.Children.Count==1,"已选标签摘要独立显示");f.IsExpanded=false;SaveUiSnapshot(w,"182-tags-collapsed.png");w.Close();
+        var until=DateTime.UtcNow.AddSeconds(5);while(f.Content is null&&DateTime.UtcNow<until){DrainDispatcher(main.Dispatcher);System.Threading.Thread.Sleep(10);}body.Children.Remove(f);body.Children.Insert(0,(System.Windows.UIElement)f.Content!);SaveUiSnapshot(w,"182-tags.png");
+        Assert(FindVisualChildren<System.Windows.Controls.Expander>((System.Windows.DependencyObject)f.Content!).Where(e=>e.Header?.ToString()?.StartsWith("所属师")==true).All(e=>!e.IsExpanded),"所属师默认折叠");
+        FindVisualChildren<System.Windows.Controls.CheckBox>((System.Windows.DependencyObject)f.Content!).Single(c=>Equals(c.Content,"苏联")).IsChecked=true;Assert(f.SelectionSummary.Children.Count==1,"已选标签摘要独立显示");SaveUiSnapshot(w,"182-tags-collapsed.png");w.Close();
         vm.AdvancedMode=true;Assert(WarnoLiteModdingTool.App.Localisation.GameText.Display("country","DDR")=="DDR","高级国家代码");vm.AdvancedMode=false;
         WarnoLiteModdingTool.App.Localisation.UiText.Current.SetLanguage("en");Assert(WarnoLiteModdingTool.App.Localisation.GameText.Display("country","DDR")=="DDR","中文国名不改英文");WarnoLiteModdingTool.App.Localisation.UiText.Current.SetLanguage("zh-CN");
     }

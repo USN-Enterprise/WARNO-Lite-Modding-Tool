@@ -33,8 +33,9 @@ public static class ProjectModuleCatalog
                 Path.Combine("Decks", "DeckPacks.ndf"),
                 Path.Combine("Decks", "Decks.ndf")
             ]),
+        new FileSetProjectModule("sp", "战略 Pack（SP）", [Path.Combine("Decks", "StrategicPacks.ndf")]),
         new FileSetProjectModule("strategic", "将军模式",
-            [Path.Combine("Decks", "StrategicPacks.ndf"), Path.Combine("Decks", "StrategicDecks.ndf"),
+            [Path.Combine("Decks", "StrategicDecks.ndf"),
              Path.Combine("Decks", "StrategicCombatGroups.ndf"), Path.Combine("Unit", "Strategic", "Units.ndf"),
              Path.Combine("Unit", "Strategic", "AirplaneUnits.ndf")])
     ];

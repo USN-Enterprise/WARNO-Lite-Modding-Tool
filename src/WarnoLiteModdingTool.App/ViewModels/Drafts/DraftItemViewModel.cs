@@ -40,6 +40,7 @@ public sealed class DraftItemViewModel : ObservableObject
         "ammo" => "弹药",
         "divisions" => "战术师",
         "strategic" => "将军模式",
+        "sp" => "战略 Pack（SP）",
         "rules" => "游戏规则",
         _ => Resolved.Operation.Module
     };

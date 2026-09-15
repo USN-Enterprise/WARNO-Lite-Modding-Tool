@@ -3,7 +3,10 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:l="clr-namespace:WarnoLiteModdingTool.App.Localisation"
     xmlns:controls="clr-namespace:WarnoLiteModdingTool.App.Controls">
-<Grid>
+<UserControl.Resources>
+ <Style x:Key="CenteredNumber" TargetType="TextBlock"><Setter Property="TextAlignment" Value="Center"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
+ <Style x:Key="CenteredNumberEditor" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}"><Setter Property="TextAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="VerticalAlignment" Value="Stretch"/><Setter Property="Padding" Value="4"/><Setter Property="Margin" Value="2"/></Style>
+</UserControl.Resources><Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition x:Name="DivisionListColumn" Width="300" MinWidth="240" MaxWidth="520" />
                             <ColumnDefinition Width="6" />
@@ -11,6 +14,7 @@
                         </Grid.ColumnDefinitions>
 
                         <DockPanel Grid.Column="0"><WrapPanel DockPanel.Dock="Top" Margin="6"><Button Content="{l:Loc Key='新建战术师'}" Click="CreateDivision_Click" Padding="10,6"/><Button Content="{l:Loc Key='名称与徽章'}" Click="EditDivisionIdentity_Click" Padding="10,6" Margin="6,0,0,0"/></WrapPanel><TextBox DockPanel.Dock="Top" Margin="6" Text="{Binding DivisionWorkspace.Search, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Loc Key='搜索师'}"/>
+                        <controls:FacetFilter DockPanel.Dock="Top" Margin="6" Rows="{Binding DivisionWorkspace.DivisionFilterRows}" FilterChanged="DivisionFilter_Changed"/>
                         <DataGrid ItemsSource="{Binding DivisionWorkspace.DivisionsView}"
                                   SelectedItem="{Binding DivisionWorkspace.SelectedDivision}"
                                   AutoGenerateColumns="False"
@@ -22,7 +26,7 @@
                                   BorderThickness="0"
                                   RowHeaderWidth="0">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="{l:Loc Key='师'}" Binding="{Binding DisplayName}" ElementStyle="{StaticResource IndexPrimaryGridText}" HeaderStyle="{StaticResource IndexGridColumnHeader}" Width="*" />
+                                <DataGridTemplateColumn Header="{l:Loc Key='师'}" Width="*"><DataGridTemplateColumn.CellTemplate><DataTemplate><StackPanel Orientation="Horizontal"><controls:DivisionEmblem Width="32" Height="32" Margin="0,2,6,2" Root="{Binding DataContext.DivisionWorkspace.ProjectRoot, RelativeSource={RelativeSource AncestorType=UserControl}}" TextureKey="{Binding Emblem}"/><TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/></StackPanel></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
                                 <DataGridTextColumn Header="{l:Loc Key='国家'}" Binding="{l:GameBinding Path=Country, Kind=country}" Width="58" />
                                 <DataGridTextColumn Header="{l:Loc Key='草稿'}" Binding="{Binding DraftStatus}" Width="58" />
                             </DataGrid.Columns>
@@ -56,8 +60,8 @@
                                             <DataGrid.Columns>
                                                 <DataGridTextColumn Header="Unit" Binding="{Binding Unit}" ElementStyle="{StaticResource PrimaryGridText}" IsReadOnly="True" Width="2*" />
                                                 <DataGridCheckBoxColumn Binding="{Binding AvailableWithoutTransport, UpdateSourceTrigger=PropertyChanged}" Width="140" ><DataGridCheckBoxColumn.Header><StackPanel MaxWidth="125"><TextBlock Text="{l:Loc Key='可无运输'}"/><controls:ParameterNote Text="AvailableWithoutTransport"/></StackPanel></DataGridCheckBoxColumn.Header></DataGridCheckBoxColumn>
-                                                <DataGridTextColumn Binding="{Binding MaxPackNumber, UpdateSourceTrigger=PropertyChanged}" Width="115" ><DataGridTextColumn.Header><StackPanel MaxWidth="125"><TextBlock Text="{l:Loc Key='最大卡数'}"/><controls:ParameterNote Text="MaxPackNumber"/></StackPanel></DataGridTextColumn.Header></DataGridTextColumn>
-                                                <DataGridTextColumn Binding="{Binding NumberOfUnitInPack, UpdateSourceTrigger=PropertyChanged}" Width="130" ><DataGridTextColumn.Header><StackPanel MaxWidth="125"><TextBlock Text="{l:Loc Key='单卡数量'}"/><controls:ParameterNote Text="NumberOfUnitInPack"/></StackPanel></DataGridTextColumn.Header></DataGridTextColumn>
+                                                <DataGridTextColumn ElementStyle="{StaticResource CenteredNumber}" EditingElementStyle="{StaticResource CenteredNumberEditor}" Binding="{Binding MaxPackNumber, UpdateSourceTrigger=PropertyChanged}" Width="115" ><DataGridTextColumn.Header><StackPanel MaxWidth="125"><TextBlock Text="{l:Loc Key='最大卡数'}"/><controls:ParameterNote Text="MaxPackNumber"/></StackPanel></DataGridTextColumn.Header></DataGridTextColumn>
+                                                <DataGridTextColumn ElementStyle="{StaticResource CenteredNumber}" EditingElementStyle="{StaticResource CenteredNumberEditor}" Binding="{Binding NumberOfUnitInPack, UpdateSourceTrigger=PropertyChanged}" Width="130" ><DataGridTextColumn.Header><StackPanel MaxWidth="125"><TextBlock Text="{l:Loc Key='单卡数量'}"/><controls:ParameterNote Text="NumberOfUnitInPack"/></StackPanel></DataGridTextColumn.Header></DataGridTextColumn>
                                             </DataGrid.Columns>
                                         </DataGrid>
                                         <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,10,0,0">

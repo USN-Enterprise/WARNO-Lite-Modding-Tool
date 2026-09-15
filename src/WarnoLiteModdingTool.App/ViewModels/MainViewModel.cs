@@ -42,6 +42,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public RulesWorkspaceViewModel? RulesWorkspace { get; private set; }
     public bool IsRulesModule => SelectedModule?.Key == "rules" && RulesWorkspace is not null;
     public StrategicWorkspaceViewModel? StrategicWorkspace { get; private set; }
+    public bool IsPackModule => SelectedModule?.Key == "sp" && StrategicWorkspace is not null;
     public bool IsStrategicModule => SelectedModule?.Key == "strategic" && StrategicWorkspace is not null;
     private ModuleItemViewModel? _selectedModule;
     private RecentProjectEntry? _selectedRecentProject;
@@ -138,7 +139,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if(window.ShowDialog()!=true||window.Result is not {} operation)return;
         StatusText="正在校验战术师…";
         await new WarnoLiteModdingTool.Core.Transactions.UnitTransactionService().PrepareApplyAsync(_creationDivisions.ProjectRoot,[operation]);
-        await _draftStore.UpsertAsync(operation);UnitWorkspace?.RefreshExternalDraftState();StatusText="战术师已加入草稿";
+        await _draftStore.UpsertAsync(operation);UnitWorkspace?.RefreshExternalDraftState();DivisionWorkspace?.RefreshFromDrafts();StatusText="战术师已加入草稿";
     }
     private static string IgnoredPath=>Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"WarnoLiteModdingTool","ignored-problems.json");
     public ObservableCollection<ProblemItemViewModel> IgnoredProblems {get;}=LoadIgnored();
@@ -175,7 +176,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 OnPropertyChanged(nameof(IsWeaponModule));
                 OnPropertyChanged(nameof(IsAmmoModule));
                 OnPropertyChanged(nameof(IsDivisionModule));
-                OnPropertyChanged(nameof(IsStrategicModule));
+                OnPropertyChanged(nameof(IsStrategicModule));OnPropertyChanged(nameof(IsPackModule));
                 OnPropertyChanged(nameof(IsRulesModule));
                 OnPropertyChanged(nameof(IsDraftModule));
                 OnPropertyChanged(nameof(IsProblemModule));
@@ -250,7 +251,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             if (SetProperty(ref _divisionWorkspace, value))
             {
                 OnPropertyChanged(nameof(IsDivisionModule));
-                OnPropertyChanged(nameof(IsStrategicModule));
+                OnPropertyChanged(nameof(IsStrategicModule));OnPropertyChanged(nameof(IsPackModule));
                 OnPropertyChanged(nameof(IsRulesModule));
                 OnPropertyChanged(nameof(IsObjectModule));
             }
@@ -263,7 +264,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public bool IsProblemModule => SelectedModule?.Key == "problems";
 
-    public bool IsObjectModule => !IsUnitModule && !IsWeaponModule && !IsAmmoModule && !IsDivisionModule && !IsStrategicModule && !IsRulesModule && !IsDraftModule && !IsProblemModule;
+    public bool IsObjectModule => !IsUnitModule && !IsWeaponModule && !IsAmmoModule && !IsDivisionModule && !IsStrategicModule && !IsPackModule && !IsRulesModule && !IsDraftModule && !IsProblemModule;
 
     public RecentProjectEntry? SelectedRecentProject
     {
@@ -577,7 +578,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             if (unitCapability?.CanScan == true ||
                 weaponCapability?.CanScan == true ||
                 ammoCapability?.CanScan == true ||
-                divisionCapability?.CanScan == true || result.Modules.Any(m => m.Key is "strategic" or "rules" && m.CanScan))
+                divisionCapability?.CanScan == true || result.Modules.Any(m => m.Key is "strategic" or "sp" or "rules" && m.CanScan))
             {
                 StatusText = "正在建立项目字段、名称与引用索引";
                 var unitData = await _unitLoader.LoadAsync(context, result, scanCancellation.Token, loadCache);
@@ -644,14 +645,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     DivisionWorkspace = new DivisionWorkspaceViewModel(divisionData, _draftStore, SetStatusText, UnitWorkspace.RefreshExternalDraftState);
                 }
 
-                if (result.Modules.Any(m => m.Key == "strategic" && m.CanScan))
+                if (result.Modules.Any(m => m.Key is "strategic" or "sp" && m.CanScan))
                 {
                     var strategic = await new WarnoLiteModdingTool.Core.Strategic.StrategicLoader().LoadAsync(context, result, unitData, scanCancellation.Token);
                     UnitWorkspace.StrategicData = strategic;
                     StrategicWorkspace = new StrategicWorkspaceViewModel(strategic, _draftStore, UnitWorkspace.RefreshExternalDraftState, SetStatusText);
                     UnitWorkspace.RefreshExternalDraftState();
                     OnPropertyChanged(nameof(StrategicWorkspace));
-                    OnPropertyChanged(nameof(IsStrategicModule));
+                    OnPropertyChanged(nameof(IsStrategicModule));OnPropertyChanged(nameof(IsPackModule));
                 OnPropertyChanged(nameof(IsRulesModule));
                     foreach (var diagnostic in strategic.Diagnostics) Diagnostics.Add(new DiagnosticItemViewModel("将军模式", diagnostic));
                 }
@@ -665,7 +666,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                 RulesWorkspace = new RulesWorkspaceViewModel(unitData.Rules!, _draftStore, UnitWorkspace.RefreshExternalDraftState);
                 OnPropertyChanged(nameof(RulesWorkspace)); OnPropertyChanged(nameof(IsRulesModule));
-                ProjectSummary = $"1.9.5 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
+                ProjectSummary = $"1.9.6 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
             }
 
             RefreshMode();
@@ -836,7 +837,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(RulesWorkspace));
         StrategicWorkspace = null;
         OnPropertyChanged(nameof(StrategicWorkspace));
-        OnPropertyChanged(nameof(IsStrategicModule));
+        OnPropertyChanged(nameof(IsStrategicModule));OnPropertyChanged(nameof(IsPackModule));
                 OnPropertyChanged(nameof(IsRulesModule));
         Modules.Clear();
         Modules.Add(_problemModule);

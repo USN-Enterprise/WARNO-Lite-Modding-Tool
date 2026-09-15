@@ -23,6 +23,7 @@ public sealed class RuleWorkspace(string root, IReadOnlyList<RuleGroup> groups)
         {
             try
             {
+                if(definition.Number==AirLayout.Number){groups.Add(AirLayout.Read(root,definition));continue;}
                 if (!sources.TryGetValue(definition.RelativePath, out var source))
                 {
                     var snapshot = TextFileSnapshot.Load(root, definition.RelativePath, FormalTextFileKind.Ndf);
@@ -79,7 +80,7 @@ public sealed class RuleWorkspace(string root, IReadOnlyList<RuleGroup> groups)
             }
             else
             {
-                var boolean = definition.Number == 46 && raw is "true" or "false";
+                var boolean = definition.Number is 46 or 52 && raw is "true" or "false";
                 if (!boolean && !decimal.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out _)) throw new InvalidDataException("不是直接数值：" + label);
                 cells.Add(new(key, label, raw, doc.StartOffset(value), doc.Length(value), boolean, !boolean && definition.Number is 1 or 2 or 3 or 4 or 5 or 6 or 16 or 33 or 34 or 35 or 36 or 37 or 38 or 39 or 40 or 43 or 44 or 45 or 47 or 48 or 50));
             }
@@ -104,6 +105,7 @@ public sealed class RuleWorkspace(string root, IReadOnlyList<RuleGroup> groups)
     public static Dictionary<string,string> Values(DraftOperation operation) => JsonSerializer.Deserialize<Dictionary<string,string>>(operation.TargetRaw) ?? throw new InvalidDataException("草稿为空");
     public static void Validate(RuleGroup group, IReadOnlyDictionary<string,string> values)
     {
+        if(group.Definition.Number==AirLayout.Number){AirLayout.Validate(group,values);return;}
         if (!group.CanEdit || values.Count != group.Cells.Count || group.Cells.Any(c => !values.ContainsKey(c.Key))) throw new InvalidDataException("数值格结构已变化");
         foreach (var cell in group.Cells)
         {
@@ -130,7 +132,8 @@ public sealed class RuleWorkspace(string root, IReadOnlyList<RuleGroup> groups)
     }
     public void Plan(IReadOnlyList<DraftOperation> operations, List<PlannedFileChange> planned)
     {
-        var active = operations.Where(o => o.TargetKind == DraftTargetKind.GlobalRule).ToArray();
+        var active = operations.Where(o => o.TargetKind == DraftTargetKind.GlobalRule && o.FieldKey!="54").ToArray();
+        foreach(var layout in operations.Where(o=>o.TargetKind==DraftTargetKind.GlobalRule && o.FieldKey=="54"))AirLayout.Plan(Root,layout,planned);
         foreach(var file in active.GroupBy(o => o.RelativeSourceFile))
         {
             var snapshot = TextFileSnapshot.Load(Root, file.Key, FormalTextFileKind.Ndf);

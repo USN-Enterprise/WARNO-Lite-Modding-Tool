@@ -49,7 +49,7 @@ public sealed class UnitApplyPlanner(
 
         var index = await _indexer.IndexAsync(context, cancellationToken: cancellationToken);
         var unitCapability = index.Modules.FirstOrDefault(item => item.Key == "units");
-        if (operations.Any(o => o.TargetKind is not (DraftTargetKind.StrategicPlan or DraftTargetKind.GlobalRule)) &&
+        if (operations.Any(o => o.TargetKind is not (DraftTargetKind.StrategicPlan or DraftTargetKind.StrategicPack or DraftTargetKind.GlobalRule)) &&
             (unitCapability?.CanScan != true || unitCapability.Availability == ModuleAvailability.ParseError))
         {
             throw new TransactionValidationException("单位模块当前不可安全写入；请先处理扫描诊断。");
@@ -91,7 +91,7 @@ public sealed class UnitApplyPlanner(
         }
 
         StrategicWorkspace? strategic = null;
-        if (operations.Any(o => o.TargetKind == DraftTargetKind.StrategicPlan))
+        if (operations.Any(o => o.TargetKind is DraftTargetKind.StrategicPlan or DraftTargetKind.StrategicPack))
             strategic = await new StrategicLoader().LoadAsync(context, index, workspace, cancellationToken);
         var resolved = DraftResolver.Resolve(workspace, weaponWorkspace, divisionWorkspace, operations, strategic);
         var conflicts = resolved.Where(item => item.Status == DraftResolutionStatus.Conflict).ToArray();
@@ -286,6 +286,7 @@ public sealed class UnitApplyPlanner(
         DivisionIdentity.Plan(root,divisionWorkspace,index,operations,plannedFiles);
         if(operations.Any(o=>o.TargetKind==DraftTargetKind.UnitCreate))UnitCreation.Plan(root,workspace,weaponWorkspace!,divisionWorkspace,index,operations,plannedFiles);
         if(weaponWorkspace is not null)AmmoNames.Plan(root,workspace,weaponWorkspace,operations,plannedFiles);
+        if(strategic is not null)StrategicPackEditing.Plan(strategic,operations,plannedFiles);
         var backupId = CreateBackupId("apply");
         var preparedUtc = DateTimeOffset.UtcNow;
         if (weaponWorkspace is not null &&
@@ -350,6 +351,7 @@ public sealed class UnitApplyPlanner(
                 DraftTargetKind.AmmoField or DraftTargetKind.AmmoName => "ammo",
                 DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity => "divisions",
                 DraftTargetKind.StrategicPlan => "strategic",
+                DraftTargetKind.StrategicPack => "sp",
                 DraftTargetKind.GlobalRule => "rules",
                 _ => "units"
             };

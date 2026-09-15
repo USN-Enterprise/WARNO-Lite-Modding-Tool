@@ -57,7 +57,8 @@ public enum DraftTargetKind
     UnitCreate,
     AmmoName,
     GlobalRule,
-    DivisionIdentity
+    DivisionIdentity,
+    StrategicPack
 }
 
 public enum DraftEditScope

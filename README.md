@@ -4,7 +4,7 @@
 
 <a id="chinese"></a>
 
-当前版本：**1.9.5**。新增单位图片、战术师模板创建与名称/已有师徽修改、新单位固定槽位 Ammo 选择，并修复新单位联合应用报错。
+当前版本：**1.9.6**。新增独立战略 Pack（SP）编辑与安全重命名、挂载武器数量、战术师师徽与筛选；统一非单位页面筛选窗口，并增加游戏规则分类与空军布局设置。
 
 这是一款面向 WARNO Mod 新手和不熟悉代码的玩家、易于上手的 Windows 图形化数值编辑器。通过可视化界面调整单位、武器、弹药等数值与相关参数，无需手写代码。编辑范围以数值和规则配置为主，不涉及模型、贴图、动画等美术资源的制作或编辑。
 
@@ -112,7 +112,7 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 <a id="english"></a>
 
-Current version: **1.9.5**. Unit portraits, tactical division creation and name/emblem editing, per-slot Ammo selection for new units, and a fix for combined unit-creation transactions.
+Current version: **1.9.6**. Separate Strategic Pack editing and reference-aware renaming, mounted weapon counts, division emblems and filters, filter dialogs outside the unit workspace, rule categories and aircraft panel layouts.
 
 # WARNO Lite Modding Tool — English
 

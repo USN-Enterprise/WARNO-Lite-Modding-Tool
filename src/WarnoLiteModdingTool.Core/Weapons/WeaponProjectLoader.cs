@@ -279,6 +279,14 @@ public sealed class WeaponProjectLoader
             fields.Add(CreateValue(descriptor, source, document, definition, document.Raw(ammo), ammoName, ammo, ammoChoices));
         }
 
+        var count = Direct(document, mount, "NbWeapons");
+        if (count is not null)
+        {
+            var definition = WeaponFieldDefinitions.MountedCount(mountIndex);
+            var raw = document.Raw(count);
+            if (WeaponValueConverter.TryRead(definition, raw, out var display))
+                fields.Add(CreateValue(descriptor, source, document, definition, raw, display, count, []));
+        }
         var hidden = Direct(document, mount, "HideInInterface");
         if (hidden is not null)
         {

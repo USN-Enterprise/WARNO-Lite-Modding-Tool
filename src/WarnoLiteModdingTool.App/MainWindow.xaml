@@ -31,13 +31,14 @@
                 <TextBlock Text="{l:Loc Key=打开你的Mod，开始编辑}" FontSize="16" Margin="0,12,0,24" Foreground="{DynamicResource MutedTextBrush}"/>
                 <Button Content="{l:Loc Key='打开 Mod 文件夹'}" Style="{StaticResource PrimaryButton}" Click="OpenProject_Click" IsEnabled="{Binding CanOpenProject}"/>
                 <Button Content="{l:Loc Key='自动查找 Mod'}" Click="FindMods_Click" IsEnabled="{Binding CanOpenProject}" Margin="0,10,0,0"/>
+                <Button Content="{l:Loc Key='创建新 Mod'}" Click="CreateMod_Click" IsEnabled="{Binding CanCreateMod}" Margin="0,10,0,0"/>
             </StackPanel>
         </Border>
         <Border x:Name="HeaderBar" Grid.Row="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="18,10">
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="290" Margin="0,0,12,0">
                     <TextBlock Text="{Binding ProjectName}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding ProjectPath}"/>
-                    <TextBlock Text="1.9.5" Foreground="{DynamicResource MutedTextBrush}" FontSize="11"/>
+                    <TextBlock Text="1.9.6" Foreground="{DynamicResource MutedTextBrush}" FontSize="11"/>
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
@@ -88,7 +89,7 @@
                             IsEnabled="{Binding CanCreateMod}"
                             Click="CreateMod_Click"
                             Padding="12,8"
-                            Margin="0,0,10,0" />
+                            Margin="0,0,0,0" />
 <Button Content="{l:Loc Key='启动开发模式'}" Style="{StaticResource SecondaryButton}" Padding="12,8" IsEnabled="{Binding CanRunDevMode}" Click="RunDevMode_Click" ToolTip="{l:LocalizedBinding Path=DevModeAvailability}" />
                                     <TextBlock Text="{l:LocalizedBinding Path=DevModeAvailability}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="2,3,0,8" />
 
@@ -289,6 +290,7 @@
                                  Background="{DynamicResource ProgressTrackBrush}" />
 
                     <controls:RulesView Grid.Row="2" Workspace="{Binding RulesWorkspace}" Visibility="{Binding IsRulesModule, Converter={StaticResource BooleanToVisibilityConverter}}"><controls:RulesView.Style><Style TargetType="controls:RulesView"><Style.Triggers><DataTrigger Binding="{Binding UnitWorkspace.IsTransactionBusy}" Value="True"><Setter Property="IsEnabled" Value="False"/></DataTrigger></Style.Triggers></Style></controls:RulesView.Style></controls:RulesView>
+                    <controls:StrategicPackView Grid.Row="2" DataContext="{Binding StrategicWorkspace.Packs}" Visibility="{Binding DataContext.IsPackModule, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" />
                     <controls:StrategicWorkspaceView Grid.Row="2" DataContext="{Binding StrategicWorkspace}" Visibility="{Binding DataContext.IsStrategicModule, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" />
                     <workspaces:UnitWorkspaceView x:Name="UnitPage" Grid.Row="2" Visibility="{Binding IsUnitModule, Converter={StaticResource BooleanToVisibilityConverter}}" />
 

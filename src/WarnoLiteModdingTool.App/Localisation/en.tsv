@@ -813,3 +813,44 @@ WARNO Lite Modding Tool 已在运行。|WARNO Lite Modding Tool is already runni
 师徽|Emblem
 沿用模板单位池、费用和默认牌组；应用后可在师页面继续调整。简介与历史文字沿用模板。|Inherits the template roster, costs and default deck. Edit them on the division page after applying. Summary and history text are inherited.
 修改师名称和已有徽章，名称及标题一起更新。简介与历史文字保持原内容。|Edit the name and existing emblem. The name and title update together; summary and history text remain unchanged.
+
+战略 Pack（SP）|Strategic Packs (SP)
+编辑 Pack / 重命名|Edit / rename Pack
+Pack 名称|Pack name
+生成可读名称|Generate readable name
+共享本体修改影响全部引用|Shared Pack changes affect all references
+编制资料不完整，统计仅限已识别文件|Incomplete roster data; counts cover recognised files only
+槽位|Slots
+营团|Formations
+对局设置|Match settings
+经济与收入|Economy and income
+AI 难度|AI difficulty
+战斗与单位行为|Combat and unit behaviour
+后勤与补给|Logistics and supply
+空军|Air force
+连续起飞间隔（秒）|Time between takeoffs (seconds)
+撤离时允许开火|Allow firing during evacuation
+撤离高度（GRU）|Evacuation altitude (GRU)
+飞机栏容量与布局|Aircraft panel capacity and layout
+飞机栏排列|Aircraft panel grid
+卡片大小倍率（相对当前文件）|Card scale (relative to current file)
+武器数量|Weapon count
+当前挂载的 NbWeapons；不等同于弹药数量。|NbWeapons of this mount; separate from ammunition quantity.
+无运输|No transport
+
+搜索名称、单位、运输	Search names, units and transports
+返回列表	Back to list
+未保存编辑	Unsaved edits
+当前 Pack 有未加入草稿的修改。是：加入草稿；否：放弃修改；取消：留在当前 Pack。	This Pack has edits not yet saved to drafts. Yes: save to drafts; No: discard edits; Cancel: stay on this Pack.
+请选择 Pack	Select a Pack
+复制名称	Copy name
+未加入草稿	Not saved to drafts
+撤销编辑	Discard edits
+使用位置	Used by
+尚未被引用	No known references
+跳转到将军模式	Go to Army General
+显示	Showing
+当前 Pack 有未加入草稿的修改。	This Pack has edits not yet saved to drafts.
+加入草稿并切换	Save draft and switch
+放弃并切换	Discard and switch
+查看详情	View details

@@ -5,16 +5,19 @@ using System.Windows.Threading;
 using WarnoLiteModdingTool.Core.Drafts;
 using WarnoLiteModdingTool.Core.Rules;
 namespace WarnoLiteModdingTool.App.ViewModels;
-public sealed class RulesWorkspaceViewModel
+public sealed class RulesWorkspaceViewModel : ObservableObject
 {
     public RulesWorkspaceViewModel(RuleWorkspace data,DraftStore store,Action changed)
     {
         Groups = data.Groups.Select(g => new RuleGroupViewModel(data,g,store,changed)).ToArray();
-        View = CollectionViewSource.GetDefaultView(Groups); View.Filter = o => o is RuleGroupViewModel g && (Advanced.EditorMode.IsAdvanced || g.Group.Definition.Basic) && (Search.Length == 0 || g.Title.Contains(Search,StringComparison.OrdinalIgnoreCase) || g.Group.Definition.Fields.Contains(Search,StringComparison.OrdinalIgnoreCase));
+        View = CollectionViewSource.GetDefaultView(Groups); View.Filter = o => o is RuleGroupViewModel g && (Advanced.EditorMode.IsAdvanced || g.Group.Definition.Basic) && (Search.Length>0 || Category=="全部" || g.Group.Definition.Category==Category) && (Search.Length == 0 || (Localisation.UiText.T(g.Group.Definition.Category).Contains(Search,StringComparison.OrdinalIgnoreCase) || g.Title.Contains(Search,StringComparison.OrdinalIgnoreCase)) || g.Group.Definition.Fields.Contains(Search,StringComparison.OrdinalIgnoreCase));
     }
     public IReadOnlyList<RuleGroupViewModel> Groups {get;}
     public ICollectionView View {get;}
     public string Search {get;set;} = "";
+    private string _category="全部";
+    public string Category {get=>_category;set{if(SetProperty(ref _category,value))Refresh();}}
+    public IReadOnlyList<string> Categories {get;} = ["全部","对局设置","经济与收入","AI 难度","战斗与单位行为","后勤与补给","将军模式","空军"];
     public void Refresh() => View.Refresh();
     public void Restore() {foreach(var group in Groups)group.Restore();}
     public async Task FlushAsync() { foreach(var group in Groups) { await group.SaveAsync(); if(group.HasPendingError)throw new InvalidOperationException(group.Title + "：" + group.Status); } }

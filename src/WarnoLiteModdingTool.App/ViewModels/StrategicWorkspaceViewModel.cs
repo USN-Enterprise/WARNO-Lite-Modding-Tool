@@ -51,7 +51,8 @@ public sealed class StrategicWorkspaceViewModel : ObservableObject
     private string _name = "";
     private readonly Dictionary<string, string> _pawn = new();
     public StrategicWorkspaceViewModel(StrategicWorkspace data, DraftStore store, Action refresh, Action<string> status)
-    { Data = data; _store = store; _refresh = refresh; _status = status; Selected = data.Records.FirstOrDefault(); }
+    { Data = data; _store = store; _refresh = refresh; _status = status; Packs = new StrategicPackWorkspaceViewModel(data,store,refresh); Selected = data.Records.FirstOrDefault(); }
+    public StrategicPackWorkspaceViewModel Packs {get;}
     public StrategicWorkspace Data { get; }
     public ObservableCollection<StrategicNode> Companies { get; } = [];
     public ObservableCollection<StrategicNode> Roots { get; } = [];
@@ -70,7 +71,7 @@ public sealed class StrategicWorkspaceViewModel : ObservableObject
     public string PawnValue(string key) => _pawn.GetValueOrDefault(key) ?? "";
     public void SetPawnValue(string key, string value) { if (_pawn.GetValueOrDefault(key) == value) return; _pawn[key] = value; Save(); }
     public event Action? SelectionRestored;
-    public void SetTransactionLocked(bool value) { _locked = value; OnPropertyChanged(nameof(CanEdit)); OnPropertyChanged(nameof(CanEditRoster)); }
+    public void SetTransactionLocked(bool value) { _locked = value; Packs.Locked=value; OnPropertyChanged(nameof(CanEdit)); OnPropertyChanged(nameof(CanEditRoster)); }
     public async Task FlushAsync()
     {
         await _pending;
@@ -84,6 +85,7 @@ public sealed class StrategicWorkspaceViewModel : ObservableObject
 
     public void Restore()
     {
+        Packs.Refresh();
         _loading = true;
         Roots.Clear();
         Companies.Clear(); _pawn.Clear(); _conflict = false;

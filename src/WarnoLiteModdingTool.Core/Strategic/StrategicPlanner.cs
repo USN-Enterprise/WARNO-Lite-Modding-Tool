@@ -95,6 +95,8 @@ public sealed class StrategicPlanner
         var additions = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         var csvTexts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var objectNames = workspace.Packs.Keys.Concat(workspace.Decks.Keys).Concat(workspace.CombatGroups.Keys).ToHashSet(StringComparer.Ordinal);
+        foreach(var op in operations.Where(o=>o.TargetKind==DraftTargetKind.StrategicPack))objectNames.Add(StrategicPackEditing.Read(op).Name);
+        bool allNamesLoaded=false;
         var generatedPacks = new Dictionary<string, string>(StringComparer.Ordinal);
         var usedTokens = workspace.Names.Values.SelectMany(n => n.Keys).ToHashSet(StringComparer.Ordinal);
         var summaries = new List<string>();
@@ -261,7 +263,8 @@ public sealed class StrategicPlanner
             text = Set(text, "DeckPackDescriptor", "Xp", slot.Xp.ToString(CultureInfo.InvariantCulture), true, nl);
             if (slot.Transport.Length > 0) text = Set(text, "DeckPackDescriptor", "Transport", "$/GFX/Unit/" + slot.Transport, true, nl);
             else if (original?.Transport.Length > 0) text = RemoveAssignment(text, "DeckPackDescriptor", "Transport");
-            var name = NewObject("Descriptor_StrategicPack_WLMT_");
+            if(!allNamesLoaded){objectNames.UnionWith(StrategicPackEditing.ExistingNames(workspace.Root));allNamesLoaded=true;}
+            var name = StrategicPackEditing.Name(slot.Unit,slot.Transport,slot.Xp,objectNames);
             text = original is null ? name + " is " + text : Rename(text, original.Source.Info.Name, name);
             Append(StrategicLoader.DirectoryPath + "StrategicPacks.ndf", text);
             generatedPacks[signature] = name;
@@ -278,10 +281,10 @@ public sealed class StrategicPlanner
     private static void VerifyCandidates(StrategicWorkspace baseline, IReadOnlyList<DraftOperation> operations, IReadOnlyList<PlannedFileChange> changes)
     {
         var context = new WarnoLiteModdingTool.Core.Projects.ModProjectDetector().Detect(baseline.Root);
-        var module = context.Modules.Single(m => m.Key == "strategic");
+        var sourceFiles = context.Modules.Where(m => m.Key is "strategic" or "sp").SelectMany(m=>m.SourceFiles).Distinct(StringComparer.OrdinalIgnoreCase);
         var objects = new List<NdfObjectInfo>();
         var overrides = changes.Where(c => c.Kind == FormalTextFileKind.Ndf).ToDictionary(c => c.RelativePath, c => Decode(c.CandidateBytes), StringComparer.OrdinalIgnoreCase);
-        foreach (var file in module.SourceFiles)
+        foreach (var file in sourceFiles)
         {
             var relative = Path.GetRelativePath(baseline.Root, file).Replace('\\', '/');
             var text = overrides.GetValueOrDefault(relative) ?? File.ReadAllText(file);
@@ -329,7 +332,7 @@ public sealed class StrategicPlanner
         var current = doc.ReadArrayElements(span).Select(doc.Raw).ToArray();
         return current.SequenceEqual(desired, StringComparer.Ordinal) ? text : Set(text, type, field, Array(desired, nl));
     }
-    private static string RemoveAssignment(string text, string type, string field)
+    internal static string RemoveAssignment(string text, string type, string field)
     {
         var doc = new NdfSyntaxDocument(text);
         var span = Field(doc, type, field) ?? throw new InvalidDataException("缺少 " + field);

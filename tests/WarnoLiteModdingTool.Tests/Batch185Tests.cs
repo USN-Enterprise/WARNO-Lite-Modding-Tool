@@ -59,7 +59,8 @@ Broken is TEntityDescriptor ( Value = [1]
         Assert(vm.UnitWorkspace!.Fields.All(f=>!string.IsNullOrWhiteSpace(f.OriginalParameter)),"所有单位字段有原参数名");
         vm.SelectedModule=vm.Modules.Single(m=>m.Key=="rules");DrainDispatcher(window.Dispatcher);
         var rules=FindVisualChildren<RulesView>((DependencyObject)window.Content).Single();
-        var first=FindVisualChildren<Expander>(rules).First();first.IsExpanded=true;
+        var first=FindVisualChildren<Expander>(rules).Single(e=>Equals(e.Tag,"经济与收入"));first.IsExpanded=true;DrainDispatcher(window.Dispatcher);
+        FindVisualChildren<Expander>(rules).Single(e=>Equals(e.Tag,1)).IsExpanded=true;
         DrainDispatcher(window.Dispatcher);SaveUiSnapshot(window,"185-rules-basic.png");
         Assert(FindVisualChildren<ParameterNote>(rules).Any(n=>n.Text=="DefaultArgentInitial"),"规则数值旁显示原参数");
         Assert(!FindVisualChildren<TextBlock>(rules).Any(n=>n.Text.Contains("32 项")||n.Text.Contains("50 项")),"规则页不显示模式数量");

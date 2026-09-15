@@ -6,6 +6,20 @@
 
 仅列出功能更新和影响使用的问题修复。
 
+## 1.9.6 — 2026-09-16
+
+- 同版本界面修补：游戏规则按大类/小类两层折叠，保留展开状态与搜索；SP改为左右浏览编辑布局，支持窄窗口切换、明确引用跳转和未保存编辑保护。
+
+- 对齐创建 Mod 与开发模式按钮；欢迎页增加创建新 Mod 入口。
+- 战术师列表显示师徽，支持国家、阵营、师类型、草稿状态筛选；单位池数量单元格编辑时水平、垂直居中。
+- 单位主页面以外的筛选统一通过居中窗口打开，保留选择并支持清空。
+- 武器页“挂载”增加已有 NbWeapons 字段，沿用当前/所选单位与全部引用作用域及必要共享隔离。
+- 独立战略 Pack（SP）模块可编辑现有 Pack 的单位、运输、老练度与名称，显示编制引用并可双击跳转。共享本体修改影响所有引用者；重命名同步引用并检查名称冲突。编制的数量与索引继续在将军模式编辑。
+- 自动产生的 Pack 使用带 `_mod_` 标记的单位、运输和老练度名称，重名自动追加短序号；可手动生成可读名称。
+- 游戏规则按对局、经济、AI、战斗行为、后勤、将军模式、空军七类组织，搜索可跨分类。
+- 空军布局提供网格方案与卡片倍率，数量由行列相乘确定，联动三个界面文件。倍率相对当前正式文件中的卡片尺寸，重复预览不累乘；应用后重载以新尺寸为1×。连续起飞间隔、撤离开火及撤离高度仅在专业模式显示。
+- 本轮通过合成数据事务/恢复与WPF界面检查；空军布局和NbWeapons的游戏内效果未在本轮实测。
+
 ## 1.9.5 — 2026-09-11
 
 - 单位检查器显示肖像：宽栏小图、窄栏查看按钮，点击放大；优先当前 Mod 图片，其余从本机 WARNO 读取并缓存，缺图不影响编辑。
@@ -161,6 +175,20 @@
 [中文](#chinese) | [English](#english)
 
 Feature updates and fixes that affect everyday use.
+
+## 1.9.6 — 2026-09-16
+
+- UI patch, version unchanged: nested rule categories with retained expansion/search; side-by-side Pack browsing and editing, compact list/detail navigation, explicit reference navigation and unsaved-edit protection.
+
+- Align Mod creation buttons and add Create Mod to the welcome panel.
+- Show division emblems; add country, coalition, type and draft filters; center quantity editors.
+- Open filters outside the main Unit page in centered windows with retained selections and a clear action.
+- Edit existing NbWeapons under weapon mounting, with the existing scope and isolation workflow.
+- Add a separate strategic Pack workspace for unit, transport, experience and identifier editing, reference inspection and formation navigation. Shared edits affect all users; renaming updates references and checks collisions.
+- Generate readable Pack identifiers with a mod marker and short collision suffixes.
+- Organize rules into seven categories, including Air. Air capacity uses grid presets and linked card/panel sizing across three files. Card multipliers use current saved dimensions; repeated previews do not compound.
+- Takeoff interval, firing during evacuation and evacuation altitude are professional-only settings.
+- Synthetic transaction/recovery and WPF checks passed. In-game air layout and NbWeapons effects remain unverified in this release cycle.
 
 ## 1.9.5 — 2026-09-11
 

@@ -4,14 +4,14 @@ using System.Windows.Controls;
 using WarnoLiteModdingTool.App.Localisation;
 namespace WarnoLiteModdingTool.App.Controls;
 
-public sealed class UnitMiniFilter : Expander
+public sealed class UnitMiniFilter : FilterWindowHost
 {
     private readonly Dictionary<string, HashSet<string>> _selected = new();
     private readonly List<(ContentControl Control,string Kind,string Raw)> _labels=[];
     public event EventHandler? FilterChanged;
     public static readonly DependencyProperty ItemsSourceProperty = DependencyProperty.Register(nameof(ItemsSource), typeof(IEnumerable), typeof(UnitMiniFilter), new PropertyMetadata(null,(o,_)=>((UnitMiniFilter)o).Rebuild()));
     public IEnumerable? ItemsSource { get => (IEnumerable?)GetValue(ItemsSourceProperty); set=>SetValue(ItemsSourceProperty,value); }
-    public UnitMiniFilter() { Header=UiText.T("筛选"); Margin=new Thickness(0,5,0,5); Loaded+=(_,_)=>UiText.Current.PropertyChanged+=LanguageChanged; Unloaded+=(_,_)=>UiText.Current.PropertyChanged-=LanguageChanged; }
+    public UnitMiniFilter() { ClearFilters=()=>{Rebuild();Changed();}; Header=UiText.T("筛选"); Margin=new Thickness(0,5,0,5); Loaded+=(_,_)=>UiText.Current.PropertyChanged+=LanguageChanged; Unloaded+=(_,_)=>UiText.Current.PropertyChanged-=LanguageChanged; }
     private void LanguageChanged(object? sender,System.ComponentModel.PropertyChangedEventArgs e) { if(e.PropertyName!=nameof(UiText.Version))return; foreach(var (control,kind,raw) in _labels)control.Content=kind.Length==0?UiText.T(raw):GameText.Display(kind,raw);Header=UiText.T("筛选")+" · "+_selected.Values.Sum(v=>v.Count); }
     private static string Read(object item,string key)
     {
@@ -21,7 +21,7 @@ public sealed class UnitMiniFilter : Expander
     public bool Matches(object item) => _selected.All(p=>p.Value.Count==0 || p.Value.Contains(Read(item,p.Key)));
     private void Rebuild()
     {
-        var panel=new StackPanel();Content=new ScrollViewer { Content=panel,MaxHeight=200,VerticalScrollBarVisibility=ScrollBarVisibility.Auto }; _selected.Clear(); _labels.Clear();
+        var panel=new StackPanel();Content=new ScrollViewer { Content=panel,VerticalScrollBarVisibility=ScrollBarVisibility.Auto }; _selected.Clear(); _labels.Clear();
         var items=ItemsSource?.Cast<object>().ToArray()??[];
         foreach(var (key,label) in new[]{("Country","国家"),("Coalition","阵营"),("Factory","栏位"),("Role","角色")})
         {

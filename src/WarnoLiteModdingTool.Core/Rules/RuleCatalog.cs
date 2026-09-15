@@ -1,8 +1,9 @@
 namespace WarnoLiteModdingTool.Core.Rules;
 public sealed record RuleDefinition(int Number, string Label, string File, string Constructor, string Fields, string? MapKey)
 {
-    public bool Basic => Number <= 16 || Number is >= 33 and <= 48;
-    public string RelativePath => "GameData/Gameplay/Constantes/" + File;
+    public bool Basic => Number <= 16 || Number is >= 33 and <= 48 || Number == 54;
+    public string Category => Number switch { >=51 => "空军", >=49 => "AI 难度", >=33 => "将军模式", >=23 and <=30 => "后勤与补给", >=17 => "战斗与单位行为", >=13 => "AI 难度", >=3 and <=6 => "对局设置", _ => "经济与收入" };
+    public string RelativePath => Number==54 ? AirLayout.Directory+AirLayout.Files[0] : "GameData/Gameplay/Constantes/" + File;
 }
 public static class RuleCatalog
 {
@@ -57,5 +58,9 @@ public static class RuleCatalog
         new(48, "守方战后疲劳（战果按攻方视角）", "Strategic/StrategicFatigueConstants.ndf", "", "StrategicBattleDefenderFatigueGainAfterBattle", null),
         new(49, "将军 AI 战术收入额外加成", "Strategic/GDConstants.ndf", "TStrategicTunableConstante", "TacticalRelativeBonusFluxByIADifficulty", null),
         new(50, "将军 AI 单位经验加成", "Strategic/GDConstants.ndf", "TStrategicTunableConstante", "FlatIAPawnXPBonusByIADifficulty", null),
+        new(51, "连续起飞间隔（秒）", "Airplane.ndf", "TAirplaneConstantesModernWarfareDescriptor", "TempsEntreDeuxDecollagesEnSecondes", null),
+        new(52, "撤离时允许开火", "Airplane.ndf", "TAirplaneConstantesModernWarfareDescriptor", "UtiliserArmesPendantEvac", null),
+        new(53, "撤离高度（GRU）", "Airplane.ndf", "TAirplaneConstantesModernWarfareDescriptor", "EvacuationAltitudeGRU", null),
+        new(54, "飞机栏容量与布局", "", "AirLayout", "grid;scale", null),
     ];
 }

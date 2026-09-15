@@ -18,6 +18,9 @@ public sealed class DivisionListItemViewModel : ObservableObject
     public DivisionRecord Division { get; }
     public string DisplayName => Division.DisplayName;
     public string InternalName => Division.Name;
+    public string Emblem { get => _emblem; private set => SetProperty(ref _emblem, value); }
+    private string _emblem = "";
+    public void SetEmblem(string value) => Emblem = value;
     public string Coalition => Division.Baseline.Coalition;
     public string Country => Division.Baseline.CountryId;
     public string Type => Division.Baseline.TypeToken;
@@ -338,11 +341,12 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
         _draftStore = draftStore;
         _setStatus = setStatus;
         _draftsChanged = draftsChanged;
+        Controls.DivisionEmblem.Reset(data.ProjectRoot);
         Divisions = new ObservableCollection<DivisionListItemViewModel>(data.Divisions.OrderBy(item=>string.IsNullOrWhiteSpace(item.Baseline.CountryId)?1:0).ThenBy(item=>item.Baseline.CountryId,StringComparer.OrdinalIgnoreCase).Select(item => new DivisionListItemViewModel(item)));
         Rules = [];
         RuleFilterRows=data.Units.Units.Select(Controls.FilterRows.Unit).ToArray();
         RulesView=new ListCollectionView(Rules){Filter=o=>o is DivisionUnitRuleViewModel r && (RuleFilter?.Invoke(r.Unit)??true)};
-        DivisionsView=new ListCollectionView(Divisions){Filter=o=>o is DivisionListItemViewModel d && (d.DisplayName.Contains(Search,StringComparison.OrdinalIgnoreCase)||d.InternalName.Contains(Search,StringComparison.OrdinalIgnoreCase)||Localisation.DivisionNames.Display(d.DisplayName,false).Contains(Search,StringComparison.OrdinalIgnoreCase))};
+        DivisionsView=new ListCollectionView(Divisions){Filter=o=>o is DivisionListItemViewModel d && (DivisionFilter?.Invoke(d.InternalName)??true) && (d.DisplayName.Contains(Search,StringComparison.OrdinalIgnoreCase)||d.InternalName.Contains(Search,StringComparison.OrdinalIgnoreCase)||Localisation.DivisionNames.Display(d.DisplayName,false).Contains(Search,StringComparison.OrdinalIgnoreCase))};
         Packs = [];
         CostCurves = [];
         TagOptions = [];
@@ -365,6 +369,11 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
     }
 
     private string _search="";
+    public string ProjectRoot => _data.ProjectRoot;
+    public Func<string, bool>? DivisionFilter { get; set; }
+    public IReadOnlyList<Controls.FilterRow> DivisionFilterRows => Divisions.Select(d => new Controls.FilterRow(d.InternalName, new Dictionary<string,string[]> {
+        ["国家"]=[d.Country.Length==0?"未知":d.Country], ["阵营"]=[d.Coalition.Length==0?"未知":d.Coalition], ["师类型"]=[d.Type.Length==0?"未知":d.Type],
+        ["草稿"]=d.DraftStatus=="冲突"?["有草稿","冲突"]:[d.DraftStatus.Length==0?"无草稿":"有草稿"] })).ToArray();
     public string Search {get=>_search;set{if(SetProperty(ref _search,value))DivisionsView.Refresh();}}
     public ICollectionView DivisionsView {get;}
     public ICollectionView RulesView {get;}
@@ -975,13 +984,18 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
     private void RefreshDraftStatuses()
     {
         var resolved = DraftResolver.Resolve(_data.Units, null, _data, _draftStore.Operations)
-            .Where(item => item.Operation.TargetKind == DraftTargetKind.DivisionPlan)
+            .Where(item => item.Operation.TargetKind is DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity)
             .ToArray();
         foreach (var item in Divisions)
         {
             var matches = resolved.Where(entry => entry.Operation.ObjectName == item.InternalName).ToArray();
             item.SetDraftStatus(matches.Length > 0, matches.Any(entry => entry.Status == DraftResolutionStatus.Conflict));
+            var identity=matches.FirstOrDefault(e=>e.Operation.TargetKind==DraftTargetKind.DivisionIdentity && e.Status==DraftResolutionStatus.Active);
+            try { item.SetEmblem(identity is null ? DivisionIdentity.Field(item.Division,"EmblemTexture") : DivisionIdentity.Read(identity.Operation).Emblem); }
+            catch (Exception ex) when (ex is IOException or InvalidOperationException or ArgumentException) { item.SetEmblem(""); }
         }
+        OnPropertyChanged(nameof(DivisionFilterRows));
+        DivisionsView.Refresh();
     }
 
     private void NotifyRuleOptionsChanged()

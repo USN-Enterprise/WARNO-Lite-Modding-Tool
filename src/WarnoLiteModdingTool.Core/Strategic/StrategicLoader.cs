@@ -21,7 +21,7 @@ public sealed class StrategicLoader
         LoadNames(context, workspace);
         var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var pawns = new List<StrategicSource>();
-        foreach (var obj in index.Objects.Where(o => o.ModuleKey == "strategic"))
+        foreach (var obj in index.Objects.Where(o => o.ModuleKey is "strategic" or "sp"))
         {
             cancellationToken.ThrowIfCancellationRequested();
             try

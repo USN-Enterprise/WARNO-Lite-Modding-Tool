@@ -44,6 +44,9 @@ public static class WeaponFieldDefinitions
     public static WeaponFieldDefinition MountedAmmo(int mount) =>
         new($"mount.{mount}.ammo", "挂载", "使用的 Ammo", "只能替换为当前项目中已有 Ammo；不新增槽位。", WeaponFieldOwner.MountedWeapon, "Ammunition", WeaponValueKind.Reference, Section: "挂载与库存");
 
+    public static WeaponFieldDefinition MountedCount(int mount) =>
+        new($"mount.{mount}.count", "挂载", "武器数量", "当前挂载的 NbWeapons；不等同于弹药数量。", WeaponFieldOwner.MountedWeapon, "NbWeapons", WeaponValueKind.Integer, true, Section: "挂载与库存");
+
     public static WeaponFieldDefinition MountedHidden(int mount) =>
         new($"mount.{mount}.hidden", "挂载", "在界面隐藏", "仅编辑已存在的 HideInInterface。", WeaponFieldOwner.MountedWeapon, "HideInInterface", WeaponValueKind.Boolean, Section: "挂载与库存");
 

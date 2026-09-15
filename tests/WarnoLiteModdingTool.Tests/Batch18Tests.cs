@@ -128,14 +128,14 @@ internal static partial class Program
         FindVisualChildren<System.Windows.Controls.Button>(slots).First(b=>Equals(b.Content,"恢复母版")).RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
         Assert(slots.Choices.Count==0,"恢复母版清除槽位替换");
         for(var page=1;page<5;page++){tabs.SelectedIndex=page;DrainDispatcher(main.Dispatcher);SaveUiSnapshot(wizard,"creation-"+(page+1)+".png");}wizard.Close();
-        var filter=new WarnoLiteModdingTool.App.Controls.FacetFilter{IsExpanded=true,Rows=new[]{
+        var filter=new WarnoLiteModdingTool.App.Controls.FacetFilter{Rows=new[]{
             new WarnoLiteModdingTool.App.Controls.FilterRow("shared",new Dictionary<string,string[]>{{"国家",["DDR"]},{"角色",["infantry"]}}),
             new WarnoLiteModdingTool.App.Controls.FilterRow("shared",new Dictionary<string,string[]>{{"国家",["US"]},{"角色",["armor"]}}),
             new WarnoLiteModdingTool.App.Controls.FilterRow("match",new Dictionary<string,string[]>{{"国家",["DDR"]},{"角色",["armor"]}})}};
         var filterWindow=new System.Windows.Window{Content=filter,Width=520,Height=520};
         var deadline=DateTime.UtcNow.AddSeconds(5);while(filter.Content is null&&DateTime.UtcNow<deadline){DrainDispatcher(main.Dispatcher);Thread.Sleep(10);}
-        SaveUiSnapshot(filterWindow,"facets.png");foreach(var e in FindVisualChildren<System.Windows.Controls.Expander>(filter))e.IsExpanded=true;SaveUiSnapshot(filterWindow,"facets.png");
-        var boxes=FindVisualChildren<System.Windows.Controls.CheckBox>(filter).ToArray();boxes.Single(c=>Equals(c.Content,"东德")).IsChecked=true;boxes.Single(c=>Equals(c.Content,"装甲")).IsChecked=true;
+        filterWindow.Content=filter.Content;SaveUiSnapshot(filterWindow,"facets.png");foreach(var e in FindVisualChildren<System.Windows.Controls.Expander>((System.Windows.DependencyObject)filter.Content!))e.IsExpanded=true;SaveUiSnapshot(filterWindow,"facets.png");
+        var boxes=FindVisualChildren<System.Windows.Controls.CheckBox>((System.Windows.DependencyObject)filter.Content!).ToArray();boxes.Single(c=>Equals(c.Content,"东德")).IsChecked=true;boxes.Single(c=>Equals(c.Content,"装甲")).IsChecked=true;
         Assert(!filter.Matches("shared")&&filter.Matches("match"),"多个使用者筛选必须落在同一单位，不能跨引用者拼条件");SaveUiSnapshot(filterWindow,"facets-selected.png");filterWindow.Close();
         vm.AdvancedMode=true;Assert(workspace.Fields.Count(f=>f.Key.EndsWith(".family")&&f.Key.StartsWith("armor.")&&f.IsVisible)==1,"专业模式统一护甲类型");vm.AdvancedMode=false;
     }
