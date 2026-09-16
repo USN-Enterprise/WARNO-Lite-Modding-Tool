@@ -79,6 +79,9 @@ internal static partial class Program
 
         var tests = new (string Name, Func<Task> Run)[]
         {
+            ("1.9.7 师徽后台图片转入编辑器", Emblem197BackgroundImage),
+            ("1.9.7 经验类型引用与依赖验证", Experience197),
+            ("1.9.7 师徽二进制事务与恢复", Emblem197),
             ("1.9.6 空军布局联动与失败恢复", AirLayout196),
             ("1.9.6 SP命名与全引用事务", PackEditing196),
             ("1.9.6 挂载数量隔离", MountedCount196),
@@ -1965,6 +1968,7 @@ internal static partial class Program
                     var bitmap=System.Windows.Media.Imaging.BitmapSource.Create(32,24,96,96,PixelFormats.Bgra32,null,pixels,128);var encoder=new System.Windows.Media.Imaging.PngBitmapEncoder();encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));using(var file=File.Create(backdrop))encoder.Save(file);
                     VerifyBatch18Ui(viewModel,window,root);
                     Verify195Ui(window,root,divisionRoot);
+                    Verify197Ui(window);
                     Verify181Ui(viewModel);
                     Verify182Ui(viewModel,window);
                     Verify184Ui(viewModel,window);
@@ -1984,6 +1988,7 @@ internal static partial class Program
                     Verify191Ui(viewModel, window);
                     viewModel.AdvancedMode=false;WarnoLiteModdingTool.App.Localisation.UiText.Current.SetLanguage("zh-CN");Verify192Ui(viewModel, window);
                     Verify196Ui(viewModel, window, root,divisionRoot);
+                    Verify197Panels(window);
                     Verify186Ui(viewModel, window, root);
                     application.Shutdown();
                     if (failure is not null)

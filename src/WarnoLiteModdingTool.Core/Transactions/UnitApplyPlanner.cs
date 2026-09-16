@@ -287,6 +287,8 @@ public sealed class UnitApplyPlanner(
         if(operations.Any(o=>o.TargetKind==DraftTargetKind.UnitCreate))UnitCreation.Plan(root,workspace,weaponWorkspace!,divisionWorkspace,index,operations,plannedFiles);
         if(weaponWorkspace is not null)AmmoNames.Plan(root,workspace,weaponWorkspace,operations,plannedFiles);
         if(strategic is not null)StrategicPackEditing.Plan(strategic,operations,plannedFiles);
+        var experience = operations.Any(o=>o.FieldKey=="experience.type") ? ExperienceCatalog.Load(root) : null;
+        experience?.Validate(operations);
         var backupId = CreateBackupId("apply");
         var preparedUtc = DateTimeOffset.UtcNow;
         if (weaponWorkspace is not null &&
@@ -320,7 +322,7 @@ public sealed class UnitApplyPlanner(
             preparedUtc,
             operations.ToArray(),
             plannedFiles,
-            validation.ToArray());
+            validation.ToArray()) { ReadDependencies = experience?.Dependencies ?? new() };
     }
 
     internal static string CreateBackupId(string prefix) =>

@@ -6,6 +6,19 @@
 
 仅列出功能更新和影响使用的问题修复。
 
+## 1.9.7 patch1 — 2026-09-17
+
+- 修复已有师徽从后台加载后，打开图片编辑或固定模板时出现“调用线程无法访问此对象”的错误。导出PNG不再读取后台解码器元数据，像素和透明度保持。
+
+## 1.9.7 — 2026-09-16
+
+- 基础信息增加经验类型选择，候选来自当前Mod有效四档配置；展开显示实际等级效果，切换走草稿、预览和备份流程。
+- “名称与徽章”保留选择已有师徽，新增可搜索的缩略图库、PNG/JPEG导入及独立图片编辑窗。支持缩放、矩形裁剪、圆形内/外透明、撤销与重置。
+- 十种固定师徽模板支持0–3位番号：近卫、东德、空降、黑盾、波兰四种几何、捷克两种中央符号；捷克可选四种既定配色（深蓝/红/金黄/橄榄灰）。波兰伞锚不在模板内。
+- 自定义PNG、纹理声明、目标师引用联合预览、应用和备份恢复；草稿保存图片及编辑参数，原图保持。
+- 设置新增面板独立弹出开关，默认大面板，可选折叠分组；双击标题打开，关闭归位。师徽编辑器始终独立弹出。
+- 模板包含重构底图，非原版像素还原。自定义师徽尚未运行AssetCooker或游戏内验收。
+
 ## 1.9.6 — 2026-09-16
 
 - 同版本界面修补：游戏规则按大类/小类两层折叠，保留展开状态与搜索；SP改为左右浏览编辑布局，支持窄窗口切换、明确引用跳转和未保存编辑保护。
@@ -175,6 +188,19 @@
 [中文](#chinese) | [English](#english)
 
 Feature updates and fixes that affect everyday use.
+
+## 1.9.7 patch1 — 2026-09-17
+
+- Fix cross-thread access when opening the image editor or templates with an existing emblem loaded in the background. PNG encoding preserves pixels and alpha without reading decoder metadata across threads.
+
+## 1.9.7 — 2026-09-16
+
+- Choose valid experience packs from the current Mod in basic mode and inspect level effects.
+- Retain existing-emblem selection with a searchable thumbnail gallery. Import PNG/JPEG images into a separate zoomable editor with crop, circular transparency, undo and reset.
+- Ten numbered templates cover Soviet, East German, Polish geometric and Czech designs; Czech shields offer four color presets. Polish parachute/anchor designs are excluded.
+- Image data and editing parameters persist in drafts. New PNG files, texture declarations and division references share transaction preview, backup and recovery.
+- Enable detachable panels in Settings. Double-click workspace or expandable-group titles; close windows to dock them again.
+- Some template bases are reconstructed. AssetCooker and in-game validation have not been performed for the new emblem workflow.
 
 ## 1.9.6 — 2026-09-16
 

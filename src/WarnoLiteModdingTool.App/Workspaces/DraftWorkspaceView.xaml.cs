@@ -7,7 +7,7 @@ namespace WarnoLiteModdingTool.App.Workspaces;
 public partial class DraftWorkspaceView : UserControl
 {
     public DraftWorkspaceView() => InitializeComponent();
-    private MainWindow Host => (MainWindow)Window.GetWindow(this);
+    private MainWindow Host => WarnoLiteModdingTool.App.Controls.FloatingPanels.Host(this);
     private void ClearDraftSelection_Click(object sender, RoutedEventArgs e) => Host.ClearDraftSelection_Click(sender, e);
     private void ClearDrafts_Click(object sender, RoutedEventArgs e) => Host.ClearDrafts_Click(sender, e);
     private void DeleteSelectedDrafts_Click(object sender, RoutedEventArgs e) => Host.DeleteSelectedDrafts_Click(sender, e);

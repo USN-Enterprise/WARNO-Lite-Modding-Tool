@@ -49,6 +49,7 @@ public sealed class UnitProjectLoader(
         diagnostics.AddRange(localisation.Diagnostics);
         ReadNames(units, sources, localisation);
         UnitCatalogBuilder.ApplyChoices(units, damageResistance);
+        ExperienceCatalog.Load(context.Layout.RootPath).Apply(units);
 
         if (restored is not null)
         {

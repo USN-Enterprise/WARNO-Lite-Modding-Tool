@@ -7,7 +7,7 @@ namespace WarnoLiteModdingTool.App.Workspaces;
 public partial class ProblemWorkspaceView : UserControl
 {
     public ProblemWorkspaceView() => InitializeComponent();
-    private MainWindow Host => (MainWindow)Window.GetWindow(this);
+    private MainWindow Host => WarnoLiteModdingTool.App.Controls.FloatingPanels.Host(this);
     private void CopyProblem_Click(object sender, RoutedEventArgs e) => Host.CopyProblem_Click(sender, e);
     private void OpenProblemLogs_Click(object sender, RoutedEventArgs e) => Host.OpenProblemLogs_Click(sender, e);
     private void ProblemAction_Click(object sender,RoutedEventArgs e) => Host.ProblemAction_Click(sender, e);

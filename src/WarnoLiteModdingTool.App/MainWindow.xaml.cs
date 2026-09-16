@@ -42,6 +42,7 @@ public partial class MainWindow : Window
     {
         _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
+        Loaded += (_,_) => Controls.FloatingPanels.Install(this);
         ThemeManager.ThemeChanged += UpdateNativeTitleBar;
         Closed += (_,_) => ThemeManager.ThemeChanged -= UpdateNativeTitleBar;
         _windowLayoutReady = true;
@@ -713,6 +714,7 @@ public partial class MainWindow : Window
     internal async void CreateUnit_Click(object sender,RoutedEventArgs e){try{await _viewModel.CreateUnitAsync(this,Equals((sender as FrameworkElement)?.Tag,"edit"));}catch(Exception ex){MessageBox.Show(this,ex.Message,"无法创建单位");}}
     private async Task OpenSelectedProjectAsync(string root)
     {
+        Controls.FloatingPanels.CloseAll();
         if (!_viewModel.CanOpenProject) return;
         try
         {

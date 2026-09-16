@@ -4,9 +4,9 @@
 
 <a id="chinese"></a>
 
-当前版本：**1.9.6**。新增独立战略 Pack（SP）编辑与安全重命名、挂载武器数量、战术师师徽与筛选；统一非单位页面筛选窗口，并增加游戏规则分类与空军布局设置。
+当前版本：**1.9.7**。基础模式可切换经验类型；师徽支持选择已有图、导入裁剪与圆形透明、固定模板改番号及捷克配色；设置支持双击独立弹出大面板或折叠分组。
 
-这是一款面向 WARNO Mod 新手和不熟悉代码的玩家、易于上手的 Windows 图形化数值编辑器。通过可视化界面调整单位、武器、弹药等数值与相关参数，无需手写代码。编辑范围以数值和规则配置为主，不涉及模型、贴图、动画等美术资源的制作或编辑。
+这是一款面向 WARNO Mod 新手和不熟悉代码的玩家、易于上手的 Windows 图形化数值编辑器。通过可视化界面调整单位、武器、弹药等数值与相关参数，无需手写代码。编辑范围以数值和规则配置为主，并支持战术师师徽PNG图片编辑；不提供模型或动画制作。
 
 **QQ 交流群：1013181135**
 
@@ -112,13 +112,13 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 <a id="english"></a>
 
-Current version: **1.9.6**. Separate Strategic Pack editing and reference-aware renaming, mounted weapon counts, division emblems and filters, filter dialogs outside the unit workspace, rule categories and aircraft panel layouts.
+Current version: **1.9.7**. Basic-mode experience selection, existing/custom division emblems, crop and circular transparency editing, numbered emblem templates, Czech color presets, and detachable workspaces or expandable groups.
 
 # WARNO Lite Modding Tool — English
 
 [中文](#chinese) | [English](#english)
 
-A beginner-friendly Windows graphical editor for WARNO Mod creators and players who are unfamiliar with code. Use visual controls to adjust unit, weapon, and ammunition stats and related parameters without writing code. The editor focuses on numerical values and game rules; it does not create or edit models, textures, animations, or other art assets.
+A beginner-friendly Windows graphical editor for WARNO Mod creators and players who are unfamiliar with code. Use visual controls to adjust unit, weapon, and ammunition stats and related parameters without writing code. The editor focuses on numerical values and game rules, with PNG editing for division emblems. It does not create models or animations.
 
 **QQ community group: 1013181135**
 

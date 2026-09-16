@@ -27,7 +27,8 @@ public sealed record ApplyPreview(
     IReadOnlyList<PlannedFileChange> Files,
     IReadOnlyList<string> ValidationMessages)
 {
-    public int FormalFileCount => Files.Count(item => item.Kind is FormalTextFileKind.Ndf or FormalTextFileKind.Csv);
+    public Dictionary<string,byte[]> ReadDependencies {get;init;} = new();
+    public int FormalFileCount => Files.Count(item => item.Kind is FormalTextFileKind.Ndf or FormalTextFileKind.Csv or FormalTextFileKind.Binary);
 
     public string LogRelativePath => Files.Single(item => item.Kind == FormalTextFileKind.Log).RelativePath;
 }

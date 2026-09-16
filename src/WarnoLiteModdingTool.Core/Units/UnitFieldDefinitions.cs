@@ -6,6 +6,7 @@ public static class UnitFieldDefinitions
 {
     public static IReadOnlyList<UnitFieldDefinition> All { get; } =
     [
+        Choice("experience.type", "基本信息", "经验与老练度", "经验类型", "决定各老练度的加成与升级门槛；不改变出场等级", "TExperienceModuleDescriptor", "ExperienceLevelsPackDescriptor"),
         MapInteger("economy.commandPoints", "费用与部署", "费用", "指挥点", "部署价格", "TProductionModuleDescriptor", "ProductionRessourcesNeeded", "Resource_CommandPoints"),
         MapInteger("economy.tickets", "费用与部署", "费用", "将军模式价格", "单位在将军模式中的价格", "TProductionModuleDescriptor", "ProductionRessourcesNeeded", "Resource_Tickets"),
 

@@ -6,7 +6,8 @@ public enum FormalTextFileKind
 {
     Ndf,
     Csv,
-    Log
+    Log,
+    Binary
 }
 
 public sealed class TextFileSnapshot
@@ -87,6 +88,7 @@ public sealed class TextFileSnapshot
         }
 
         var bytes = File.ReadAllBytes(fullPath);
+        if(kind==FormalTextFileKind.Binary) return new TextFileSnapshot(root,relativePath,fullPath,kind,true,bytes,string.Empty,StrictUtf8NoBom,[],File.GetLastWriteTimeUtc(fullPath));
         Encoding encoding;
         byte[] preamble;
         int contentOffset;

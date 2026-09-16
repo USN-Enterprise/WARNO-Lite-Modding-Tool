@@ -7,6 +7,6 @@ namespace WarnoLiteModdingTool.App.Workspaces;
 public partial class ObjectWorkspaceView : UserControl
 {
     public ObjectWorkspaceView() => InitializeComponent();
-    private MainWindow Host => (MainWindow)Window.GetWindow(this);
+    private MainWindow Host => WarnoLiteModdingTool.App.Controls.FloatingPanels.Host(this);
     private void ObjectIndex_Sorting(object sender, DataGridSortingEventArgs e) => Host.ObjectIndex_Sorting(sender, e);
 }

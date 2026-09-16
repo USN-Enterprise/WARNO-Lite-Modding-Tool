@@ -9,6 +9,7 @@ public sealed record UnitFieldValue(
     UnitSourceLocation? Location,
     IReadOnlyList<UnitChoice> Choices)
 {
+    public IReadOnlyDictionary<string, string> ChoiceDetails { get; init; } = new Dictionary<string,string>();
     public bool CanEdit => Availability == UnitFieldAvailability.Editable;
 }
 

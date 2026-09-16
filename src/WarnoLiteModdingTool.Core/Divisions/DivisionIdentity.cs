@@ -9,7 +9,7 @@ using WarnoLiteModdingTool.Core.Transactions;
 using WarnoLiteModdingTool.Core.Units;
 namespace WarnoLiteModdingTool.Core.Divisions;
 
-public sealed record DivisionIdentityState(string Mother,string Id,bool Create,string Name,string Token,string Emblem,int SerializerId,Dictionary<string,string> Baselines);
+public sealed record DivisionIdentityState(string Mother,string Id,bool Create,string Name,string Token,string Emblem,int SerializerId,Dictionary<string,string> Baselines, EmblemAsset? Asset = null);
 public static class DivisionIdentity
 {
     public static DivisionIdentityState Read(DraftOperation op)=>JsonSerializer.Deserialize<DivisionIdentityState>(op.TargetRaw)??throw new InvalidDataException("师草稿为空");
@@ -41,7 +41,8 @@ public static class DivisionIdentity
         foreach(var op in ops)
         {
             var resolved=Resolve(data,op);if(resolved.Status!=DraftResolutionStatus.Active)throw new TransactionValidationException(resolved.Reason);var s=Read(op);var mother=data.Division(s.Mother)!;
-            var emblemChoices=ModTextures.Read(root,true);if(s.Emblem!=Field(mother,"EmblemTexture")&&!emblemChoices.Any(e=>e.Key==s.Emblem))throw new TransactionValidationException("师徽不在当前Mod候选中");
+            if(s.Asset is not null) EmblemAssets.Plan(root,s,files);
+            var emblemChoices=ModTextures.Read(root,true);if(s.Asset is null && s.Emblem!=Field(mother,"EmblemTexture")&&!emblemChoices.Any(e=>e.Key==s.Emblem))throw new TransactionValidationException("师徽不在当前Mod候选中");
             var rename=s.Create||s.Name!=mother.DisplayName;if(rename){VanillaNames.RequireAvailable();if(!tokens.Add(s.Token)||VanillaNames.Lookup("UNITS",s.Token) is not null||data.Units.Localisation.TryResolve(s.Token,out _)||data.Units.Localisation.IsTokenAmbiguous(s.Token))throw new TransactionValidationException("师名称token已占用");}
             string Change(string original,string type,Dictionary<string,string> values,string? oldName=null,string? newName=null)
             {

@@ -60,6 +60,10 @@ public sealed class SettingsWindow : Window
             { MessageBox.Show(this, ex.Message, UiText.T("清除 Mod 缓存")); }
         };
         general.Children.Add(clearModCache);
+        var floating=new CheckBox {Content=UiText.T("允许面板独立弹出"),IsChecked=_preferences.FloatingPanels,Margin=new Thickness(0,10,0,6)};general.Children.Add(floating);
+        var size=new ComboBox {ItemsSource=new[]{UiText.T("大面板（默认）"),UiText.T("小面板（折叠分组）")},SelectedIndex=_preferences.FloatSmallPanels?1:0};general.Children.Add(size);
+        floating.Click+=(_,_)=>{_preferences=_preferences with {FloatingPanels=floating.IsChecked==true};if(Save())Controls.FloatingPanels.CloseAll();};
+        size.SelectionChanged+=(_,_)=>{_preferences=_preferences with {FloatSmallPanels=size.SelectedIndex==1};if(Save())Controls.FloatingPanels.CloseAll();};
         Label(general, "原版名称");
         var gamePath = new TextBlock { Text = _preferences.GameDirectory ?? UiText.T("自动查找 WARNO"), TextWrapping = TextWrapping.Wrap };
         general.Children.Add(gamePath);

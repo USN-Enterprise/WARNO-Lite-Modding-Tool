@@ -32,6 +32,12 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
             throw new TransactionValidationException("预览后草稿已变化，请重新预览。");
         }
 
+        if(preview.ReadDependencies.Count>0)
+        {
+            var current=WarnoLiteModdingTool.Core.Units.ExperienceCatalog.Load(preview.ProjectRoot);
+            if(current.Dependencies.Count!=preview.ReadDependencies.Count || preview.ReadDependencies.Any(pair=>!current.Dependencies.TryGetValue(pair.Key,out var bytes)||!bytes.AsSpan().SequenceEqual(pair.Value)))
+                throw new TransactionValidationException("经验配置在预览后变化，请重新预览。");
+        }
         var backupStore = new TransactionBackupStore(preview.ProjectRoot);
         var manifest = await ExecuteAsync(
             backupStore,
@@ -294,6 +300,7 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
 
             var allowed = change.Kind switch
             {
+                FormalTextFileKind.Binary => relative.StartsWith("GameData/Assets/2D/", StringComparison.OrdinalIgnoreCase) && relative.EndsWith(".png", StringComparison.OrdinalIgnoreCase),
                 FormalTextFileKind.Ndf or FormalTextFileKind.Csv => relative.StartsWith("GameData/", StringComparison.OrdinalIgnoreCase),
                 FormalTextFileKind.Log => relative.StartsWith("logs/", StringComparison.OrdinalIgnoreCase),
                 _ => false

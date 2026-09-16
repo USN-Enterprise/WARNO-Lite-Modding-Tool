@@ -7,7 +7,7 @@ namespace WarnoLiteModdingTool.App.Workspaces;
 public partial class WeaponWorkspaceView : UserControl
 {
     public WeaponWorkspaceView() => InitializeComponent();
-    private MainWindow Host => (MainWindow)Window.GetWindow(this);
+    private MainWindow Host => WarnoLiteModdingTool.App.Controls.FloatingPanels.Host(this);
     private void ClearDrafts_Click(object sender, RoutedEventArgs e) => Host.ClearDrafts_Click(sender, e);
     private void ClearWeaponScopeSelection_Click(object sender, RoutedEventArgs e) => Host.ClearWeaponScopeSelection_Click(sender, e);
     private void PreviewApply_Click(object sender, RoutedEventArgs e) => Host.PreviewApply_Click(sender, e);

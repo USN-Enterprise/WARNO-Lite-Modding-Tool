@@ -110,6 +110,8 @@ public sealed class UnitFieldViewModel : ObservableObject
     public bool ShowMixedArmor => HasMixedArmor;
     public string? ChoiceValue {get=>ShowMixedArmor?null:EditValue;set{if(value is null)return;var mixed=ShowMixedArmor;HasMixedArmor=false;if(mixed&&value==EditValue)SchedulePersistence();else EditValue=value;OnPropertyChanged(nameof(ShowMixedArmor));}}
     public string Hint { get; }
+    public bool IsExperience => Key == "experience.type";
+    public string ExperienceDetails => Field?.ChoiceDetails.GetValueOrDefault(EditValue) ?? "当前引用无法解析";
 
     public string BaseValue { get; }
 
@@ -118,7 +120,7 @@ public sealed class UnitFieldViewModel : ObservableObject
     public string ReadOnlyReason { get; }
 
     public bool IsEditable => _baseEditable && !_transactionLocked && Advanced.EditorMode.CanEdit(Key);
-    public void RefreshMode() { OnPropertyChanged(nameof(IsEditable));OnPropertyChanged(nameof(IsVisible));OnPropertyChanged(nameof(DisplayLabel));OnPropertyChanged(nameof(OriginalParameter));ChoicesView.Refresh();OnPropertyChanged(nameof(ShowMixedArmor));OnPropertyChanged(nameof(ChoiceValue)); }
+    public void RefreshMode() { OnPropertyChanged(nameof(IsEditable));OnPropertyChanged(nameof(IsVisible));OnPropertyChanged(nameof(DisplayLabel));OnPropertyChanged(nameof(OriginalParameter));ChoicesView.Refresh();OnPropertyChanged(nameof(ShowMixedArmor));OnPropertyChanged(nameof(ChoiceValue));OnPropertyChanged(nameof(ExperienceDetails)); }
 
     public bool IsChoiceEditor { get; }
 

@@ -854,3 +854,49 @@ AI 难度|AI difficulty
 加入草稿并切换	Save draft and switch
 放弃并切换	Discard and switch
 查看详情	View details
+经验与老练度	Experience and veterancy
+经验类型	Experience type
+各等级效果	Effects by level
+师徽图片编辑	Emblem image editor
+确认图片	Confirm image
+导入自定义图片	Import custom image
+固定模板	Fixed template
+番号（最多3位，可留空）	Number (up to 3 digits, optional)
+深蓝	Dark blue
+金黄	Gold
+橄榄灰	Olive gray
+生成模板	Generate template
+选区工具	Selection tool
+矩形裁剪	Rectangle crop
+圆形透明选区	Circular transparency selection
+拖动画选区；拖动内部移动；重新画框调整大小。	Drag to select. Drag inside to move; redraw to resize.
+应用裁剪	Apply crop
+圈外透明	Clear outside circle
+圈内透明	Clear inside circle
+重置图片	Reset image
+画布缩放	Canvas zoom
+透明棋盘	Transparency checkerboard
+浅色预览	Light preview
+深色预览	Dark preview
+编辑参数无法恢复，保留已保存图片	Could not restore editing parameters. Saved image retained.
+导入或编辑图片	Import or edit image
+固定模板生成	Generate from template
+选择已有师徽	Choose existing emblem
+无法编辑师徽	Cannot edit emblem
+修改师名称和徽章，名称及标题一起更新。简介与历史文字保持原内容。	Edit the division name and emblem. The name and title update together; description and history are retained.
+允许面板独立弹出	Allow detachable panels
+大面板（默认）	Whole workspace (default)
+小面板（折叠分组）	Small panel (expandable group)
+双击标题独立弹出	Double-click the title to detach
+面板已独立打开，关闭窗口后归位	Panel detached. Close its window to restore it.
+苏联近卫红旗	Soviet Guards banner
+东德圆徽	East German round emblem
+苏联空降盾徽	Soviet airborne shield
+苏联黑底盾徽	Soviet black shield
+波兰三角	Polish triangle
+波兰圆形	Polish circle
+波兰方形	Polish square
+波兰菱形	Polish diamond
+捷克菱形标记	Czech diamond symbol
+捷克尖角标记	Czech pointed symbol
+番号只允许最多3位数字	Enter up to 3 digits for the number

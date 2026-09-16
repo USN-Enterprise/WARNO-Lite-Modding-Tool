@@ -37,7 +37,7 @@ public sealed class DiffWindow : Window
         files.SelectionChanged += (_, _) =>
         {
             if (files.SelectedItem is not PlannedFileChange file) return;
-            _oldLines = Lines(file.OriginalBytes); _newLines = Lines(file.CandidateBytes);
+            _oldLines = file.Kind==FormalTextFileKind.Binary ? [UiText.T("PNG图片")+" · "+file.OriginalBytes.Length+" bytes"] : Lines(file.OriginalBytes); _newLines = file.Kind==FormalTextFileKind.Binary ? [UiText.T("PNG图片")+" · "+file.CandidateBytes.Length+" bytes"] : Lines(file.CandidateBytes);
             var first = 0; while (first < Math.Min(_oldLines.Length, _newLines.Length) && _oldLines[first] == _newLines[first]) first++;
             _page = Math.Max(0, first - 5) / 160; Show();
         };

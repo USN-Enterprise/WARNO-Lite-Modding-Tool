@@ -7,7 +7,7 @@ namespace WarnoLiteModdingTool.App.Workspaces;
 public partial class UnitWorkspaceView : UserControl
 {
     public UnitWorkspaceView() => InitializeComponent();
-    private MainWindow Host => (MainWindow)Window.GetWindow(this);
+    private MainWindow Host => WarnoLiteModdingTool.App.Controls.FloatingPanels.Host(this);
     private void AddBatchDrafts_Click(object sender, RoutedEventArgs e) => Host.AddBatchDrafts_Click(sender, e);
     private void AddCommonBatchField_Click(object sender, RoutedEventArgs e) => Host.AddCommonBatchField_Click(sender, e);
     private void ClearBatchSelection_Click(object sender, RoutedEventArgs e) => Host.ClearBatchSelection_Click(sender, e);
