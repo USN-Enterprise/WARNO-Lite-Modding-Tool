@@ -13,6 +13,18 @@ public partial class UnitWorkspaceView : UserControl
     private void ClearBatchSelection_Click(object sender, RoutedEventArgs e) => Host.ClearBatchSelection_Click(sender, e);
     private void ClearUnitFilters_Click(object sender, RoutedEventArgs e) => Host.ClearUnitFilters_Click(sender, e);
     private void CloseUnitFilters_Click(object sender, RoutedEventArgs e) => Host.CloseUnitFilters_Click(sender, e);
+    private async void UnitLifecycle_Click(object sender, RoutedEventArgs e)
+    {
+        if(DataContext is not WarnoLiteModdingTool.App.ViewModels.MainViewModel main || main.UnitWorkspace is not {} workspace) return;
+        try
+        {
+            var action=(sender as FrameworkElement)?.Tag?.ToString();
+            if(action=="abilities") await workspace.EditCapabilitiesAsync(Host);
+            else if(action=="delete") await workspace.DeleteNewUnitAsync(Host);
+            else await workspace.EditIdentityAsync(Host,action=="registration");
+        }
+        catch(Exception ex) { WarnoLiteModdingTool.App.Localisation.LocalizedMessageBox.Show(Host,ex.Message,"单位操作未完成"); }
+    }
     private void CreateUnit_Click(object sender,RoutedEventArgs e) => Host.CreateUnit_Click(sender, e);
     private void DeploymentPreset_SelectionChanged(object sender, SelectionChangedEventArgs e) => Host.DeploymentPreset_SelectionChanged(sender, e);
     private void PreviewBatch_Click(object sender, RoutedEventArgs e) => Host.PreviewBatch_Click(sender, e);

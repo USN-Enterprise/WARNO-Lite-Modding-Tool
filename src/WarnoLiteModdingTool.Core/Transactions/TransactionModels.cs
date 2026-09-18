@@ -28,6 +28,9 @@ public sealed record ApplyPreview(
     IReadOnlyList<string> ValidationMessages)
 {
     public Dictionary<string,byte[]> ReadDependencies {get;init;} = new();
+    public string? ExperienceReview { get; init; }
+    public Dictionary<string,byte[]>? UnitReadDependencies {get;init;}
+    public IReadOnlyList<DraftOperation>? DraftReview {get;init;}
     public int FormalFileCount => Files.Count(item => item.Kind is FormalTextFileKind.Ndf or FormalTextFileKind.Csv or FormalTextFileKind.Binary);
 
     public string LogRelativePath => Files.Single(item => item.Kind == FormalTextFileKind.Log).RelativePath;

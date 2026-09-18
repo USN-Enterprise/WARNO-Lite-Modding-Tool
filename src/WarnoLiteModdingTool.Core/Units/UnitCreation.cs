@@ -14,6 +14,8 @@ public sealed record UnitCreationState(string Mother,string Id,string Guid,strin
     Dictionary<string,string> DivisionBaselines,Dictionary<string,string> WeaponBaselines)
 {
     public IReadOnlyList<UnitCreationMountChoice> MountChoices {get;init;}=[];
+    public string? NamingRoot {get;init;}
+    public UnitCapabilityState? Capabilities {get;init;}
 }
 public sealed record UnitCreationMountChoice(string WeaponName,int MountIndex,string AmmoName);
 public static class UnitCreation
@@ -40,14 +42,21 @@ public static class UnitCreation
     {
         Localisation.VanillaNames.RequireAvailable();
         var root=data.Localisation.ProjectRoot;
-        var text=File.ReadAllText(Path.Combine(root,SerializerPath));var doc=new NdfSyntaxDocument(text);
+        var pending=drafts.ToArray();
+        var graph=new UnitProjectGraph(root);
+        var registrationSource=UnitIdentityEditing.Registration(graph,graph.RequireObject(mother.Source.RelativeSourceFile,mother.Name)).File;
+        var text=registrationSource.Text;var doc=registrationSource.Syntax;
         var used=doc.ReadMapEntries(doc.FindDirectAssignments(doc.FindConstructors("TDeckSerializerEntries").Single(),"UnitIds").Single()).Select(e=>int.Parse(doc.Raw(e.Value))).ToHashSet();
-        foreach(var op in drafts.Where(o=>o.TargetKind==DraftTargetKind.UnitCreate))used.Add(Read(op).SerializerId);
+        foreach(var op in pending.Where(o=>o.TargetKind==DraftTargetKind.UnitCreate))used.Add(Read(op).SerializerId);
+        used.UnionWith(UnitCreationHistory.Load(root).ReservedIds);
         var next=used.Count==0?0:checked(used.Max()+1);
         string suffix;
         do { suffix=Guid.NewGuid().ToString("N")[..10].ToUpperInvariant(); }
-        while (Localisation.VanillaNames.Lookup("UNITS",suffix) is not null || data.Units.Any(u=>u.NameToken==suffix));
-        return new(mother.Name,"Descriptor_Unit_WL_"+suffix,Guid.NewGuid().ToString(),suffix,next,mother.DisplayName+" 新单位",[],false,[],[],[]);
+        while (Localisation.VanillaNames.Lookup("UNITS",suffix) is not null || data.Units.Any(u=>u.NameToken==suffix) || pending.Where(o=>o.TargetKind==DraftTargetKind.UnitCreate).Any(o=>Read(o).Token==suffix));
+        var namingRoot=mother.Name;
+        var previous=UnitCreationHistory.Load(root).Units.SingleOrDefault(u=>!u.Deleted&&u.Name==mother.Name);
+        if(previous is not null)namingRoot=previous.NamingRoot ?? previous.Mother;
+        return new(mother.Name,UnitIdentityEditing.Suggest(namingRoot,graph,pending),Guid.NewGuid().ToString(),suffix,next,mother.DisplayName+" 新单位",[],false,[],[],[]) {NamingRoot=namingRoot};
     }
     private static string Patch(string text,IReadOnlyList<TextReplacement> edits)=>SemicolonCsvDocument.ApplyReplacements(text,edits);
     private static void Assign(NdfSyntaxDocument doc,string text,List<TextReplacement> edits,string constructor,string field,string value,bool required=true)
@@ -75,7 +84,13 @@ public static class UnitCreation
             edits.Add(new(at,0,"","SpecialtiesList = "+inserted+(source.Contains("\r\n")?"\r\n":"\n"),key));continue;
         }
         if(!f.CanEdit||f.Location is null||!UnitValueConverter.TryFormatTarget(f,value,out _,out var raw,out var error))throw new InvalidDataException("字段不可编辑："+key);edits.Add(new(f.Location.CharacterOffset-mother.Source.CharacterOffset,f.Location.CharacterLength,f.RawValue,raw,key));}
-        return Patch(source,edits);
+        var result=Patch(source,edits);
+        if (state.Capabilities is null) return result;
+        // A pending unit can be edited through its projected identity, then renamed.
+        // Creation owns UNITE tags; capability changes carry only non-identity tags.
+        var identity = UnitCapabilities.FromBody(result).Tags.Where(t => t.StartsWith("UNITE_", StringComparison.Ordinal)).ToArray();
+        UnitCapabilityState Rebase(UnitCapabilityState value) => value with { Tags = value.Tags.Where(t => !t.StartsWith("UNITE_", StringComparison.Ordinal)).Concat(identity).ToArray() };
+        return UnitCapabilities.Apply(result, Rebase(UnitCapabilities.FromBody(source)), Rebase(state.Capabilities));
     }
     public static UnitRecord Project(UnitRecord mother,UnitCreationState state,string source)
     {
@@ -98,6 +113,12 @@ public static class UnitCreation
         {
             var resolved=Resolve(units,op);if(resolved.Status!=DraftResolutionStatus.Active)throw new TransactionValidationException(resolved.Reason);
             var state=Read(op);var mother=units.Units.Single(u=>u.Name==state.Mother);
+            var graph=new UnitProjectGraph(root,files);
+            UnitIdentityEditing.RequireAvailable(state.Id,graph,operations,state.Id);
+            var registration=UnitIdentityEditing.NewRegistration(graph,mother,state.Id);
+            var serializerPath=UnitIdentityEditing.Registration(graph,graph.RequireObject(mother.Source.RelativeSourceFile,mother.Name)).File.Path;
+            if(state.Capabilities is not null) UnitCapabilities.ValidateModuleScope(op.BaselineRaw,graph,mother.Source.RelativeSourceFile);
+            if(state.Capabilities is not null) foreach(var skill in state.Capabilities.Skills.Except(UnitCapabilities.FromBody(op.BaselineRaw).Skills)) UnitCapabilities.ValidateReference(graph,mother.Source.RelativeSourceFile,skill);
             if(!existingNames.Add(state.Id)||!tokens.Add(state.Token)||!ids.Add(state.SerializerId))throw new TransactionValidationException("新单位身份冲突");
             if(!guids.Add("GUID:{"+state.Guid+"}"))throw new TransactionValidationException("新单位GUID已占用");
             var clone=Clone(mother,state,op.BaselineRaw);
@@ -116,7 +137,7 @@ public static class UnitCreation
                     var body=Patch(original,edits);var old=Get(weapon.Source.RelativeSourceFile);Put(weapon.Source.RelativeSourceFile,old+touched[weapon.Source.RelativeSourceFile.Replace('\\','/')].Snapshot.NewLine+body);}
                 changes.Add(new(doc.StartOffset(reference.Span),doc.Length(reference.Span),reference.Raw,"$/GFX/Weapon/"+name,"武器引用"));}clone=Patch(clone,changes);}
             var source=Get(mother.Source.RelativeSourceFile);Put(mother.Source.RelativeSourceFile,source+touched[mother.Source.RelativeSourceFile.Replace('\\','/')].Snapshot.NewLine+clone);
-            var serializer=Get(SerializerPath);var sd=new NdfSyntaxDocument(serializer);var map=sd.FindDirectAssignments(sd.FindConstructors("TDeckSerializerEntries").Single(),"UnitIds").Single();var entries=sd.ReadMapEntries(map);if(entries.Any(e=>int.Parse(sd.Raw(e.Value))==state.SerializerId||NdfSyntaxDocument.Leaf(sd.Raw(e.Key))==state.Id))throw new TransactionValidationException("牌组编号已占用");var insertion=sd.StartOffset(map)+sd.Length(map)-1;Put(SerializerPath,serializer.Insert(insertion,(sd.NeedsArraySeparator(map)?","+touched[SerializerPath].Snapshot.NewLine:"")+$"    ({state.Id}, {state.SerializerId}),"+touched[SerializerPath].Snapshot.NewLine));
+            var serializer=Get(serializerPath);var sd=new NdfSyntaxDocument(serializer);var map=sd.FindDirectAssignments(sd.FindConstructors("TDeckSerializerEntries").Single(),"UnitIds").Single();var entries=sd.ReadMapEntries(map);if(entries.Any(e=>int.Parse(sd.Raw(e.Value))==state.SerializerId||NdfSyntaxDocument.Leaf(sd.Raw(e.Key))==state.Id))throw new TransactionValidationException("牌组编号已占用");var insertion=sd.StartOffset(map)+sd.Length(map)-1;Put(serializerPath,serializer.Insert(insertion,(sd.NeedsArraySeparator(map)?","+touched[serializerPath].Snapshot.NewLine:"")+$"    ({registration}, {state.SerializerId}),"+touched[serializerPath].Snapshot.NewLine));
             var csvPath=Path.GetRelativePath(root,csv).Replace('\\','/');var csvText=Get(csvPath,FormalTextFileKind.Csv);if(csvText.Length==0)csvText="TOKEN;REFTEXT";var csvDoc=SemicolonCsvDocument.Parse(csvText);if(csvDoc.Rows[0].Fields.Count!=2||csvDoc.Rows[0].Fields[0].Value.Trim()!="TOKEN"||csvDoc.Rows[0].Fields[1].Value.Trim()!="REFTEXT"||csvDoc.Rows.Skip(1).Any(r=>r.Fields[0].Value==state.Token))throw new TransactionValidationException("名称表格式不兼容或token冲突");var nl=touched[csvPath].Snapshot.NewLine;Put(csvPath,csvText+(csvText.EndsWith('\n')?"":nl)+state.Token+";"+SemicolonCsvDocument.Quote(state.Name)+nl,FormalTextFileKind.Csv);
             foreach(var (divisionId,rule) in state.Divisions){var division=divisions?.Division(divisionId)??throw new TransactionValidationException("所选师不可用");if(!state.DivisionBaselines.TryGetValue(divisionId,out var baseline)||baseline!=DivisionDraftCodec.Serialize(division.Baseline))throw new TransactionValidationException("所选师基线已变化");
                 var desired=rule with {Unit=state.Id};var candidate=division.Baseline with {UnitRules=division.Baseline.UnitRules.Append(desired).ToArray()};var expanded=units with {Units=units.Units.Append(projected).ToArray()};var errors=DivisionStateValidator.Validate(divisions! with {Units=expanded},division,candidate);if(errors.Count>0)throw new TransactionValidationException(string.Join(";",errors));

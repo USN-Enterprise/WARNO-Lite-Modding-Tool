@@ -29,7 +29,7 @@ internal static partial class Program
             try{
                 var sourcePath=Path.Combine(root,"GameData/Generated/Gameplay/Gfx/UniteDescriptor.ndf");var source=File.ReadAllText(sourcePath);var at=source.IndexOf("    ModulesDescriptors",StringComparison.Ordinal);source=source.Insert(at,"    ClassNameForDebug = 'Unit_Test_Tank_US'\n");source+="\n"+File.ReadAllText(Path.Combine(divRoot,"GameData/Generated/Gameplay/Gfx/UniteDescriptor.ndf"));source=source.Replace("\r\n","\n").Replace("\n",newline);File.WriteAllText(sourcePath,source,new UTF8Encoding(false));
                 foreach(var file in Directory.GetFiles(Path.Combine(divRoot,"GameData/Generated/Gameplay/Decks"))){var target=Path.Combine(root,"GameData/Generated/Gameplay/Decks",Path.GetFileName(file));Directory.CreateDirectory(Path.GetDirectoryName(target)!);File.Copy(file,target,true);}
-                File.WriteAllText(Path.Combine(root,UnitCreation.SerializerPath),"unnamed TDeckSerializerEntries\n(\n UnitIds = MAP [ (Descriptor_Unit_Test_Tank_US, 17), (Descriptor_Unit_Test_Recon_SOV, 3) /* last entry without comma */ ]\n)\n".Replace("\n",newline),new UTF8Encoding(false));
+                File.WriteAllText(Path.Combine(root,UnitCreation.SerializerPath),"unnamed TDeckSerializerEntries\n(\n UnitIds = MAP [ ($/GFX/Unit/Descriptor_Unit_Test_Tank_US, 17), ($/GFX/Unit/Descriptor_Unit_Test_Recon_SOV, 3) /* last entry without comma */ ]\n)\n".Replace("\n",newline),new UTF8Encoding(false));
                 if (missingAmmo)
                 {
                     var weaponPath = Path.Combine(root, "GameData/Generated/Gameplay/Gfx/WeaponDescriptor.ndf");

@@ -21,6 +21,12 @@ public sealed class UnitCreationWindow:Window
     private readonly UnitCreationState? _state;
     private UnitRecord? _mother;
     private readonly TextBox _name=new();
+    private readonly TextBox _variableName=new();
+    private UnitCreationState? _suggestedState;
+    private UnitCapabilityState? _capabilities;
+    private string? _suggestedName;
+    private UnitProjectGraph? _graph;
+    private string? _identityError;
     private readonly CheckBox _independent=new();
     private readonly Dictionary<string,Control> _fields=[];
     private readonly List<DivisionRow> _rows=[];
@@ -65,7 +71,7 @@ public sealed class UnitCreationWindow:Window
         divisionPage.Children.Add(new ParameterNote {Text="AvailableTransportList"});var transport=new Button{Content=UiText.T("选择当前行运输"),HorizontalAlignment=HorizontalAlignment.Left};transport.Click+=(_,_)=>{if(grid.SelectedItem is not DivisionRow row)return;var choose=new UnitSelectionWindow(units.Units.Where(u=>u.HasUniqueTransporterModule).Select(u=>(u.Name,u.DisplayName)),row.Transports){Owner=this};if(choose.ShowDialog()==true){row.Transports=choose.SelectedIds.ToArray();row.Refresh();}};divisionPage.Children.Add(transport);
         var transportText=new TextBlock{TextWrapping=TextWrapping.Wrap};transportText.SetBinding(TextBlock.TextProperty,new Binding("SelectedItem.TransportText"){Source=grid});divisionPage.Children.Add(transportText);
         var review=Page("5 创建草稿");var summary=new TextBlock{TextWrapping=TextWrapping.Wrap,LineHeight=25};review.Children.Add(summary);
-        tabs.SelectionChanged+=(_,_)=>{if(tabs.SelectedIndex==4)summary.Text=UiText.T("新增单位")+"："+_name.Text+"\n"+UiText.T("母版")+"："+_mother?.DisplayName+"\n"+UiText.T("所选师")+"："+_rows.Count(r=>r.Selected)+"\n"+UiText.T("替换槽位")+"："+_weaponSlots.Choices.Count+"\n"+string.Join("\n",_weaponSlots.Choices.Select(c=>UiText.T("槽位")+" "+(c.MountIndex+1)+" → "+(_weapons.Ammo(c.AmmoName)?.DisplayName??c.AmmoName)))+"\n"+UiText.T("加入草稿后可继续调整，正式文件只在应用草稿时写入。");};
+        tabs.SelectionChanged+=(_,_)=>{if(tabs.SelectedIndex==4)summary.Text=UiText.T("新增单位")+"："+_name.Text+"\n"+UiText.T("母版")+"："+_mother?.DisplayName+"\n"+UiText.T("单位变量名")+"："+_variableName.Text+"\n"+UiText.T("注册编号")+"："+_suggestedState?.SerializerId+"\n"+UiText.T("所选师")+"："+_rows.Count(r=>r.Selected)+"\n"+UiText.T("替换槽位")+"："+_weaponSlots.Choices.Count+"\n"+string.Join("\n",_weaponSlots.Choices.Select(c=>UiText.T("槽位")+" "+(c.MountIndex+1)+" → "+(_weapons.Ammo(c.AmmoName)?.DisplayName??c.AmmoName)))+"\n"+UiText.T("加入草稿后可继续调整，正式文件只在应用草稿时写入。");};
         picker.SelectedItemChanged+=(_,_)=>{_mother=picker.SelectedItem as UnitRecord;BuildBasics();};picker.SelectedItem=units.Units.FirstOrDefault(u=>u.Name==_state?.Mother)??units.Units.FirstOrDefault();_mother=picker.SelectedItem as UnitRecord;BuildBasics();
         void Button(string label,Action action){var b=new Button{Content=UiText.T(label),Padding=new Thickness(14,8,14,8),Margin=new Thickness(8,12,0,0)};b.Click+=(_,_)=>action();actions.Children.Add(b);}
         Button("上一步",()=>tabs.SelectedIndex=Math.Max(0,tabs.SelectedIndex-1));Button("下一步",()=>tabs.SelectedIndex=Math.Min(4,tabs.SelectedIndex+1));
@@ -73,7 +79,23 @@ public sealed class UnitCreationWindow:Window
     }
     private void BuildBasics()
     {
-        if(_mother is null)return;_weaponSlots.Load(_mother,_weapons,_state?.MountChoices??[]);_fields.Clear();_basics.Children.Clear();_name.Text=_state?.Name??_mother.DisplayName+" "+UiText.T("新单位");_basics.Children.Add(new TextBlock{Text=UiText.T("名称")});_basics.Children.Add(new ParameterNote {Text="NameToken → UNITS.csv.REFTEXT"});_basics.Children.Add(_name);
+        if(_mother is null)return;
+        _graph??=new UnitProjectGraph(_units.Localisation.ProjectRoot);
+        var handEdited=_suggestedName is not null && _variableName.Text!=_suggestedName;
+        try{_suggestedState=_state??UnitCreation.New(_mother,_units,_drafts);_identityError=null;}
+        catch(Exception ex)when(ex is IOException or InvalidOperationException){_suggestedState=null;_identityError=ex.Message;}
+        _capabilities=_state?.Capabilities;
+        var defaultName=_suggestedState?.Id??UnitIdentityEditing.Suggest(_mother.Name,_graph,_drafts);
+        if(!handEdited || _state is not null)_variableName.Text=defaultName;
+        _suggestedName=defaultName;
+        _variableName.IsReadOnly=!Advanced.EditorMode.IsAdvanced;
+        _weaponSlots.Load(_mother,_weapons,_state?.MountChoices??[]);_fields.Clear();_basics.Children.Clear();_name.Text=_state?.Name??_mother.DisplayName+" "+UiText.T("新单位");_basics.Children.Add(new TextBlock{Text=UiText.T("名称")});_basics.Children.Add(new ParameterNote {Text="NameToken → UNITS.csv.REFTEXT"});_basics.Children.Add(_name);
+        _basics.Children.Add(new TextBlock{Text=UiText.T("单位变量名"),Margin=new Thickness(0,12,0,4)});_basics.Children.Add(_variableName);
+        if(_identityError is not null)_basics.Children.Add(new TextBlock{Text=UiText.T(_identityError),TextWrapping=TextWrapping.Wrap});
+        if(Advanced.EditorMode.IsAdvanced){var suggest=new Button{Content=UiText.T("重新生成建议名"),HorizontalAlignment=HorizontalAlignment.Left};suggest.Click+=(_,_)=>{_variableName.Text=UnitIdentityEditing.Suggest(_suggestedState?.NamingRoot??_mother.Name,_graph,_drafts.Where(o=>o.Id!=_existing?.Id));_suggestedName=_variableName.Text;};_basics.Children.Add(suggest);}
+        var abilities=new Button{Content=UiText.T("特性与实际能力"),HorizontalAlignment=HorizontalAlignment.Left,Margin=new Thickness(0,8,0,8)};
+        abilities.Click+=(_,_)=>{try{var dialog=new UnitCapabilitiesWindow(_mother,_graph,_capabilities??UnitCapabilities.FromBody(UnitCreation.Source(_mother))){Owner=this};if(dialog.ShowDialog()==true)_capabilities=dialog.State;}catch(Exception ex){MessageBox.Show(this,ex.Message,"单位操作未完成");}};_basics.Children.Add(abilities);
+
         foreach(var key in new[]{"structure.coalition","structure.country","structure.factory","structure.role","economy.commandPoints","survival.health"})
         {var field=_mother.Field(key);if(field?.CanEdit!=true)continue;_basics.Children.Add(new TextBlock{Text=UiText.T(field.Definition.Label),Margin=new Thickness(0,10,0,4)});_basics.Children.Add(new ParameterNote {Text=ParameterNote.ForUnit(field.Definition)});var value=_state?.Fields.GetValueOrDefault(key)??field.DisplayValue;Control input;if(field.Choices.Count>0){input=new ComboBox{ItemsSource=field.Choices.Select(c=>new Choice(c.Display,GameText.Display(key,c.Display))).ToArray(),DisplayMemberPath="Label",SelectedValuePath="Value",SelectedValue=value};}else input=new TextBox{Text=value};_fields[key]=input;_basics.Children.Add(input);}
         foreach(var row in _rows){row.Selected=false;row.WithoutTransport=true;row.Cards=1;row.Count=1;row.Transports=[];row.Xp="1, 1, 1, 1";var rule=_state?.Divisions.GetValueOrDefault(row.Division.Name)??row.Division.Baseline.UnitRules.FirstOrDefault(r=>r.Unit==_mother.Name);row.Selected=_state?.Divisions.ContainsKey(row.Division.Name)??false;if(rule is null){row.Refresh();continue;}row.WithoutTransport=rule.AvailableWithoutTransport;row.Cards=rule.MaxPackNumber;row.Count=rule.NumberOfUnitInPack;row.Transports=rule.AvailableTransports.ToArray();row.Xp=string.Join(", ",rule.XpMultipliers.Select(x=>x.ToString(System.Globalization.CultureInfo.InvariantCulture)));row.Refresh();}
@@ -81,7 +103,10 @@ public sealed class UnitCreationWindow:Window
     private void BuildResult()
     {
         var mother=_mother??throw new InvalidDataException("请选择母版");
-        var state=_state??UnitCreation.New(mother,_units,_drafts);
+        var state=_state??_suggestedState??UnitCreation.New(mother,_units,_drafts);
+        var name=_variableName.Text.Trim();
+        UnitIdentityEditing.RequireAvailable(name,_graph??new UnitProjectGraph(_units.Localisation.ProjectRoot),_drafts,_state?.Id);
+        state=state with {Id=name,Capabilities=_capabilities};
         var fields=new Dictionary<string,string>(_state?.Fields??[]);foreach(var (key,input) in _fields){var value=input is ComboBox combo?combo.SelectedValue?.ToString()??"":((TextBox)input).Text;if(value!=mother.Field(key)!.DisplayValue)fields[key]=value;else fields.Remove(key);}
         var divisionRules=new Dictionary<string,DivisionUnitRuleState>();var baselines=new Dictionary<string,string>();foreach(var row in _rows.Where(r=>r.Selected)){divisionRules[row.Division.Name]=new(state.Id,row.WithoutTransport,row.Transports,row.Cards,row.Count,row.Xp.Split(',',StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries).Select(v=>double.Parse(v,System.Globalization.CultureInfo.InvariantCulture)).ToArray());baselines[row.Division.Name]=_state?.DivisionBaselines.GetValueOrDefault(row.Division.Name)??DivisionDraftCodec.Serialize(row.Division.Baseline);}
         var weapons=new Dictionary<string,string>();foreach(var id in mother.Weapons){var w=_weapons.Weapon(id)??throw new InvalidDataException("母版武器不存在");weapons[id]=_state?.WeaponBaselines.GetValueOrDefault(id)??File.ReadAllText(w.Source.SourceFile).Substring(w.Source.CharacterOffset,w.Source.CharacterLength);}

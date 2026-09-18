@@ -41,6 +41,17 @@ public sealed class UnitApplyPlanner(
         }
 
         var root = Path.GetFullPath(projectRoot);
+        using var currentDrafts = new DraftStore(root);
+        var loadedDrafts = await currentDrafts.LoadAsync(cancellationToken);
+        if (loadedDrafts.IsBlocked) throw new TransactionValidationException(loadedDrafts.Error ?? "草稿不可读取");
+        var allOperations = UnitDraftLinks.Expand(operations, currentDrafts.Operations);
+        var deleteNames = allOperations.Where(o=>o.TargetKind==DraftTargetKind.UnitDelete).Select(o=>o.ObjectName).ToHashSet();
+        operations = allOperations.Where(o=>!deleteNames.Contains(o.ObjectName)||o.TargetKind==DraftTargetKind.UnitDelete).ToArray();
+        var lifecycle = allOperations.Any(o=>UnitDraftLinks.Lifecycle(o)||o.TargetKind==DraftTargetKind.UnitCreate);
+        var unitReview = lifecycle ? new UnitProjectGraph(root).Dependencies : null;
+        var historyPath = Path.Combine(root,UnitCreationHistory.LedgerPath);
+        if(unitReview is not null) unitReview[UnitCreationHistory.LedgerPath] = File.Exists(historyPath)?File.ReadAllBytes(historyPath):[];
+
         var context = _detector.Detect(root);
         if (!context.IsRecognized)
         {
@@ -49,7 +60,7 @@ public sealed class UnitApplyPlanner(
 
         var index = await _indexer.IndexAsync(context, cancellationToken: cancellationToken);
         var unitCapability = index.Modules.FirstOrDefault(item => item.Key == "units");
-        if (operations.Any(o => o.TargetKind is not (DraftTargetKind.StrategicPlan or DraftTargetKind.StrategicPack or DraftTargetKind.GlobalRule)) &&
+        if (operations.Any(o => o.TargetKind is not (DraftTargetKind.StrategicPlan or DraftTargetKind.StrategicPack or DraftTargetKind.GlobalRule or DraftTargetKind.ExperienceLevel)) &&
             (unitCapability?.CanScan != true || unitCapability.Availability == ModuleAvailability.ParseError))
         {
             throw new TransactionValidationException("单位模块当前不可安全写入；请先处理扫描诊断。");
@@ -287,9 +298,18 @@ public sealed class UnitApplyPlanner(
         if(operations.Any(o=>o.TargetKind==DraftTargetKind.UnitCreate))UnitCreation.Plan(root,workspace,weaponWorkspace!,divisionWorkspace,index,operations,plannedFiles);
         if(weaponWorkspace is not null)AmmoNames.Plan(root,workspace,weaponWorkspace,operations,plannedFiles);
         if(strategic is not null)StrategicPackEditing.Plan(strategic,operations,plannedFiles);
+        var experienceEdits = operations.Any(o => o.TargetKind == DraftTargetKind.ExperienceLevel) ? workspace.Rules!.Experience : null;
+        var finalExperience = experienceEdits?.Plan(operations, plannedFiles);
         var experience = operations.Any(o=>o.FieldKey=="experience.type") ? ExperienceCatalog.Load(root) : null;
         experience?.Validate(operations);
+        UnitCapabilities.Plan(root,operations,plannedFiles);
+        UnitIdentityEditing.Plan(root,operations,plannedFiles);
+        UnitDeletion.Plan(root,workspace,operations,plannedFiles);
+        if (finalExperience is not null && operations.Any(o => o.TargetKind is DraftTargetKind.UnitRename or DraftTargetKind.UnitDelete))
+            finalExperience = Rules.ExperienceWorkspace.Load(root, plannedFiles.Where(f => f.Kind == FormalTextFileKind.Ndf).ToDictionary(f => f.RelativePath, f => Encoding.UTF8.GetString(f.CandidateBytes), StringComparer.OrdinalIgnoreCase));
+        if(operations.Any(o=>o.TargetKind is DraftTargetKind.UnitRename or DraftTargetKind.UnitDelete)) UnitLifecycleValidation.Validate(root,plannedFiles);
         var backupId = CreateBackupId("apply");
+        UnitCreationHistory.Plan(root,operations,plannedFiles,backupId);
         var preparedUtc = DateTimeOffset.UtcNow;
         if (weaponWorkspace is not null &&
             (weaponPlan.ValidationMessages.Count > 0 || operations.Any(o => o.TargetKind == DraftTargetKind.UnitCreate)))
@@ -305,6 +325,14 @@ public sealed class UnitApplyPlanner(
         };
         validation.AddRange(weaponPlan.ValidationMessages);
         validation.AddRange(divisionPlan.ValidationMessages);
+        if (lifecycle) validation.Add("单位声明、注册与能力按当前Mod引用证据校验；提交前复查输入文件及关联草稿");
+        if (deleteNames.Count > 0) validation.Add("删除组中同单位的编辑草稿本次不写入，删除成功后随组清理；共享资源保留");
+        if (finalExperience is not null)
+        {
+            validation.Add("经验路线、效果数值及最终组合已验证；游戏提示文本未同步");
+            foreach (var route in finalExperience.Routes.Where(r => operations.Any(o => o.TargetKind == DraftTargetKind.ExperienceLevel && o.ObjectName == r.Name)))
+                validation.Add(route.Name + " · 最终共享使用者 " + route.Users.Count + "\n" + string.Join("\n", route.Users));
+        }
         if (strategic is not null) validation.Add("战略编组、单位/运输、共享隔离及 PackIndex 候选已校验");
         var logRelativePath = Normalize(Path.Combine("logs", $"WARNO Lite Modding Tool-{backupId}.md"));
         var logSnapshot = TextFileSnapshot.Load(root, logRelativePath, FormalTextFileKind.Log, allowMissing: true);
@@ -320,9 +348,9 @@ public sealed class UnitApplyPlanner(
             root,
             backupId,
             preparedUtc,
-            operations.ToArray(),
+            allOperations.ToArray(),
             plannedFiles,
-            validation.ToArray()) { ReadDependencies = experience?.Dependencies ?? new() };
+            validation.ToArray()) { ReadDependencies = experience?.Dependencies ?? new(), ExperienceReview = experienceEdits?.Review(operations), UnitReadDependencies = unitReview, DraftReview = lifecycle ? currentDrafts.Operations.ToArray() : null };
     }
 
     internal static string CreateBackupId(string prefix) =>
@@ -354,7 +382,7 @@ public sealed class UnitApplyPlanner(
                 DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity => "divisions",
                 DraftTargetKind.StrategicPlan => "strategic",
                 DraftTargetKind.StrategicPack => "sp",
-                DraftTargetKind.GlobalRule => "rules",
+                DraftTargetKind.GlobalRule or DraftTargetKind.ExperienceLevel => "rules",
                 _ => "units"
             };
             if (!string.Equals(operation.Module, expectedModule, StringComparison.Ordinal) ||

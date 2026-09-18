@@ -900,3 +900,129 @@ AI 难度|AI difficulty
 捷克菱形标记	Czech diamond symbol
 捷克尖角标记	Czech pointed symbol
 番号只允许最多3位数字	Enter up to 3 digits for the number
+
+经验与老练度|Experience and veterancy
+特种经验|Special forces experience
+火炮|Artillery
+直升机|Helicopter
+固定翼|Fixed-wing
+自定义|Custom
+等级 {0}|Level {0}
+共享使用者：{0}|Shared users: {0}
+使用者与来源|Users and source
+当前未发现显式使用者|No explicit users found
+当前 Mod 未找到经验路线|No experience routes found in this Mod
+修改共享路线，影响所有引用者。游戏提示文本未同步。|Changes affect all users of this shared route. In-game hint text is not synchronized.
+升级门槛|Level thresholds
+等级加成|Level effects
+门槛加值|Threshold additional value
+门槛价格系数|Threshold price multiplier
+压制承伤修饰（%）|Suppression damage modifier (%)
+速度修饰（%）|Speed modifier (%)
+瞄准时间倍率|Aim-time multiplier
+静止精度加值|Stationary accuracy addition
+移动精度加值|Moving accuracy addition
+两次齐射间隔倍率|Salvo interval multiplier
+最大射程散布倍率|Maximum-range dispersion multiplier
+压制恢复每秒|Suppression recovery per second
+被瞄准精度加值|Accuracy-when-targeted addition
+结构说明与保留效果|Structure notes and preserved effects
+撤销此等级|Undo this level
+尚未保存|Not saved yet
+未显式配置等级效果|No explicit level effects
+空效果包：{0}|Empty effects pack: {0}
+等级标签（保留）：{0}|Level tags (preserved): {0}
+未解释效果：{0}|Uninterpreted effect: {0}
+效果被多处引用，当前版本仅支持独占效果数值编辑|This effect has multiple references; this version edits exclusively referenced effects only
+当前效果语义不支持编辑|Editing this effect's modifier semantics is not supported
+字段不是支持的直接数值|This field is not a supported direct numeric value
+路线声明多义或源文件语法错误|Ambiguous route declaration or source syntax error
+无法唯一定位等级数组|Cannot uniquely locate the levels array
+不支持的等级结构|Unsupported level structure
+等级效果赋值不唯一或结构不支持|Ambiguous or unsupported level effects assignment
+等级效果引用缺失、多义或不支持：{0}|Missing, ambiguous or unsupported level effect reference: {0}
+效果列表无法编辑：{0}|Cannot edit this effects list: {0}
+等级数组为空|The levels array is empty
+{0}：未配置或赋值不唯一|{0}: not configured or ambiguous assignment
+部分文件无法读取，共享影响无法完整核对|Some files cannot be read; the full shared impact cannot be verified
+经验路线结构已变化或无法编辑|The experience route structure changed or cannot be edited
+{0}：请输入有效数值（不小于0）|{0}: enter a valid nonnegative number
+{0}：请输入有效数值|{0}: enter a valid number
+路线、效果或共享影响基线已变化，请撤销此项后重新编辑|The route, effects or shared users changed; undo this draft and edit again
+当前等级无法编辑，请先处理诊断或撤销冲突草稿|This level cannot be edited; address the diagnostics or undo the conflicting draft
+特性与实际能力|Traits and abilities
+特性显示标签|Trait display labels
+显示标签|Display labels
+实际能力|Abilities
+添加/补齐|Add / complete
+未添加|Not assigned
+已配套|Configured
+仅显示|Display only
+仅能力|Ability only
+配置不完整|Incomplete
+自定义或无法判断|Custom or unknown
+添加能力|Add ability
+替换能力|Replace ability
+移除能力|Remove ability
+清空能力|Clear abilities
+搜索能力或完整引用|Search abilities or full references
+请选择能力|Select an ability
+请选择已有能力和替代能力|Select the current and replacement abilities
+目标能力已存在|The ability is already assigned
+当前Mod能力参数与条件|Ability parameters and conditions in this mod
+实际能力摘要|Assigned abilities
+仅修改显示标签|Edit display labels only
+保存草稿|Save draft
+配套状态描述配置，不代表游戏内实时生效。修改只影响当前单位，共享能力数值保持。|Status describes configuration, not active in-game effects. Edits affect this unit; shared ability definitions are preserved.
+修改单位变量名|Rename unit variable
+单位变量名|Unit variable name
+重新生成建议名|Generate suggested name
+注册编号|Serializer ID
+检查单位注册|Check unit registration
+待创建单位将在应用时注册|Pending units will be registered when applied
+变量名编辑仅专业模式可用|Variable renaming requires professional mode
+请先选择可编辑单位|Select an editable unit first
+显示名、GUID、名称token和牌组编号保持。引用影响在应用预览中列出。|Display name, GUID, name token and serializer ID are preserved. Reference changes appear in the apply preview.
+删除新建单位 / 撤销删除|Delete created unit / undo deletion
+删除新建单位|Delete created unit
+取消创建|Cancel creation
+保存删除草稿|Save deletion draft
+待删除|Pending deletion
+待删除；撤销删除后可继续编辑|Pending deletion; undo deletion to resume editing
+联动清理|Included cleanup
+选择替代单位|Choose replacement unit
+删除先保存为草稿，可撤销；正式应用后通过文件级备份恢复。共享武器、弹药和能力保留。|Deletion is staged and can be undone. After applying, recovery uses file-level backups. Shared weapons, ammunition and abilities are preserved.
+取消未应用创建及必要依赖草稿，正式文件保持。|Cancel this pending creation and required dependent drafts. Formal files are unchanged.
+单位操作未完成|Unit operation not completed
+特性与实际能力已保存草稿|Trait and ability draft saved
+仅修改显示标签，不自动赋予实际能力；配套修改请使用“特性与实际能力”|Edits display labels only, without granting abilities. Use Traits and abilities for coordinated changes.
+坚定|Resolute
+民兵|Militia
+预备役|Reservist
+警戒|Security
+地面监视雷达|Ground surveillance radar
+反炮兵雷达|Counter-battery radar
+雷达防空干扰|Radar AA jamming
+光电干扰|Electro-optical jammer
+突击|Shock
+宪兵|Military police
+狙击|Sniper
+地面干扰|Ground jamming
+教官 · 步兵|Instructor · infantry
+教官 · 坦克|Instructor · tank
+步战车协同 · 提供支援|IFV cooperation · provider
+步战车协同 · 接受支援|IFV cooperation · receiver
+信号情报|Signals intelligence
+单位变量名须以Descriptor_Unit_开头，后接英文字母、数字或下划线|Unit variables must start with Descriptor_Unit_ followed by ASCII letters, digits or underscores
+单位变量名已占用：{0}|Unit variable name is already used: {0}
+待提交名称已占用：{0}|Pending name is already used: {0}
+单位或能力引用在预览后变化，请重新预览|Unit or ability dependencies changed after preview; preview again
+关联草稿在预览后变化，请重新预览|Related drafts changed after preview; preview again
+无法核对本项目成功创建记录，请保留或提供对应创建备份：{0}|A successful creation record could not be verified. Keep or provide the corresponding project backup: {0}
+能力引用缺失、多义或类型不符：{0}|Missing, ambiguous or wrong-type ability reference: {0}
+请先解除或替换引用：{0}|Remove or replace this reference first: {0}
+能力依赖无法解析：{0}|Unable to resolve ability dependency: {0}
+
+创建来源|Creation record
+批量目标包含待删除单位，请先撤销删除或取消勾选|Batch targets include units pending deletion. Undo deletion or deselect them first.
+当前Mod未提供唯一能力定义|This Mod does not provide a unique ability definition.

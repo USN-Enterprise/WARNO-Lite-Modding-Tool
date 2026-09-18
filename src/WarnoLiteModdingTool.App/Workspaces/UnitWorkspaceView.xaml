@@ -180,7 +180,7 @@
                                         <TextBlock Text="{l:Loc Key='单位检查器'}" FontWeight="SemiBold" FontSize="16" />
                                         <TextBlock Text="{Binding UnitWorkspace.SelectedUnit.DisplayName, TargetNullValue=尚未选择单位}" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0" TextWrapping="Wrap" />
                                         </StackPanel></DockPanel>
-                                        <TextBlock Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}" Text="{Binding UnitWorkspace.SelectedUnit.InternalName}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,12" />
+                                        <TextBlock Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}" Text="{Binding UnitWorkspace.SelectedIdentityText}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,12" />
 
                                         <Border Background="{DynamicResource InfoBackgroundBrush}" BorderBrush="{DynamicResource InfoBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,0,0,10"
                                                 Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}">
@@ -197,6 +197,13 @@
                                             <TextBlock Text="{Binding UnitWorkspace.DraftLoadError}" TextWrapping="Wrap" />
                                         </Border>
 
+                                        <WrapPanel Margin="0,0,0,10">
+                                            <Button Content="{l:Loc Key='特性与实际能力'}" Tag="abilities" Click="UnitLifecycle_Click" IsEnabled="{Binding UnitWorkspace.CanEditSelectedLifecycle}" Margin="0,0,6,6"/>
+                                            <Button Content="{l:Loc Key='修改单位变量名'}" Tag="rename" Click="UnitLifecycle_Click" IsEnabled="{Binding UnitWorkspace.CanEditSelectedLifecycle}" Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,6,6"/>
+                                            <Button Content="{l:Loc Key='检查单位注册'}" Tag="registration" Click="UnitLifecycle_Click" IsEnabled="{Binding UnitWorkspace.CanEditSelectedLifecycle}" Margin="0,0,6,6"/>
+                                            <Button Content="{l:Loc Key='删除新建单位 / 撤销删除'}" Tag="delete" Click="UnitLifecycle_Click" Margin="0,0,6,6"/>
+                                        </WrapPanel>
+                                        <TextBlock Text="{l:LocalizedBinding Path=UnitWorkspace.LifecycleState}" TextWrapping="Wrap" Margin="0,0,0,8"/>
                                         <ItemsControl x:Name="UnitFieldSections" ItemsSource="{Binding UnitWorkspace.FieldSections}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>

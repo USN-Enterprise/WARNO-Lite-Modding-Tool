@@ -31,6 +31,20 @@ internal static partial class Program
     private static async Task<int> Main(string[] args)
     {
         VanillaNames.Replace(SyntheticNames());
+        if(args is ["--scan-lifecycle",var scan199Root])
+        {
+            var graph=new UnitProjectGraph(scan199Root);
+            var unit=graph.Objects.First(o=>o.TypeName=="TEntityDescriptor"&&o.Name.StartsWith("Descriptor_Unit_"));
+            var choices=UnitCapabilities.Choices(graph,unit.RelativeSourceFile);
+            Console.WriteLine($"Files={graph.Files.Count}; abilities={choices.Count}; available={choices.Count(c=>c.Error is null)}");
+            foreach(var choice in choices.Where(c=>c.Error is not null).Take(8))Console.WriteLine(choice.Name+": "+choice.Error);
+            var failures=new List<string>(); var scanned=0;
+            foreach(var item in graph.Objects.Where(o=>o.TypeName=="TEntityDescriptor"&&o.Name.StartsWith("Descriptor_Unit_")))
+            { scanned++; try{UnitCapabilities.ValidateModuleScope(graph.Body(item),graph,item.RelativeSourceFile);}catch(Exception ex){failures.Add(item.Name+": "+ex.Message);} }
+            Console.WriteLine($"Module scopes={scanned-failures.Count}/{scanned}");foreach(var failure in failures.Take(4))Console.WriteLine(failure);
+            return choices.All(c=>c.Error is null)&&failures.Count==0?0:1;
+        }
+
         if (args is ["--benchmark-cache", var modRoot193, var cache193]) { await BenchmarkCache193(modRoot193, cache193); return 0; }
         if (args is ["--verify-local-names", var gameDirectory, var cacheFile])
         {
@@ -79,6 +93,17 @@ internal static partial class Program
 
         var tests = new (string Name, Func<Task> Run)[]
         {
+            ("1.9.9 生命周期与经验联合事务", Unit199Combined),
+            ("1.9.9 命名空间与草稿依赖边界", Unit199ReferenceBoundaries),
+            ("1.9.9 删除使用者与共享资源", Unit199DeleteReferences),
+            ("1.9.9 能力例外与旧数据边界", Unit199AbilityBoundaries),
+            ("1.9.9 注册与可读命名", Unit199RegistrationNames),
+            ("1.9.9 改名与完整能力配套", Unit199RenameAbilities),
+            ("1.9.9 新建删除与失败恢复", Unit199DeletionRestore),
+            ("1.9.9 提交前依赖保护", Unit199PreviewGuards),
+            ("1.9.8 经验路线原文保持与两文件恢复", Experience198Transaction),
+            ("1.9.8 经验路线共享与结构边界", Experience198Guards),
+            ("1.9.8 路线切换与数值同文件组合", Experience198Combined),
             ("1.9.7 师徽后台图片转入编辑器", Emblem197BackgroundImage),
             ("1.9.7 经验类型引用与依赖验证", Experience197),
             ("1.9.7 师徽二进制事务与恢复", Emblem197),
@@ -1989,6 +2014,8 @@ internal static partial class Program
                     viewModel.AdvancedMode=false;WarnoLiteModdingTool.App.Localisation.UiText.Current.SetLanguage("zh-CN");Verify192Ui(viewModel, window);
                     Verify196Ui(viewModel, window, root,divisionRoot);
                     Verify197Panels(window);
+                    Verify198Ui(window);
+                    Verify199Ui(window);
                     Verify186Ui(viewModel, window, root);
                     application.Shutdown();
                     if (failure is not null)

@@ -27,16 +27,35 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
             throw new TransactionValidationException("草稿存储与应用项目不一致。");
         }
 
-        if (!preview.Operations.All(operation => draftStore.Operations.Contains(operation)))
+        if (!preview.Operations.All(operation => draftStore.Operations.Any(current => System.Text.Json.JsonSerializer.Serialize(current) == System.Text.Json.JsonSerializer.Serialize(operation))))
         {
             throw new TransactionValidationException("预览后草稿已变化，请重新预览。");
         }
 
+        if (preview.UnitReadDependencies is { } unitDependencies)
+        {
+            var paths=Units.UnitProjectGraph.InputFiles(preview.ProjectRoot).Append(Units.UnitCreationHistory.LedgerPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if(!paths.SetEquals(unitDependencies.Keys) || unitDependencies.Any(p=>!(File.Exists(Path.Combine(preview.ProjectRoot,p.Key))?File.ReadAllBytes(Path.Combine(preview.ProjectRoot,p.Key)):Array.Empty<byte>()).AsSpan().SequenceEqual(p.Value)))
+                throw new TransactionValidationException("单位或能力引用在预览后变化，请重新预览");
+            if(preview.DraftReview is not null && System.Text.Json.JsonSerializer.Serialize(preview.DraftReview) != System.Text.Json.JsonSerializer.Serialize(draftStore.Operations))
+                throw new TransactionValidationException("关联草稿在预览后变化，请重新预览");
+        }
         if(preview.ReadDependencies.Count>0)
         {
             var current=WarnoLiteModdingTool.Core.Units.ExperienceCatalog.Load(preview.ProjectRoot);
             if(current.Dependencies.Count!=preview.ReadDependencies.Count || preview.ReadDependencies.Any(pair=>!current.Dependencies.TryGetValue(pair.Key,out var bytes)||!bytes.AsSpan().SequenceEqual(pair.Value)))
                 throw new TransactionValidationException("经验配置在预览后变化，请重新预览。");
+        }
+        if (preview.ExperienceReview is not null)
+        {
+            try
+            {
+                var current = Rules.ExperienceWorkspace.Load(preview.ProjectRoot);
+                if (current.Review(preview.Operations) != preview.ExperienceReview)
+                    throw new TransactionValidationException("经验路线或共享影响在预览后变化，请重新加载并预览。");
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or InvalidDataException or IOException)
+            { throw new TransactionValidationException("经验路线复核失败：" + ex.Message); }
         }
         var backupStore = new TransactionBackupStore(preview.ProjectRoot);
         var manifest = await ExecuteAsync(
@@ -301,7 +320,9 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
             var allowed = change.Kind switch
             {
                 FormalTextFileKind.Binary => relative.StartsWith("GameData/Assets/2D/", StringComparison.OrdinalIgnoreCase) && relative.EndsWith(".png", StringComparison.OrdinalIgnoreCase),
-                FormalTextFileKind.Ndf or FormalTextFileKind.Csv => relative.StartsWith("GameData/", StringComparison.OrdinalIgnoreCase),
+                FormalTextFileKind.Ndf => relative.StartsWith("GameData/", StringComparison.OrdinalIgnoreCase) || relative.StartsWith("CommonData/", StringComparison.OrdinalIgnoreCase),
+                FormalTextFileKind.Csv => relative.StartsWith("GameData/", StringComparison.OrdinalIgnoreCase),
+                FormalTextFileKind.Metadata => relative == Units.UnitCreationHistory.LedgerPath,
                 FormalTextFileKind.Log => relative.StartsWith("logs/", StringComparison.OrdinalIgnoreCase),
                 _ => false
             };

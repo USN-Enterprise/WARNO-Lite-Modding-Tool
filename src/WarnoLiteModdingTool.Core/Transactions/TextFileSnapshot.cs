@@ -7,7 +7,8 @@ public enum FormalTextFileKind
     Ndf,
     Csv,
     Log,
-    Binary
+    Binary,
+    Metadata
 }
 
 public sealed class TextFileSnapshot

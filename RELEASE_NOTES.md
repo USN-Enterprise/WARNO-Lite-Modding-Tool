@@ -6,6 +6,22 @@
 
 仅列出功能更新和影响使用的问题修复。
 
+## 1.9.9 — 2026-09-18
+
+- 新建单位注册继承当前Mod可确认的母版路径，默认变量名使用母版名加递增序号；专业模式支持待创建及正式单位改名，联动引用，保持GUID、名称token和注册编号。已有错误注册可单独修复。
+- 新增“特性与实际能力”：15类特性配套，区分教官、IFV角色及SIGINT合法变体；专业模式可自由增删、替换和清空当前Mod可解析的已有能力，显示标签独立编辑。
+- 支持取消未应用创建及删除本工具已创建单位；核对来源，预览引用清理或替代，保留共享资源，删除编号不自动复用。待删除状态可撤销，正式删除支持文件级备份恢复。
+- 三项接入既有草稿与事务，组合普通字段、经验路线和其他编辑；提交前重新检查输入、依赖和草稿变化。未知或多义结构说明原因并阻止相关写入。
+- 本版验证为合成事务、失败恢复及WPF界面检查；未运行官方生成器或游戏，未修改用户真实Mod。
+
+## 1.9.8 — 2026-09-17
+
+- 游戏规则新增“经验与老练度”，按大类→路线→等级组织，基础/专业模式均可用，支持搜索及中英文。
+- 编辑当前Mod已有路线的各级门槛及已识别效果数值，保留原修饰类型、未知效果、等级标签和未改文本；显示共享使用者及来源。
+- 等级改动进入草稿，门槛/效果跨文件联合预览、备份与失败恢复；应用前重新检查共享影响，支持与单位路线切换同批提交。
+- SF缺省0级、固定翼空效果包及自定义实际等级结构如实显示；多处共享或语义未支持的效果只读，不自动补建。
+- 本版不创建单位独立路线、不扩展游戏等级上限、不自动改游戏提示文本；未运行游戏验证经验计算公式。
+
 ## 1.9.7 patch1 — 2026-09-17
 
 - 修复已有师徽从后台加载后，打开图片编辑或固定模板时出现“调用线程无法访问此对象”的错误。导出PNG不再读取后台解码器元数据，像素和透明度保持。
@@ -188,6 +204,22 @@
 [中文](#chinese) | [English](#english)
 
 Feature updates and fixes that affect everyday use.
+
+## 1.9.9 — 2026-09-18
+
+- New units inherit their template's verified registration path and receive sequential readable names. Professional mode can rename pending and applied units with linked reference updates, preserving GUIDs, name tokens and registration IDs. Existing registration errors can be repaired separately.
+- Traits and actual abilities provides 15 trait families, including instructor/IFV roles and valid SIGINT variants. Professional mode can add, replace, remove or clear resolvable abilities from this Mod, independently of display labels.
+- Cancel pending creation or delete an applied unit created by this tool after provenance checks. Reference cleanup or replacement is previewed; shared resources remain and deleted IDs are not automatically reused. Deletion drafts can be undone, and committed deletions use file-level backup restoration.
+- All three features share drafts, combined previews and transactions with existing unit and experience edits. Inputs, dependencies and drafts are rechecked before commit; ambiguous or unsupported structures block affected writes.
+- Validation covers synthetic transactions, rollback and WPF UI checks. No official generator or in-game validation was performed, and no real Mod was modified.
+
+## 1.9.8 — 2026-09-17
+
+- Game Rules adds Experience and veterancy, organized by category, route and level, with search and Chinese/English support in both editor modes.
+- Edit existing level thresholds and supported numeric effects from the selected Mod. Modifier types, unknown effects, tags and untouched text are preserved; shared users and sources are listed.
+- Level edits use drafts and combined multi-file previews, backups and rollback. Shared impact is rechecked before committing; route selection and numeric edits can be applied together.
+- Missing SF level-zero effects, empty aircraft effects and actual custom level structures remain visible. Multiply referenced or unsupported effects are read-only; missing effects are not inserted.
+- Private unit routes, expanded game level limits and automatic in-game hint updates are outside this release. Engine experience formulas have not been tested in-game.
 
 ## 1.9.7 patch1 — 2026-09-17
 

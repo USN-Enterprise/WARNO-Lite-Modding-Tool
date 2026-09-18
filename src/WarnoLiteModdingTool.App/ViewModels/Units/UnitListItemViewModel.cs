@@ -16,6 +16,10 @@ public sealed class UnitListItemViewModel(UnitRecord unit, Action? batchSelectio
     public string DisplayName => _draftDisplayName ?? Unit.DisplayName;
 
     public string InternalName => Unit.Name;
+    private string? _pendingName;
+    private bool _pendingDelete;
+    public string PendingName => _pendingName ?? InternalName;
+    public void UpdateLifecycle(string? name,bool deleted){_pendingName=name;_pendingDelete=deleted;OnPropertyChanged(nameof(PendingName));OnPropertyChanged(nameof(DraftStatus));}
 
     public string Coalition => Unit.Coalition;
 
@@ -33,7 +37,7 @@ public sealed class UnitListItemViewModel(UnitRecord unit, Action? batchSelectio
 
     public string AmmunitionText => Unit.Ammunition.Count == 0 ? "无已识别 Ammo" : string.Join(", ", Unit.Ammunition);
 
-    public string DraftStatus => _hasConflict ? "冲突" : _hasDraft ? "有草稿" : string.Empty;
+    public string DraftStatus => _pendingDelete ? "待删除" : _hasConflict ? "冲突" : _hasDraft ? "有草稿" : string.Empty;
 
     public bool IsWeaponScopeSelected
     {

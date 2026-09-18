@@ -4,7 +4,14 @@
 
 <a id="chinese"></a>
 
-当前版本：**1.9.7**。基础模式可切换经验类型；师徽支持选择已有图、导入裁剪与圆形透明、固定模板改番号及捷克配色；设置支持双击独立弹出大面板或折叠分组。
+当前版本：**1.9.9**。新增单位注册与变量命名、特性与实际能力编辑，以及删除本工具新建单位。
+
+单位检查器新增“特性与实际能力”：基础模式提供15类配套，专业模式可搜索当前Mod已有能力并添加、替换、移除或清空。显示标签可单独编辑，展开特性查看当前Mod参数。新建向导沿用同一套能力操作，默认变量名按母版递增；专业模式可改变量名，应用时联动可确认引用。“检查单位注册”可生成定向修复草稿，保持原编号。
+
+“删除新建单位 / 撤销删除”可取消未应用创建；已应用单位须能核对本项目创建备份和身份，删除进入草稿并列出引用。师规则和可安全移除的运输候选联动清理，其他使用者先选择替代或解除引用；武器、弹药等共享资源保留。删除前可撤销，应用后通过文件级备份恢复。不要清理仍需用于来源核对的创建备份。无法唯一确认的引用或结构会阻止相关操作；生成器和游戏内效果尚未在本版验证。
+
+1.9.8新增游戏规则 → 经验与老练度 → 经验路线 → 等级，可修改各级门槛和已有效果数值。共享路线影响全部引用者，可展开使用者列表；改动自动保存到草稿，在草稿中心预览并应用。单位页继续用于选择路线。缺少或未支持的效果保留原文，多处共用的效果当前只读；不创建独立路线，不自动同步游戏提示文字。
+
 
 这是一款面向 WARNO Mod 新手和不熟悉代码的玩家、易于上手的 Windows 图形化数值编辑器。通过可视化界面调整单位、武器、弹药等数值与相关参数，无需手写代码。编辑范围以数值和规则配置为主，并支持战术师师徽PNG图片编辑；不提供模型或动画制作。
 
@@ -112,7 +119,14 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 <a id="english"></a>
 
-Current version: **1.9.7**. Basic-mode experience selection, existing/custom division emblems, crop and circular transparency editing, numbered emblem templates, Czech color presets, and detachable workspaces or expandable groups.
+Current version: **1.9.9**. Unit registration and variable naming, traits and actual abilities, and deletion of units created by this tool.
+
+The unit inspector provides 15 trait families with ability/display/tag pairing. Professional mode can search this Mod's existing abilities, add, replace, remove or clear references, and edit display labels independently. Expand a trait to inspect this Mod's parameters. The creation wizard shares these controls and suggests a sequential name based on its template. Professional renaming updates uniquely resolved references; registration repair preserves the original ID.
+
+Delete created unit / Undo deletion cancels pending creation or stages deletion of an applied unit whose creation backup and identity can be verified. Eligible division rules and transport entries are removed together; other users require replacement or reference removal. Shared weapons, ammunition and resources remain. Undo a deletion draft before applying, or restore the file-level backup afterward. Keep creation backups needed for provenance. Ambiguous references or unsupported structures block the affected operation. This version has not been validated with the official generator or in game.
+
+1.9.8 adds Game Rules → Experience and veterancy → Route → Level, with editable level thresholds and supported existing numeric effects. Shared edits affect all listed users and follow the draft, preview and apply workflow. Unit pages still select a route. Missing or unsupported effects are preserved; multiply referenced effects are read-only. This release does not create private routes or synchronize in-game hint text.
+
 
 # WARNO Lite Modding Tool — English
 

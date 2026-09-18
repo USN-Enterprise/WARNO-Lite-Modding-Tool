@@ -45,6 +45,8 @@ public sealed class RulesView : UserControl
                 }
                 list.Children.Add(parent);
             }
+            if (vm.Category is "全部" or "经验与老练度" || vm.Search.Length > 0)
+                list.Children.Add(ExperienceRulesView.Build(vm, _expanded));
         }
         _observed=vm.View;_render=(_,_)=>Render();_observed.CollectionChanged+=_render;Render();
         panel.Children.Add(new ScrollViewer{Content=list,VerticalScrollBarVisibility=ScrollBarVisibility.Auto});Content=panel;

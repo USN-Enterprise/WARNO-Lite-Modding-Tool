@@ -28,6 +28,10 @@ public static class DraftResolver
         var result = new List<ResolvedDraftOperation>();
         foreach (var operation in operations)
         {
+            if(UnitIdentityEditing.IsKind(operation.TargetKind)){result.Add(UnitIdentityEditing.Resolve(workspace,operation));continue;}
+            if(operation.TargetKind==DraftTargetKind.UnitCapabilities){result.Add(UnitCapabilities.Resolve(workspace,operation));continue;}
+            if(operation.TargetKind==DraftTargetKind.UnitDelete){result.Add(UnitDeletion.Resolve(workspace,operation));continue;}
+            if (operation.TargetKind == DraftTargetKind.ExperienceLevel) { result.Add(workspace.Rules?.Experience.Resolve(operation) ?? new(operation, DraftResolutionStatus.Conflict, "经验路线模块未加载")); continue; }
             if (operation.TargetKind == DraftTargetKind.GlobalRule) { result.Add(workspace.Rules?.Resolve(operation) ?? new(operation, DraftResolutionStatus.Conflict, "游戏规则模块未加载")); continue; }
             if(operation.TargetKind==DraftTargetKind.AmmoName){result.Add(AmmoNames.Resolve(workspace,weapons,operation));continue;}
             if(operation.TargetKind==DraftTargetKind.DivisionIdentity){result.Add(DivisionIdentity.Resolve(divisions,operation));continue;}

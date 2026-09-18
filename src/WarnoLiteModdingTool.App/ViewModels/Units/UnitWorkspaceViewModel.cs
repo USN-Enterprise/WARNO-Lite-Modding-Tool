@@ -14,7 +14,7 @@ using WarnoLiteModdingTool.Core.Batch;
 
 namespace WarnoLiteModdingTool.App.ViewModels.Units;
 
-public sealed class UnitWorkspaceViewModel : ObservableObject
+public sealed partial class UnitWorkspaceViewModel : ObservableObject
 {
     private const string All = "全部";
     private readonly UnitWorkspaceData _data;
@@ -241,7 +241,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
         HasDrafts &&
         !HasDraftLoadError &&
         !IsTransactionBusy &&
-        DraftItems.All(item => item.Resolved.Status == DraftResolutionStatus.Active);
+        DraftItems.All(item => item.Resolved.Status == DraftResolutionStatus.Active || SuppressedByDeletion(item.Resolved.Operation));
 
     public bool CanRestoreBackups => !HasDrafts && !IsTransactionBusy;
 
@@ -253,6 +253,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
             if (SetProperty(ref _selectedUnit, value))
             {
                 RebuildFields();
+                RefreshLifecycle();
             }
         }
     }
@@ -523,6 +524,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
 
     private async Task SaveBatchAsync(IReadOnlyList<DraftOperation> upserts,IReadOnlyList<string> removals)
     {
+        if (upserts.Any(SuppressedByDeletion)) throw new InvalidOperationException("批量目标包含待删除单位，请先撤销删除或取消勾选");
         var result=upserts.ToList(); var removed=removals.ToList();
         if(!Advanced.EditorMode.IsAdvanced)
         {
@@ -610,7 +612,8 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
     {
         try
         {
-            await _draftStore.RemoveAsync(item.Resolved.Operation.Id);
+            if(item.Resolved.Operation.TargetKind==DraftTargetKind.UnitCreate) await UnitDraftLinks.CancelCreationAsync(_draftStore,item.Resolved.Operation);
+            else await _draftStore.RemoveAsync(item.Resolved.Operation.Id);
             RefreshDraftState();
             RebuildFields();
             _setStatus("已移除选中的草稿");
@@ -625,11 +628,13 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
     {
         RefreshDraftState();
         RebuildFields();
+        RefreshLifecycle();
     }
 
     public async Task RemoveSelectedDraftsAsync(IReadOnlySet<string> ids)
     {
         await WaitForPendingEditsAsync();
+        foreach(var creation in _draftStore.Operations.Where(o=>ids.Contains(o.Id)&&o.TargetKind==DraftTargetKind.UnitCreate).ToArray()) await UnitDraftLinks.CancelCreationAsync(_draftStore,creation);
         await _draftStore.ApplyBatchAsync([], ids.ToArray());
         RefreshExternalDraftState();
     }
@@ -675,7 +680,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
 
             await FlushAsync();
             RefreshDraftState();
-            if (!HasDrafts || DraftItems.Any(item => (selectedIds == null || selectedIds.Contains(item.Resolved.Operation.Id)) && item.Resolved.Status == DraftResolutionStatus.Conflict))
+            if (!HasDrafts || DraftItems.Any(item => (selectedIds == null || selectedIds.Contains(item.Resolved.Operation.Id)) && item.Resolved.Status == DraftResolutionStatus.Conflict && !SuppressedByDeletion(item.Resolved.Operation)))
             {
                 throw new TransactionValidationException("没有可安全应用的草稿，或草稿仍存在冲突。");
             }
@@ -768,6 +773,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
 
     private async Task PersistFieldAsync(UnitFieldViewModel fieldViewModel)
     {
+        if(SelectedPendingDelete) throw new InvalidOperationException("待删除单位不能继续编辑");
         var input = fieldViewModel.EditValue;
         var creation=_draftStore.Operations.FirstOrDefault(o=>o.TargetKind==DraftTargetKind.UnitCreate&&o.ObjectName==fieldViewModel.Unit.Name);
         if(creation is not null){var state=UnitCreation.Read(creation);var mother=_data.Units.Single(u=>u.Name==state.Mother);if(fieldViewModel.IsName)state=state with{Name=input};else {var fields=new Dictionary<string,string>(state.Fields){[fieldViewModel.Key]=input};if(fieldViewModel.Key=="armor.front.family")foreach(var side in new[]{"side","rear","top"})fields["armor."+side+".family"]=input;
@@ -1083,6 +1089,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
             var matches = resolved.Where(item => item.Operation.ObjectName == unit.Unit.Name).ToArray();
             var draftName = matches.FirstOrDefault(item =>
                 item.Status == DraftResolutionStatus.Active && item.Operation.TargetKind == DraftTargetKind.UnitName)?.Operation.TargetValue;
+            unit.UpdateLifecycle(matches.FirstOrDefault(m=>m.Operation.TargetKind==DraftTargetKind.UnitRename) is {} rename ? UnitIdentityEditing.Read(rename.Operation).NewName : null, matches.Any(m=>m.Operation.TargetKind==DraftTargetKind.UnitDelete));
             unit.UpdateDraftState(
                 matches.Length > 0,
                 matches.Any(item => item.Status == DraftResolutionStatus.Conflict),
@@ -1097,6 +1104,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
         UpdateBackupRestoreAvailability();
         RefreshFilter();
         RebuildCommonBatchFields();
+        RefreshLifecycle();
     }
 
     private void RefreshBackups()
@@ -1115,7 +1123,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
         IsTransactionBusy = value;
         foreach (var field in Fields)
         {
-            field.SetTransactionLocked(value);
+            field.SetTransactionLocked(value || SelectedPendingDelete);
         }
 
         UpdateBackupRestoreAvailability();
@@ -1265,7 +1273,7 @@ public sealed class UnitWorkspaceViewModel : ObservableObject
 
         var textMatches = string.IsNullOrWhiteSpace(TextFilter) ||
                           unit.DisplayName.Contains(TextFilter, StringComparison.CurrentCultureIgnoreCase) ||
-                          unit.InternalName.Contains(TextFilter, StringComparison.OrdinalIgnoreCase);
+                          unit.InternalName.Contains(TextFilter, StringComparison.OrdinalIgnoreCase) || unit.PendingName.Contains(TextFilter,StringComparison.OrdinalIgnoreCase);
         if (!textMatches)
         {
             return false;

@@ -126,7 +126,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         StatusText="正在校验新单位…";
         var root=_creationUnits.Localisation.ProjectRoot;
         await Task.Run(()=>new WarnoLiteModdingTool.Core.Transactions.UnitTransactionService().PrepareApplyAsync(root,[operation]));
-        await _draftStore.UpsertAsync(operation);UnitWorkspace?.RefreshExternalDraftState();
+        if(existing is not null) await WarnoLiteModdingTool.Core.Units.UnitDraftLinks.ReplaceCreationAsync(_draftStore,existing,operation);
+        else await _draftStore.UpsertAsync(operation);UnitWorkspace?.RefreshExternalDraftState();
         if(UnitWorkspace is {} workspace)workspace.SelectedUnit=workspace.Units.FirstOrDefault(u=>u.InternalName==operation.ObjectName);
         StatusText="新增单位已加入草稿";
     }
@@ -666,7 +667,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                 RulesWorkspace = new RulesWorkspaceViewModel(unitData.Rules!, _draftStore, UnitWorkspace.RefreshExternalDraftState);
                 OnPropertyChanged(nameof(RulesWorkspace)); OnPropertyChanged(nameof(IsRulesModule));
-                ProjectSummary = $"1.9.7 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
+                ProjectSummary = $"1.9.8 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
             }
 
             RefreshMode();

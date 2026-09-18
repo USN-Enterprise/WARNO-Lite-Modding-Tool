@@ -10,17 +10,23 @@ public sealed class RulesWorkspaceViewModel : ObservableObject
     public RulesWorkspaceViewModel(RuleWorkspace data,DraftStore store,Action changed)
     {
         Groups = data.Groups.Select(g => new RuleGroupViewModel(data,g,store,changed)).ToArray();
+        Experience = data.Experience.Routes.Select(r => new ExperienceRouteViewModel(r, r.Levels.Select(l => new ExperienceLevelViewModel(data.Experience, r, l, store, changed)).ToArray())).ToArray();
         View = CollectionViewSource.GetDefaultView(Groups); View.Filter = o => o is RuleGroupViewModel g && (Advanced.EditorMode.IsAdvanced || g.Group.Definition.Basic) && (Search.Length>0 || Category=="全部" || g.Group.Definition.Category==Category) && (Search.Length == 0 || (Localisation.UiText.T(g.Group.Definition.Category).Contains(Search,StringComparison.OrdinalIgnoreCase) || g.Title.Contains(Search,StringComparison.OrdinalIgnoreCase)) || g.Group.Definition.Fields.Contains(Search,StringComparison.OrdinalIgnoreCase));
     }
     public IReadOnlyList<RuleGroupViewModel> Groups {get;}
+    public IReadOnlyList<ExperienceRouteViewModel> Experience { get; }
     public ICollectionView View {get;}
     public string Search {get;set;} = "";
     private string _category="全部";
     public string Category {get=>_category;set{if(SetProperty(ref _category,value))Refresh();}}
-    public IReadOnlyList<string> Categories {get;} = ["全部","对局设置","经济与收入","AI 难度","战斗与单位行为","后勤与补给","将军模式","空军"];
+    public IReadOnlyList<string> Categories {get;} = ["全部","对局设置","经济与收入","AI 难度","战斗与单位行为","后勤与补给","将军模式","空军","经验与老练度"];
     public void Refresh() => View.Refresh();
-    public void Restore() {foreach(var group in Groups)group.Restore();}
-    public async Task FlushAsync() { foreach(var group in Groups) { await group.SaveAsync(); if(group.HasPendingError)throw new InvalidOperationException(group.Title + "：" + group.Status); } }
+    public void Restore() {foreach(var group in Groups)group.Restore(); foreach(var level in Experience.SelectMany(r => r.Levels))level.Restore();}
+    public async Task FlushAsync()
+    {
+        foreach(var group in Groups) { await group.SaveAsync(); if(group.HasPendingError)throw new InvalidOperationException(group.Title + "：" + group.Status); }
+        foreach(var level in Experience.SelectMany(r => r.Levels)) { await level.SaveAsync(); if(level.HasPendingError)throw new InvalidOperationException(level.Status); }
+    }
 }
 public sealed class RuleGroupViewModel : ObservableObject
 {

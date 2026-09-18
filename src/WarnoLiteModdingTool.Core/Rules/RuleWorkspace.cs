@@ -14,6 +14,7 @@ public sealed record RuleGroup(RuleDefinition Definition, IReadOnlyList<RuleCell
 public sealed class RuleWorkspace(string root, IReadOnlyList<RuleGroup> groups)
 {
     public string Root { get; } = root;
+    public ExperienceWorkspace Experience { get; } = ExperienceWorkspace.Load(root);
     public IReadOnlyList<RuleGroup> Groups { get; } = groups;
     public static RuleWorkspace Load(string root)
     {

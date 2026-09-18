@@ -4,6 +4,7 @@ public sealed class NdfSyntaxDocument
 {
     private readonly string _source;
     private readonly List<NdfToken> _tokens;
+    public IReadOnlyList<NdfToken> Tokens => _tokens;
 
     public NdfSyntaxDocument(string source, int startOffset = 0, int? length = null)
     {
@@ -333,7 +334,7 @@ public sealed class NdfSyntaxDocument
         return slash >= 0 ? trimmed[(slash + 1)..] : trimmed;
     }
 
-    private IReadOnlyList<NdfAssignmentSpan> EnumerateDirectAssignments(NdfConstructorSpan constructor)
+    public IReadOnlyList<NdfAssignmentSpan> EnumerateDirectAssignments(NdfConstructorSpan constructor)
     {
         var starts = new List<(string Name, int NameToken, int ValueStart)>();
         var parentheses = 0;
@@ -471,6 +472,14 @@ public sealed class NdfSyntaxDocument
                 continue;
             }
 
+            if (character == '/' && index + 1 < end && source[index + 1] == '*')
+            {
+                var close = source.IndexOf("*/", index + 2, StringComparison.Ordinal);
+                if (close < 0 || close + 2 > end) throw new InvalidDataException("NDF块注释未闭合");
+                index = close + 2;
+                continue;
+            }
+
             if (character is '\'' or '"')
             {
                 var quote = character;
@@ -510,7 +519,7 @@ public sealed class NdfSyntaxDocument
                 character = source[index];
                 if (char.IsWhiteSpace(character) ||
                     character is '(' or ')' or '[' or ']' or ',' or '=' or '\'' or '"' ||
-                    (character == '/' && index + 1 < end && source[index + 1] == '/'))
+                    (character == '/' && index + 1 < end && source[index + 1] is '/' or '*'))
                 {
                     break;
                 }
@@ -530,7 +539,7 @@ public sealed class NdfSyntaxDocument
         return tokens;
     }
 
-    private sealed record NdfToken(string Text, int Start, int Length)
+    public sealed record NdfToken(string Text, int Start, int Length)
     {
         public int End => Start + Length;
     }

@@ -89,8 +89,8 @@ public static class UnitFieldDefinitions
             UnitValueKind.QuotedString,
             UnitEditorKind.Choice,
             Section: "基本信息"),
-        new UnitFieldDefinition("structure.specialties", "关系与标签", "单位特性",
-            "只修改 SpecialtiesList；不会自动修改武器、烟幕、运输或 TagSet",
+        new UnitFieldDefinition("structure.specialties", "关系与标签", "特性显示标签",
+            "仅修改显示标签，不自动赋予实际能力；配套修改请使用“特性与实际能力”",
             new NdfFieldSelector("TUnitUIModuleDescriptor", "SpecialtiesList"),
             UnitValueKind.StringList, UnitEditorKind.Text, Section: "基本信息", CanInsertWhenMissing: true),
         new UnitFieldDefinition(

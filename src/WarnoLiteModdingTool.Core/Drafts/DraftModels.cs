@@ -58,7 +58,12 @@ public enum DraftTargetKind
     AmmoName,
     GlobalRule,
     DivisionIdentity,
-    StrategicPack
+    StrategicPack,
+    ExperienceLevel,
+    UnitRename,
+    UnitRegistration,
+    UnitCapabilities,
+    UnitDelete
 }
 
 public enum DraftEditScope

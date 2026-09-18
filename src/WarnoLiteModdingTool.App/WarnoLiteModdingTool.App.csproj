@@ -6,9 +6,9 @@
     <RootNamespace>WarnoLiteModdingTool.App</RootNamespace>
     <AssemblyName>WarnoLiteModdingTool</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>1.9.7</Version>
-    <FileVersion>1.9.7.1</FileVersion>
-    <InformationalVersion>1.9.7-patch1</InformationalVersion>
+    <Version>1.9.9</Version>
+    <FileVersion>1.9.9.0</FileVersion>
+    <InformationalVersion>1.9.9</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <ApplicationIcon>Assets/App.ico</ApplicationIcon>
     <AssemblyTitle>WARNO Lite Modding Tool</AssemblyTitle>
