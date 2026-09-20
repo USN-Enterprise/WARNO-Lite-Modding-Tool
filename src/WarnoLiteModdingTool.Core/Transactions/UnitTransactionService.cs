@@ -40,6 +40,12 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
             if(preview.DraftReview is not null && System.Text.Json.JsonSerializer.Serialize(preview.DraftReview) != System.Text.Json.JsonSerializer.Serialize(draftStore.Operations))
                 throw new TransactionValidationException("关联草稿在预览后变化，请重新预览");
         }
+        foreach(var pair in preview.PictureReadDependencies)
+        {
+            var path=TextFileSnapshot.ResolveInsideRoot(preview.ProjectRoot,pair.Key);
+            if(!(File.Exists(path)?File.ReadAllBytes(path):Array.Empty<byte>()).AsSpan().SequenceEqual(pair.Value))
+                throw new TransactionValidationException("图片在预览后变化，请重新预览");
+        }
         if(preview.ReadDependencies.Count>0)
         {
             var current=WarnoLiteModdingTool.Core.Units.ExperienceCatalog.Load(preview.ProjectRoot);

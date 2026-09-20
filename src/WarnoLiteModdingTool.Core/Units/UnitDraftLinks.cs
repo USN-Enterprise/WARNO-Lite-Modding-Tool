@@ -46,6 +46,13 @@ public static class UnitDraftLinks
         do
         {
             changed = false;
+            // Expand connected weapon/ammo plans; independent weapons remain separately applicable.
+            if (combined.Any(o => o.TargetKind == DraftTargetKind.WeaponBatch))
+            {
+                var names = result.Values.Where(Weapons.WeaponBatch.IsWeaponEdit).SelectMany(Weapons.WeaponBatch.Dependencies).ToHashSet();
+                foreach (var op in combined.Where(Weapons.WeaponBatch.IsWeaponEdit))
+                    if (Weapons.WeaponBatch.Dependencies(op).Any(names.Contains) && result.TryAdd(op.Id, op)) changed = true;
+            }
             foreach (var identity in combined.Where(Lifecycle))
             {
                 var related = combined.Where(o => Touches(o, identity.ObjectName)).ToArray();

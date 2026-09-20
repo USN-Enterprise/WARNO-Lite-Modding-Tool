@@ -6,6 +6,21 @@
 
 仅列出功能更新和影响使用的问题修复。
 
+## 1.9.11 — 2026-09-20
+
+- 武器页新增独立批量窗口，跨单位/Weapon勾选真实挂载，支持完整筛选结果、搜索、当前Mod条件筛选与隐藏已选数量。
+- 覆盖现有可解析库存、数量、显示、Ammo替换、炮塔角度、弹药性能和行为字段；固定值/百分比及专业公式，明确取整、完整逐行预览和共享影响。
+- 同箱/同炮塔去重；所选Ammo挂载精确隔离。按单位最终组合生成副本，相同结果复用，不同单位的不同值不会相互覆盖；局部副本继承共享的其他字段修改。
+- 独立批次草稿、明确替换重叠范围、关联依赖应用、引用/基线复查与多文件备份恢复。替换Ammo后新增参数以最终Ammo为准；旧Ammo参数与后续替换冲突需移除旧批次重新预览。
+- 待创建单位先应用创建；待删除单位禁止批改。保留1.9.10图片功能。未修改真实Mod，未运行生成器或游戏。
+
+## 1.9.10 — 2026-09-19
+
+- 单位检查器新增“修改单位图片”：选择当前Mod已有图片，或导入PNG/JPEG并在独立窗口裁剪、缩放查看及处理圆形透明区域；保留原比例和透明度，不套用师徽模板。
+- 已有单位和待创建单位均支持图片草稿及重开预览。自定义图片使用独立PNG和按钮纹理键，只重定向所选单位；原图与共享者保留。
+- 图片、纹理声明和单位引用纳入同一可恢复应用流程；支持与新建/改名同批提交，检查资源冲突、外部变更与失败恢复。
+- 不改变单位3D模型或涂装。应用后仍需生成Mod；本版尚未运行生成器或验证游戏内显示。
+
 ## 1.9.9 — 2026-09-18
 
 - 新建单位注册继承当前Mod可确认的母版路径，默认变量名使用母版名加递增序号；专业模式支持待创建及正式单位改名，联动引用，保持GUID、名称token和注册编号。已有错误注册可单独修复。
@@ -204,6 +219,21 @@
 [中文](#chinese) | [English](#english)
 
 Feature updates and fixes that affect everyday use.
+
+## 1.9.11 — 2026-09-20
+
+- Added a dedicated weapon batch window for selecting actual mounts across units and Weapon descriptors, with complete filtered selection, search, Mod-derived facets and hidden-selection counts.
+- Supports existing inventory, mount count, visibility, Ammo replacement, turret angles, ammunition performance and behavior fields. Includes fixed/percentage edits, advanced arithmetic, explicit rounding, complete result previews and shared impact details.
+- Shared ammo boxes and turrets are calculated once. Local Ammo edits isolate selected mounts; identical final configurations share copies and distinct unit values remain independent. Local copies inherit shared edits to other fields.
+- Versioned batch drafts, explicit overlap replacement, dependency-aware apply, baseline/reference revalidation and recoverable multi-file transactions. New parameter edits use the final replaced Ammo; incompatible older Ammo parameter batches must be removed and previewed again.
+- Apply pending unit creation before batch edits; units pending deletion cannot be edited. Preserves the 1.9.10 picture feature. No real Mods, official generator or game were used for validation.
+
+## 1.9.10 — 2026-09-19
+
+- Added “Change unit picture” to the unit inspector: choose an existing picture from the current Mod, or import PNG/JPEG and crop, zoom or edit circular transparency in a separate window. Aspect ratio and transparency are preserved; emblem templates are hidden.
+- Existing and pending units support picture drafts and reopened previews. Custom pictures receive independent PNG files and button texture keys, affecting only the selected unit.
+- PNG, texture declaration and unit reference changes use the same recoverable apply workflow, including combined creation/rename operations, conflict checks and failure recovery.
+- Unit models and skins are unchanged. Generate the Mod after applying. Generator and in-game display checks have not been performed for this release.
 
 ## 1.9.9 — 2026-09-18
 

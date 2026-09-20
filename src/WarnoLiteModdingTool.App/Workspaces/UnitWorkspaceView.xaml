@@ -176,7 +176,7 @@
                                 <Border.Style><Style TargetType="Border"><Style.Triggers><DataTrigger Binding="{Binding UnitWorkspace.HasBatchInspector}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Border.Style>
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                                     <StackPanel Margin="16">
-                                        <DockPanel LastChildFill="True"><controls:UnitPortrait DockPanel.Dock="Right" Unit="{Binding UnitWorkspace.SelectedUnit.Unit}" Root="{Binding UnitWorkspace.Data.Localisation.ProjectRoot}"/><StackPanel>
+                                        <DockPanel LastChildFill="True"><controls:UnitPortrait Picture="{Binding UnitWorkspace.SelectedPicture}" DockPanel.Dock="Right" Unit="{Binding UnitWorkspace.SelectedUnit.Unit}" Root="{Binding UnitWorkspace.Data.Localisation.ProjectRoot}"/><StackPanel>
                                         <TextBlock Text="{l:Loc Key='单位检查器'}" FontWeight="SemiBold" FontSize="16" />
                                         <TextBlock Text="{Binding UnitWorkspace.SelectedUnit.DisplayName, TargetNullValue=尚未选择单位}" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0" TextWrapping="Wrap" />
                                         </StackPanel></DockPanel>
@@ -198,6 +198,7 @@
                                         </Border>
 
                                         <WrapPanel Margin="0,0,0,10">
+                                            <Button Content="{l:Loc Key='修改单位图片'}" Tag="picture" Click="UnitLifecycle_Click" IsEnabled="{Binding UnitWorkspace.CanEditSelectedLifecycle}" Margin="0,0,6,6"/>
                                             <Button Content="{l:Loc Key='特性与实际能力'}" Tag="abilities" Click="UnitLifecycle_Click" IsEnabled="{Binding UnitWorkspace.CanEditSelectedLifecycle}" Margin="0,0,6,6"/>
                                             <Button Content="{l:Loc Key='修改单位变量名'}" Tag="rename" Click="UnitLifecycle_Click" IsEnabled="{Binding UnitWorkspace.CanEditSelectedLifecycle}" Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,6,6"/>
                                             <Button Content="{l:Loc Key='检查单位注册'}" Tag="registration" Click="UnitLifecycle_Click" IsEnabled="{Binding UnitWorkspace.CanEditSelectedLifecycle}" Margin="0,0,6,6"/>

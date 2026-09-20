@@ -160,6 +160,7 @@ public sealed class AmmoWorkspaceViewModel : ObservableObject
 
     private async Task PersistFieldAsync(WeaponFieldViewModel viewModel)
     {
+        if (viewModel.BatchLocked) throw new InvalidOperationException("存在相关批量草稿，请在批量窗口调整或移除批次");
         if(viewModel.Field.Key=="ammo.name"){
             var ammo=_data.Ammo(viewModel.Field.OwnerObjectName)!;var input=viewModel.EditValue.Trim();if(input.Length==0){viewModel.Revert("名称不能为空");return;}
             var existing=_draftStore.Operations.FirstOrDefault(o=>o.TargetKind==DraftTargetKind.AmmoName&&o.ObjectName==ammo.Name);
@@ -234,7 +235,7 @@ public sealed class AmmoWorkspaceViewModel : ObservableObject
         foreach (var field in SelectedAmmo.Ammo.Fields)
         {
             var id = DraftOperation.CreateId(DraftTargetKind.AmmoField, field.Location.RelativeSourceFile, field.OwnerObjectName, field.Key);
-            var viewModel = new WeaponFieldViewModel(field, resolved.GetValueOrDefault(id), PersistFieldAsync);
+            var viewModel = new WeaponFieldViewModel(field, resolved.GetValueOrDefault(id), PersistFieldAsync) { BatchLocked = WeaponBatch.Blocks(_draftStore.Operations, c => c.Ammo == field.OwnerObjectName && c.Key == field.Key) };
             viewModel.SetLocked(_transactions.IsTransactionBusy);
             Fields.Add(viewModel);
         }

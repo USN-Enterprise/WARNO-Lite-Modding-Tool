@@ -50,7 +50,8 @@ public sealed class WeaponFieldViewModel : ObservableObject
     public bool IsChoiceEditor => Field.Definition.ValueKind is WeaponValueKind.Boolean or WeaponValueKind.Choice;
     public bool IsTextEditor => !IsChoiceEditor && !IsReferenceEditor;
     public bool HasDraft => Draft is not null;
-    public bool IsEditable => !_locked && Advanced.EditorMode.CanEdit(Field.Definition.Key);
+    public bool BatchLocked { get; init; }
+    public bool IsEditable => !BatchLocked && !_locked && Advanced.EditorMode.CanEdit(Field.Definition.Key);
     public void RefreshMode() => OnPropertyChanged(nameof(IsEditable));
     public string TargetRaw => Draft?.TargetRaw ?? Field.RawValue;
 
@@ -59,7 +60,7 @@ public sealed class WeaponFieldViewModel : ObservableObject
         get => _editValue;
         set
         {
-            if (!SetProperty(ref _editValue, value ?? string.Empty) || _locked)
+            if (!SetProperty(ref _editValue, value ?? string.Empty) || _locked || BatchLocked)
             {
                 return;
             }
@@ -72,7 +73,7 @@ public sealed class WeaponFieldViewModel : ObservableObject
         }
     }
 
-    public string StatusText { get => _status; private set => SetProperty(ref _status, value); }
+    public string StatusText { get => BatchLocked ? "存在相关批量草稿，请在批量窗口调整或移除批次" : _status; private set => SetProperty(ref _status, value); }
 
     public async Task FlushAsync()
     {

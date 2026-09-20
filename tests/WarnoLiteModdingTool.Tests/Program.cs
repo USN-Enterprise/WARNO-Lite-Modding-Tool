@@ -93,6 +93,15 @@ internal static partial class Program
 
         var tests = new (string Name, Func<Task> Run)[]
         {
+            ("1.9.11 武器批量精确隔离与恢复", Weapon1911Isolation),
+            ("1.9.11 武器公式与语义预览", Weapon1911Formulas),
+            ("1.9.11 武器多作用域组合", Weapon1911Composition),
+            ("1.9.11 武器草稿与提交保护", Weapon1911Guards),
+            ("1.9.11 武器改名依赖与失败恢复", Weapon1911LifecycleRecovery),
+            ("1.9.10 单位已有图切换与原文保持", Unit1910Existing),
+            ("1.9.10 单位图片导入组合与恢复", Unit1910ImportRestore),
+            ("1.9.10 待创建单位图片与组合", Unit1910Creation),
+            ("1.9.10 图片冲突与提交前保护", Unit1910Guards),
             ("1.9.9 生命周期与经验联合事务", Unit199Combined),
             ("1.9.9 命名空间与草稿依赖边界", Unit199ReferenceBoundaries),
             ("1.9.9 删除使用者与共享资源", Unit199DeleteReferences),
@@ -2016,6 +2025,8 @@ internal static partial class Program
                     Verify197Panels(window);
                     Verify198Ui(window);
                     Verify199Ui(window);
+                    Verify1910Ui(window);
+                    Verify1911Ui(window);
                     Verify186Ui(viewModel, window, root);
                     application.Shutdown();
                     if (failure is not null)

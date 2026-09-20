@@ -29,6 +29,7 @@ public sealed class WeaponApplyPlanner
         IReadOnlyList<DraftOperation> operations,
         Func<string, TextFileSnapshot> getSnapshot)
     {
+        if (operations.Any(o => o.TargetKind == DraftTargetKind.WeaponBatch)) return WeaponBatchApplyPlanner.Plan(units, workspace, operations, getSnapshot);
         var p4 = operations.Where(IsP4).ToArray();
         if (p4.Length == 0)
         {

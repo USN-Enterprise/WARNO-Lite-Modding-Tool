@@ -47,7 +47,7 @@ public sealed class UnitApplyPlanner(
         var allOperations = UnitDraftLinks.Expand(operations, currentDrafts.Operations);
         var deleteNames = allOperations.Where(o=>o.TargetKind==DraftTargetKind.UnitDelete).Select(o=>o.ObjectName).ToHashSet();
         operations = allOperations.Where(o=>!deleteNames.Contains(o.ObjectName)||o.TargetKind==DraftTargetKind.UnitDelete).ToArray();
-        var lifecycle = allOperations.Any(o=>UnitDraftLinks.Lifecycle(o)||o.TargetKind==DraftTargetKind.UnitCreate);
+        var lifecycle = allOperations.Any(o=>UnitDraftLinks.Lifecycle(o)||o.TargetKind is DraftTargetKind.UnitCreate or DraftTargetKind.UnitPicture or DraftTargetKind.WeaponBatch);
         var unitReview = lifecycle ? new UnitProjectGraph(root).Dependencies : null;
         var historyPath = Path.Combine(root,UnitCreationHistory.LedgerPath);
         if(unitReview is not null) unitReview[UnitCreationHistory.LedgerPath] = File.Exists(historyPath)?File.ReadAllBytes(historyPath):[];
@@ -67,7 +67,7 @@ public sealed class UnitApplyPlanner(
         }
 
         var hasWeaponOperations = operations.Any(item => item.TargetKind is
-            DraftTargetKind.WeaponField or DraftTargetKind.MountedWeaponAmmo or DraftTargetKind.AmmoField or DraftTargetKind.UnitWeaponReference or DraftTargetKind.UnitCreate or DraftTargetKind.AmmoName);
+            DraftTargetKind.WeaponField or DraftTargetKind.MountedWeaponAmmo or DraftTargetKind.AmmoField or DraftTargetKind.UnitWeaponReference or DraftTargetKind.UnitCreate or DraftTargetKind.AmmoName or DraftTargetKind.WeaponBatch);
         if (hasWeaponOperations)
         {
             var weaponCapability = index.Modules.FirstOrDefault(item => item.Key == "weapons");
@@ -303,6 +303,7 @@ public sealed class UnitApplyPlanner(
         var experience = operations.Any(o=>o.FieldKey=="experience.type") ? ExperienceCatalog.Load(root) : null;
         experience?.Validate(operations);
         UnitCapabilities.Plan(root,operations,plannedFiles);
+        var pictureDependencies = Images.UnitPictures.Plan(root,operations,plannedFiles);
         UnitIdentityEditing.Plan(root,operations,plannedFiles);
         UnitDeletion.Plan(root,workspace,operations,plannedFiles);
         if (finalExperience is not null && operations.Any(o => o.TargetKind is DraftTargetKind.UnitRename or DraftTargetKind.UnitDelete))
@@ -350,7 +351,7 @@ public sealed class UnitApplyPlanner(
             preparedUtc,
             allOperations.ToArray(),
             plannedFiles,
-            validation.ToArray()) { ReadDependencies = experience?.Dependencies ?? new(), ExperienceReview = experienceEdits?.Review(operations), UnitReadDependencies = unitReview, DraftReview = lifecycle ? currentDrafts.Operations.ToArray() : null };
+            validation.ToArray()) { PictureReadDependencies = pictureDependencies, ReadDependencies = experience?.Dependencies ?? new(), ExperienceReview = experienceEdits?.Review(operations), UnitReadDependencies = unitReview, DraftReview = lifecycle ? currentDrafts.Operations.ToArray() : null };
     }
 
     internal static string CreateBackupId(string prefix) =>
@@ -377,7 +378,7 @@ public sealed class UnitApplyPlanner(
         {
             var expectedModule = operation.TargetKind switch
             {
-                DraftTargetKind.WeaponField or DraftTargetKind.MountedWeaponAmmo => "weapons",
+                DraftTargetKind.WeaponField or DraftTargetKind.MountedWeaponAmmo or DraftTargetKind.WeaponBatch => "weapons",
                 DraftTargetKind.AmmoField or DraftTargetKind.AmmoName => "ammo",
                 DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity => "divisions",
                 DraftTargetKind.StrategicPlan => "strategic",

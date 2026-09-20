@@ -20,22 +20,24 @@ public sealed class EmblemEditorWindow : Window
     private readonly TextBlock _status=new(){TextWrapping=TextWrapping.Wrap};private readonly ComboBox _tool=new();private Point _start;private Rect _selection;private bool _moving;private Rect _beforeMove;
     private readonly ComboBox _templates=new(){MinWidth=160};private readonly ComboBox _colors=new(){MinWidth=120};private readonly TextBox _number=new(){Text="35",MinWidth=100};private bool _templateMode;
     public byte[]? ResultPng {get;private set;}public string Recipe {get;private set;}="";
-    public EmblemEditorWindow(byte[]? existing=null,string recipe="",bool templateMode=false)
+    public EmblemEditorWindow(byte[]? existing=null,string recipe="",bool templateMode=false,bool unitPicture=false)
     {
-        Title=UiText.T("师徽图片编辑");Width=1120;Height=800;MinWidth=760;MinHeight=550;WindowStartupLocation=WindowStartupLocation.CenterOwner;
+        Title=UiText.T(unitPicture?"单位图片编辑":"师徽图片编辑");Width=1120;Height=800;MinWidth=760;MinHeight=550;WindowStartupLocation=WindowStartupLocation.CenterOwner;
         SetResourceReference(BackgroundProperty,"SurfaceBrush");SetResourceReference(ForegroundProperty,"TextBrush");
-        var root=new DockPanel{Margin=new Thickness(14)};Content=root;
+        var root=new DockPanel{Margin=new Thickness(14)};root.SetResourceReference(Panel.BackgroundProperty,"SurfaceBrush");Content=root;
         var bottom=new StackPanel{Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Right};DockPanel.SetDock(bottom,Dock.Bottom);root.Children.Add(bottom);
         Button Add(Panel panel,string label,Action action){var b=new Button{Content=UiText.T(label),Margin=new Thickness(4),Padding=new Thickness(10,6,10,6)};b.Click+=(_,_)=>{try{action();}catch(Exception ex)when(ex is IOException or ArgumentException or InvalidOperationException or NotSupportedException){_status.Text=ex.Message;}};panel.Children.Add(b);return b;}
         Add(bottom,"确认图片",()=>{if(_current is null)throw new InvalidOperationException("请先选择图片或模板");if(_templateError)throw new InvalidOperationException("请修正番号输入");ResultPng=Encode(_current);Recipe=BuildRecipe();DialogResult=true;});Add(bottom,"取消",Close);
         var side=new StackPanel{Width=235,Margin=new Thickness(12,0,0,0)};DockPanel.SetDock(side,Dock.Right);root.Children.Add(new ScrollViewer{Content=side,Width=250,VerticalScrollBarVisibility=ScrollBarVisibility.Auto});DockPanel.SetDock(root.Children[root.Children.Count-1],Dock.Right);
         Add(side,"导入自定义图片",()=>{var d=new Microsoft.Win32.OpenFileDialog{Filter="PNG / JPEG|*.png;*.jpg;*.jpeg"};if(d.ShowDialog(this)==true){if(new FileInfo(d.FileName).Length>8_000_000)throw new InvalidDataException("图片文件超过8MB");SetOriginal(Decode(File.ReadAllBytes(d.FileName)));_templateMode=false;Recipe="";}});
+        var templateStart=side.Children.Count;
         side.Children.Add(new TextBlock{Text=UiText.T("固定模板"),Margin=new Thickness(4,12,4,4)});
         _templates.ItemsSource=EmblemTemplates.Names;_templates.SelectedIndex=0;side.Children.Add(_templates);
         side.Children.Add(new TextBlock{Text=UiText.T("番号（最多3位，可留空）")});side.Children.Add(_number);
         _colors.ItemsSource=new[]{UiText.T("深蓝"),UiText.T("红色"),UiText.T("金黄"),UiText.T("橄榄灰")};_colors.SelectedIndex=0;side.Children.Add(_colors);_colors.Visibility=Visibility.Collapsed;
         void RenderTemplate(){_colors.Visibility=_templates.SelectedIndex>=8?Visibility.Visible:Visibility.Collapsed;if(!_templateMode)return;try{SetOriginal(EmblemTemplates.Render(_templates.SelectedIndex,_number.Text,_colors.SelectedIndex),false);_templateError=false;_status.Text="";}catch(Exception ex){_templateError=true;_status.Text=ex.Message;}}
         Add(side,"生成模板",()=>{_templateMode=true;RenderTemplate();});_templates.SelectionChanged+=(_,_)=>RenderTemplate();_colors.SelectionChanged+=(_,_)=>RenderTemplate();_number.TextChanged+=(_,_)=>RenderTemplate();
+        if(unitPicture)foreach(UIElement element in side.Children.Cast<UIElement>().Skip(templateStart))element.Visibility=Visibility.Collapsed;
         side.Children.Add(new TextBlock{Text=UiText.T("选区工具"),Margin=new Thickness(4,12,4,4)});_tool.ItemsSource=new[]{UiText.T("矩形裁剪"),UiText.T("圆形透明选区")};_tool.SelectedIndex=0;_tool.SelectionChanged+=(_,_)=>{_selection=Rect.Empty;ShowSelection();};side.Children.Add(_tool);
         side.Children.Add(new TextBlock{Text=UiText.T("拖动画选区；拖动内部移动；重新画框调整大小。"),TextWrapping=TextWrapping.Wrap,Margin=new Thickness(4)});
         Add(side,"应用裁剪",()=>ApplySelection(0));Add(side,"圈外透明",()=>ApplySelection(1));Add(side,"圈内透明",()=>ApplySelection(2));
@@ -48,8 +50,8 @@ public sealed class EmblemEditorWindow : Window
         _canvas.MouseMove+=(_,e)=>{if(!_canvas.IsMouseCaptured||_current is null)return;var q=e.GetPosition(_canvas);q.X=Math.Clamp(q.X,0,_current.PixelWidth);q.Y=Math.Clamp(q.Y,0,_current.PixelHeight);if(_moving){_selection=new Rect(Math.Clamp(_beforeMove.X+q.X-_start.X,0,_current.PixelWidth-_beforeMove.Width),Math.Clamp(_beforeMove.Y+q.Y-_start.Y,0,_current.PixelHeight-_beforeMove.Height),_beforeMove.Width,_beforeMove.Height);}else{var x=Math.Min(_start.X,q.X);var y=Math.Min(_start.Y,q.Y);var w=Math.Abs(q.X-_start.X);var h=Math.Abs(q.Y-_start.Y);if(_tool.SelectedIndex==1)w=h=Math.Min(w,h);_selection=new Rect(x,y,w,h);}ShowSelection();};
         _canvas.MouseLeftButtonUp+=(_,_)=>_canvas.ReleaseMouseCapture();
         if(existing is not null)SetOriginal(Decode(existing));
-        if(!string.IsNullOrEmpty(recipe)){try{var r=JsonSerializer.Deserialize<EditorRecipe>(recipe);if(r?.Version==2&&r.Source is not null){if(r.Template is { } tr){_templates.SelectedIndex=tr.Template;_number.Text=tr.Number;_colors.SelectedIndex=tr.Color;}_steps.AddRange(r.Steps);SetOriginal(Decode(Convert.FromBase64String(r.Source)),false);_templateMode=r.Template is not null;Recipe=recipe;}}catch(Exception ex)when(ex is JsonException or FormatException or ArgumentException or IOException){_status.Text=UiText.T("编辑参数无法恢复，保留已保存图片");}}
-        if(templateMode){_templateMode=true;RenderTemplate();}ShowSelection();
+        if(!string.IsNullOrEmpty(recipe)){try{var r=JsonSerializer.Deserialize<EditorRecipe>(recipe);if(r?.Version==2&&r.Source is not null){if(!unitPicture && r.Template is { } tr){_templates.SelectedIndex=tr.Template;_number.Text=tr.Number;_colors.SelectedIndex=tr.Color;}_steps.AddRange(r.Steps);SetOriginal(Decode(Convert.FromBase64String(r.Source)),false);_templateMode=!unitPicture && r.Template is not null;Recipe=recipe;}}catch(Exception ex)when(ex is JsonException or FormatException or ArgumentException or IOException){_status.Text=UiText.T("编辑参数无法恢复，保留已保存图片");}}
+        if(templateMode && !unitPicture){_templateMode=true;RenderTemplate();}ShowSelection();
     }
     public sealed record TemplateRecipe(int Version,int Template,string Number,int Color);
     public sealed record EditStep(int Mode,double X,double Y,double Width,double Height);

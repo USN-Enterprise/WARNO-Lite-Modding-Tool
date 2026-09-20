@@ -857,28 +857,28 @@ AI 难度|AI difficulty
 经验与老练度	Experience and veterancy
 经验类型	Experience type
 各等级效果	Effects by level
-师徽图片编辑	Emblem image editor
-确认图片	Confirm image
-导入自定义图片	Import custom image
-固定模板	Fixed template
-番号（最多3位，可留空）	Number (up to 3 digits, optional)
-深蓝	Dark blue
-金黄	Gold
-橄榄灰	Olive gray
-生成模板	Generate template
-选区工具	Selection tool
-矩形裁剪	Rectangle crop
-圆形透明选区	Circular transparency selection
-拖动画选区；拖动内部移动；重新画框调整大小。	Drag to select. Drag inside to move; redraw to resize.
-应用裁剪	Apply crop
-圈外透明	Clear outside circle
-圈内透明	Clear inside circle
-重置图片	Reset image
-画布缩放	Canvas zoom
-透明棋盘	Transparency checkerboard
-浅色预览	Light preview
-深色预览	Dark preview
-编辑参数无法恢复，保留已保存图片	Could not restore editing parameters. Saved image retained.
+师徽图片编辑|Emblem image editor
+确认图片|Confirm image
+导入自定义图片|Import custom image
+固定模板|Fixed template
+番号（最多3位，可留空）|Number (up to 3 digits, optional)
+深蓝|Dark blue
+金黄|Gold
+橄榄灰|Olive gray
+生成模板|Generate template
+选区工具|Selection tool
+矩形裁剪|Rectangle crop
+圆形透明选区|Circular transparency selection
+拖动画选区；拖动内部移动；重新画框调整大小。|Drag to select. Drag inside to move; redraw to resize.
+应用裁剪|Apply crop
+圈外透明|Clear outside circle
+圈内透明|Clear inside circle
+重置图片|Reset image
+画布缩放|Canvas zoom
+透明棋盘|Transparency checkerboard
+浅色预览|Light preview
+深色预览|Dark preview
+编辑参数无法恢复，保留已保存图片|Could not restore editing parameters. Saved image retained.
 导入或编辑图片	Import or edit image
 固定模板生成	Generate from template
 选择已有师徽	Choose existing emblem
@@ -1026,3 +1026,108 @@ AI 难度|AI difficulty
 创建来源|Creation record
 批量目标包含待删除单位，请先撤销删除或取消勾选|Batch targets include units pending deletion. Undo deletion or deselect them first.
 当前Mod未提供唯一能力定义|This Mod does not provide a unique ability definition.
+修改单位图片|Change unit picture
+单位图片编辑|Unit picture editor
+仅修改所选单位的卡片图片；原图保留。保存后进入草稿，应用后需生成Mod。|Changes the selected unit card picture only. The original is kept. Save a draft, apply it, then generate the Mod.
+搜索单位名称或图片标识|Search unit name or picture ID
+结果预览|Result preview
+编辑预览图片|Edit preview image
+还原本次选择|Reset this selection
+保留图片比例和透明度。裁剪、缩放与圆形透明处理在独立编辑窗口中进行。|Preserves aspect ratio and transparency. Crop, zoom and circular transparency tools open in a separate editor.
+选择或编辑仅预览，保存草稿后仍需应用。|Selection and editing are previews. Saved drafts still need to be applied.
+未被单位使用|Not used by a unit
+请先选择或导入单位图片|Select or import a unit picture first
+请先选择当前Mod中的单位图片作为资源模板|Select a unit picture from this Mod as the resource template first
+当前预览没有可编辑图片|No editable image in the current preview
+无法读取图片|Cannot read image
+单位图片已保存草稿|Unit picture draft saved
+图片数据过大|Image data is too large
+图片必须是PNG|Image must be PNG
+图片尺寸超出4096像素|Image dimensions exceed 4096 pixels
+图片在预览后变化，请重新预览|Image changed after preview. Prepare a new preview.
+自定义图片目前需要唯一Normal状态纹理|Custom images currently require a single Normal texture state
+单位图片标识已存在，请重新导入|Unit picture ID already exists. Import again.
+单位图片文件已存在，不覆盖|Unit picture file already exists and will not be overwritten.
+单位图片来源已变化，请重新选择图片|Unit picture source changed. Select the picture again.
+无法唯一定位单位ButtonTexture|Cannot uniquely locate the unit ButtonTexture
+单位图片引用基线已变化|Unit picture reference changed since the draft was saved
+单位图片引用不是字符串|Unit picture reference is not a string
+单位图片标识无效|Invalid unit picture ID
+请先选择可编辑单位|Select an editable unit first
+已有单位图片|Existing unit pictures
+红色|Red
+撤销|Undo
+请先选择图片或模板|Select an image or template first
+请修正番号输入|Correct the number first
+图片文件超过8MB|Image file exceeds 8 MB
+请先拖出选区|Drag a selection first
+请先选择圆形透明选区|Select the circular transparency tool first
+单位图片路径越出Mod资源目录|Unit picture path is outside the Mod resource directory
+
+批量修改武器|Batch edit weapons
+全部引用（修改共享本体）|All references (edit shared objects)
+替换重叠的批量草稿范围|Replace overlapping batch draft scopes
+勾选实际挂载，预览后加入草稿。所选挂载默认局部隔离；同箱库存、同炮塔射界会连带影响。|Select mounts, preview, then add to drafts. Selected mounts are isolated; shared ammo boxes and turret angles also affect sibling mounts.
+搜索单位、武器、弹药显示名或内部名|Search unit, weapon or ammunition names and IDs
+使用当前勾选单位|Use checked units
+使用单位筛选全部结果|Use all filtered units
+全选武器筛选结果|Select all filtered mounts
+待创建单位：应用创建后可批改|Pending units: apply creation before batch editing
+待删除单位不能加入批量草稿|Units pending deletion cannot receive batch edits
+弹药箱|Ammo box
+共享单位|Shared units
+武器 / 弹药|Weapon / ammunition
+挂载与共享|Mount and sharing
+全部结果|All results
+完整影响与隔离|Full impact and isolation
+已保存批次|Saved batches
+移除所选批次|Remove selected batch
+已选挂载|Selected mounts
+隐藏的已选|Selected outside filter
+条件变化后请重新预览；加入草稿会重新计算。|Preview again after changing inputs. Adding to drafts always recalculates.
+正在重新读取项目并计算完整影响…|Reloading project and calculating full impact…
+草稿已在外部变化，请重新加载项目|Drafts changed externally. Reload the project.
+挂载结构已变化，请重新加载项目|Mount structure changed. Reload the project.
+批量草稿已保存，正式文件未改变。应用武器草稿时会包含相关武器批次。|Batch draft saved; Mod files are unchanged. Applying weapon drafts includes connected weapon batches.
+实际字段|Distinct fields
+结果行|Result rows
+将修改|Will change
+不变|Unchanged
+跳过：字段不存在|Skipped: field unavailable
+存在相关批量草稿，请在批量窗口调整或移除批次|Related batch drafts exist. Adjust or remove them in the batch window.
+批量修改武器：{0} 个字段|Batch edit weapons: {0} fields
+批量武器：{0} 个 Weapon 副本、{1} 个 Ammo 副本|Weapon batch: {0} Weapon copies, {1} Ammo copies
+按最终单位、挂载与字段组合隔离；同结果复用副本|Isolation uses final unit, mount and field combinations; identical results share a copy.
+{0} / {1} / #{2}：同箱或同炮塔连带影响|{0} / {1} / #{2}: shared ammo box or turret impact
+{0} / {1} / #{2}：全部引用|{0} / {1} / #{2}: all references
+替换草稿范围：{0}|Replace draft scope: {0}
+请先勾选武器挂载|Select weapon mounts first
+已存在重叠草稿，请明确替换批量草稿，或在草稿中心移除单字段草稿：{0}|Drafts overlap. Enable batch replacement or remove the single-field draft in the draft center: {0}
+局部与全部引用草稿对同一字段有不同目标：{0}|Local and shared drafts request different values for the same field: {0}
+弹药引用已被草稿替换，请移除旧弹药参数批次后按最终弹药重新预览：{0}|A draft replaces the ammunition reference. Remove the old ammunition parameter batch and preview the final ammunition: {0}
+武器草稿目标冲突：{0}|Weapon draft target conflict: {0}
+武器草稿没有有效作用域：{0}|Weapon draft has no valid scope: {0}
+武器批量草稿格式无效：{0}|Invalid weapon batch draft: {0}
+批量字段基线已变化：{0}|Batch field baseline changed: {0}
+批量字段已不存在：{0}|Batch field no longer exists: {0}
+挂载结构已变化，请重新建立批量草稿：{0}|Mount structure changed. Recreate the batch draft: {0}
+请先应用或移除整套武器替换草稿，再批量修改武器|Apply or remove complete weapon replacement drafts before batch editing
+草稿推导总弹量|Derived total ammunition (draft)
+存在武器草稿冲突，请打开批量窗口处理|Weapon drafts conflict. Open the batch window to resolve them.
+参数|Parameter
+运算|Operation
+数值|Value
+筛选|Filter
+筛选结果|Filtered results
+当前值|Current value
+最小值|Minimum
+最大值|Maximum
+预览|Preview
+跳过|Skipped
+错误|Errors
+推导总弹量|Derived total ammo
+增加百分比|Increase by percent
+减少百分比|Decrease by percent
+增加固定值|Add a fixed value
+减少固定值|Subtract a fixed value
+同箱或同炮塔连带影响|Shared ammo box or turret impact

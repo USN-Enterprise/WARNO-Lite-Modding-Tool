@@ -63,7 +63,9 @@ public enum DraftTargetKind
     UnitRename,
     UnitRegistration,
     UnitCapabilities,
-    UnitDelete
+    UnitDelete,
+    UnitPicture,
+    WeaponBatch
 }
 
 public enum DraftEditScope

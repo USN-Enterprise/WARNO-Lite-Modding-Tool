@@ -19,7 +19,8 @@ public partial class UnitWorkspaceView : UserControl
         try
         {
             var action=(sender as FrameworkElement)?.Tag?.ToString();
-            if(action=="abilities") await workspace.EditCapabilitiesAsync(Host);
+            if(action=="picture") await workspace.EditPictureAsync(Host);
+            else if(action=="abilities") await workspace.EditCapabilitiesAsync(Host);
             else if(action=="delete") await workspace.DeleteNewUnitAsync(Host);
             else await workspace.EditIdentityAsync(Host,action=="registration");
         }

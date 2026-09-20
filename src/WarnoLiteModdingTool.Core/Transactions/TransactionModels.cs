@@ -28,6 +28,7 @@ public sealed record ApplyPreview(
     IReadOnlyList<string> ValidationMessages)
 {
     public Dictionary<string,byte[]> ReadDependencies {get;init;} = new();
+    public Dictionary<string,byte[]> PictureReadDependencies {get;init;} = new();
     public string? ExperienceReview { get; init; }
     public Dictionary<string,byte[]>? UnitReadDependencies {get;init;}
     public IReadOnlyList<DraftOperation>? DraftReview {get;init;}

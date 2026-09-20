@@ -4,7 +4,13 @@
 
 <a id="chinese"></a>
 
-当前版本：**1.9.9**。新增单位注册与变量命名、特性与实际能力编辑，以及删除本工具新建单位。
+当前版本：**1.9.11**。新增武器批量修改：跨单位、跨Weapon选择实际挂载，调整库存、射界与弹药参数。
+
+武器页点击“批量修改武器”，明确选择当前勾选单位、单位筛选全部结果或筛选后的挂载，选择参数及运算，预览或直接加入草稿。支持固定值、百分比；专业模式增加乘加减、上下限与全部引用。整数可显式取整，小数默认不取整。完整结果与影响可切换查看，同箱库存和同炮塔射界只计算一次；局部弹药调整精确隔离所选挂载。
+
+批次保存在草稿中；重叠修改需勾选“替换重叠的批量草稿范围”，旧单字段冲突需在草稿中心处理。应用时自动包含共享Weapon/Ammo的关联批次，独立武器仍可部分应用。待创建单位需先应用创建，待删除单位不能批改。已有相关批量草稿时，普通字段显示锁定提示，回批量窗口调整或移除批次。未运行官方生成器或游戏验证。
+
+单位检查器点击“修改单位图片”，从当前Mod已有单位图片中选择，或打开独立图片编辑窗口导入/编辑。保存草稿后可重开预览；正式应用时为自定义图片生成独立PNG与纹理键，仅改变所选单位。保留原图，支持备份恢复；应用后需按原流程生成Mod。PNG/JPEG输入不超过8MB、边长不超过4096像素；自定义输出PNG草稿数据最多8,000,000个Base64字符。此版本未做生成器和游戏内显示验证。
 
 单位检查器新增“特性与实际能力”：基础模式提供15类配套，专业模式可搜索当前Mod已有能力并添加、替换、移除或清空。显示标签可单独编辑，展开特性查看当前Mod参数。新建向导沿用同一套能力操作，默认变量名按母版递增；专业模式可改变量名，应用时联动可确认引用。“检查单位注册”可生成定向修复草稿，保持原编号。
 
@@ -13,7 +19,7 @@
 1.9.8新增游戏规则 → 经验与老练度 → 经验路线 → 等级，可修改各级门槛和已有效果数值。共享路线影响全部引用者，可展开使用者列表；改动自动保存到草稿，在草稿中心预览并应用。单位页继续用于选择路线。缺少或未支持的效果保留原文，多处共用的效果当前只读；不创建独立路线，不自动同步游戏提示文字。
 
 
-这是一款面向 WARNO Mod 新手和不熟悉代码的玩家、易于上手的 Windows 图形化数值编辑器。通过可视化界面调整单位、武器、弹药等数值与相关参数，无需手写代码。编辑范围以数值和规则配置为主，并支持战术师师徽PNG图片编辑；不提供模型或动画制作。
+这是一款面向 WARNO Mod 新手和不熟悉代码的玩家、易于上手的 Windows 图形化数值编辑器。通过可视化界面调整单位、武器、弹药等数值与相关参数，无需手写代码。编辑范围以数值和规则配置为主，并支持单位卡片与战术师师徽PNG图片编辑；不提供模型或动画制作。
 
 **QQ 交流群：1013181135**
 
@@ -119,7 +125,13 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 <a id="english"></a>
 
-Current version: **1.9.9**. Unit registration and variable naming, traits and actual abilities, and deletion of units created by this tool.
+Current version: **1.9.11**. Batch-edit weapons across units, Weapon descriptors and individual mounts.
+
+Open **Batch edit weapons** from the Weapons page. Select checked units, all filtered units, or filtered mounts; choose a parameter and operation, then preview or add to drafts. Fixed values and percentages are available in basic mode; advanced mode adds arithmetic, limits and explicit shared-object editing. Integer rounding is explicit; decimals retain fractions. Inspect every result and the full impact list. Shared ammo boxes/turrets are calculated once, and local ammunition edits isolate the selected mounts.
+
+Overlapping batches require explicit scope replacement; conflicting legacy single-field drafts must be resolved in the draft center. Applying a batch includes connected Weapon/Ammo drafts while independent batches remain selectable. Apply unit creation before batch editing; units pending deletion are excluded. Related single-field editors show a lock message until their batch is adjusted or removed. No official generator or in-game verification was performed.
+
+Click “Change unit picture” in the unit inspector. Choose an existing picture from the current Mod or import/edit one in the separate image editor. Save a draft, apply it, then generate the Mod. Custom pictures receive independent PNG files and texture keys; other units keep their pictures. Drafts retain image data and support reopening, and applied changes support backup restoration. Input PNG/JPEG files are limited to 8 MB and 4096 pixels per side; output PNG draft data is limited to 8,000,000 Base64 characters. Generator and in-game display validation are still pending.
 
 The unit inspector provides 15 trait families with ability/display/tag pairing. Professional mode can search this Mod's existing abilities, add, replace, remove or clear references, and edit display labels independently. Expand a trait to inspect this Mod's parameters. The creation wizard shares these controls and suggests a sequential name based on its template. Professional renaming updates uniquely resolved references; registration repair preserves the original ID.
 

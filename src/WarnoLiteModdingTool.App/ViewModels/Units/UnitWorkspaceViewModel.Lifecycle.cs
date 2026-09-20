@@ -18,6 +18,7 @@ public sealed partial class UnitWorkspaceViewModel
     public bool CanEditSelectedLifecycle => SelectedUnit is not null && !SelectedPendingDelete && !IsTransactionBusy && !_draftStore.IsBlocked;
     private void RefreshLifecycle()
     {
+        OnPropertyChanged(nameof(SelectedPicture));
         OnPropertyChanged(nameof(SelectedPendingDelete)); OnPropertyChanged(nameof(SelectedIdentityText)); OnPropertyChanged(nameof(LifecycleState)); OnPropertyChanged(nameof(CanEditSelectedLifecycle));
         foreach (var field in Fields) field.SetTransactionLocked(IsTransactionBusy || SelectedPendingDelete);
     }

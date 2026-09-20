@@ -16,6 +16,7 @@ public sealed record UnitCreationState(string Mother,string Id,string Guid,strin
     public IReadOnlyList<UnitCreationMountChoice> MountChoices {get;init;}=[];
     public string? NamingRoot {get;init;}
     public UnitCapabilityState? Capabilities {get;init;}
+    public Images.UnitPictureState? Picture {get;init;}
 }
 public sealed record UnitCreationMountChoice(string WeaponName,int MountIndex,string AmmoName);
 public static class UnitCreation
@@ -26,7 +27,7 @@ public static class UnitCreation
     public static DraftOperation Operation(UnitRecord mother,UnitCreationState state,string? baseline=null)
     {
         var json=JsonSerializer.Serialize(state);var raw=baseline??Source(mother);
-        return new(DraftOperation.CreateId(DraftTargetKind.UnitCreate,mother.Source.RelativeSourceFile,state.Id,"unit.create"),"create:"+state.Id,DraftTargetKind.UnitCreate,"units",mother.Source.RelativeSourceFile,state.Id,mother.Source.TypeName,"unit.create","Unit/Create","UnitCreation",raw,raw,json,json,$"新增单位 · {state.Name}",state.Token,true,DateTimeOffset.UtcNow);
+        return new(DraftOperation.CreateId(DraftTargetKind.UnitCreate,mother.Source.RelativeSourceFile,state.Id,"unit.create"),"create:"+state.Id,DraftTargetKind.UnitCreate,"units",mother.Source.RelativeSourceFile,state.Id,mother.Source.TypeName,"unit.create","Unit/Create","UnitCreation",raw,raw,state.Picture is null?json:state.Name+" · "+state.Picture.Key,json,$"新增单位 · {state.Name}",state.Token,true,DateTimeOffset.UtcNow);
     }
     public static ResolvedDraftOperation Resolve(UnitWorkspaceData data,DraftOperation op)
     {
@@ -85,6 +86,7 @@ public static class UnitCreation
         }
         if(!f.CanEdit||f.Location is null||!UnitValueConverter.TryFormatTarget(f,value,out _,out var raw,out var error))throw new InvalidDataException("字段不可编辑："+key);edits.Add(new(f.Location.CharacterOffset-mother.Source.CharacterOffset,f.Location.CharacterLength,f.RawValue,raw,key));}
         var result=Patch(source,edits);
+        if(state.Picture is not null) result=Images.UnitPictures.Apply(result,state.Picture.Key);
         if (state.Capabilities is null) return result;
         // A pending unit can be edited through its projected identity, then renamed.
         // Creation owns UNITE tags; capability changes carry only non-identity tags.

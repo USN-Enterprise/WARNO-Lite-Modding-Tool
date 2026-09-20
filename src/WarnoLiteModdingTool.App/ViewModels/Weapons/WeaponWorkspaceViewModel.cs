@@ -177,6 +177,13 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
                 return "总弹量：无法推导";
             }
 
+            if (_draftStore.Operations.Any(o => o.TargetKind == DraftTargetKind.WeaponBatch) && SelectedUnit is not null)
+            {
+                try { return Localisation.UiText.T("草稿推导总弹量") + "：" + WeaponBatch.TotalAmmo(_data,
+                    Core.Transactions.WeaponBatchApplyPlanner.ValidateCombination(_data,_draftStore.Operations),
+                    new(SelectedUnit.InternalName,SelectedWeapon.Name,SelectedMount.Mount.Index)); }
+                catch (Core.Transactions.TransactionValidationException) { return Localisation.UiText.T("存在武器草稿冲突，请打开批量窗口处理"); }
+            }
             var salves = SelectedWeapon.Field($"weapon.salves.{box}");
             var ammo = _data.Ammo(SelectedMount.Mount.AmmoName);
             if (!int.TryParse(salves?.DisplayValue, out var salvoCount) || ammo?.ShotsPerSalvo is not int shots)
@@ -250,7 +257,16 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
         ScopeSelectionChanged();
     }
 
-    public void RefreshFromDrafts() => RebuildFields();
+    public async Task OpenBatchAsync(System.Windows.Window owner)
+    {
+        await FlushAsync();
+        var window = new Controls.WeaponBatchWindow(_data, _draftStore,
+            Units.Where(u => u.IsWeaponScopeSelected).Select(u => u.InternalName).ToArray(),
+            UnitsView.Cast<UnitListItemViewModel>().Select(u => u.InternalName).ToArray(),
+            () => { _transactions.RefreshExternalDraftState(); RebuildFields(); }) { Owner = owner };
+        window.ShowDialog();
+    }
+    public void RefreshFromDrafts() { RebuildFields(); OnPropertyChanged(nameof(TotalAmmoText)); }
 
     public async Task FlushAsync()
     {
@@ -282,6 +298,7 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
 
     private async Task PersistFieldAsync(WeaponFieldViewModel viewModel, string? weaponName, int? mountIndex, DraftEditScope scope, string scopeLabel, IReadOnlyList<string> selectedUnits)
     {
+        if (viewModel.BatchLocked) throw new InvalidOperationException("存在相关批量草稿，请在批量窗口调整或移除批次");
         if (!WeaponValueConverter.TryFormat(viewModel.Field, viewModel.EditValue, out var normalized, out var raw, out var error))
         {
             viewModel.Revert(error);
@@ -418,7 +435,7 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
                 Units.Where(unit => unit.IsWeaponScopeSelected).Select(unit => unit.InternalName).ToArray();
             var viewModel = new WeaponFieldViewModel(field, resolved.GetValueOrDefault(id),
                 vm => PersistFieldAsync(vm, weaponName, mountIndex, scope, scopeLabel, selectedUnits))
-            { EditContext = weaponName + ":" + mountIndex + ":" + scope + ":" + string.Join(",", selectedUnits) };
+            { BatchLocked = WeaponBatch.Blocks(_draftStore.Operations, c => c.Weapon == weaponName || c.Ammo == field.OwnerObjectName), EditContext = weaponName + ":" + mountIndex + ":" + scope + ":" + string.Join(",", selectedUnits) };
             if(field.Definition.FieldName=="Ammunition")viewModel.SetAmmoChoices(Localisation.UiText.Current.English?_ammoChoicesEnglish:_ammoChoicesChinese);
             viewModel.SetLocked(_transactions.IsTransactionBusy);
             Fields.Add(viewModel);

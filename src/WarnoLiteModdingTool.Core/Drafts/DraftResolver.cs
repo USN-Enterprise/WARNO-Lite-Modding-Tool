@@ -28,6 +28,8 @@ public static class DraftResolver
         var result = new List<ResolvedDraftOperation>();
         foreach (var operation in operations)
         {
+            if(operation.TargetKind==DraftTargetKind.WeaponBatch){result.Add(WeaponBatch.Resolve(weapons,operation));continue;}
+            if(operation.TargetKind==DraftTargetKind.UnitPicture){result.Add(Images.UnitPictures.Resolve(workspace,operation));continue;}
             if(UnitIdentityEditing.IsKind(operation.TargetKind)){result.Add(UnitIdentityEditing.Resolve(workspace,operation));continue;}
             if(operation.TargetKind==DraftTargetKind.UnitCapabilities){result.Add(UnitCapabilities.Resolve(workspace,operation));continue;}
             if(operation.TargetKind==DraftTargetKind.UnitDelete){result.Add(UnitDeletion.Resolve(workspace,operation));continue;}
