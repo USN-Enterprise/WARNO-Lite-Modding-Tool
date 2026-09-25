@@ -305,6 +305,18 @@ public sealed class DivisionCostSlotViewModel : ObservableObject
 
 public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
 {
+    private readonly Dictionary<string, DivisionTextEditorViewModel> _textEditors = new();
+    public DivisionTextEditorViewModel? TextEditor
+    {
+        get
+        {
+            if (SelectedDivision is null) return null;
+            if (!_textEditors.TryGetValue(SelectedDivision.InternalName, out var editor))
+                _textEditors[SelectedDivision.InternalName] = editor = new(_data, SelectedDivision.Division, _draftStore, () => { RefreshDraftStatuses(); _draftsChanged(); });
+            editor.SetLocked(_transactionLocked);
+            return editor;
+        }
+    }
     private readonly DivisionWorkspaceData _data;
     private readonly DraftStore _draftStore;
     private readonly Action<string> _setStatus;
@@ -422,6 +434,7 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
             if (SetProperty(ref _selectedDivision, value))
             {
                 LoadSelected();
+                OnPropertyChanged(nameof(TextEditor));
                 OnPropertyChanged(nameof(CanEditSelected));
             }
         }
@@ -688,6 +701,8 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
 
     public async Task FlushAsync()
     {
+        var pendingText = _textEditors.Values.FirstOrDefault(e => e.HasPendingInput);
+        if (pendingText is not null) throw new InvalidOperationException(pendingText.DivisionName + "：请先在师简介页加入草稿或撤销本页输入");
         foreach (var cancellation in _persistCancellations.Values) cancellation.Cancel();
         Task[] pending;
         lock (_pendingPersists) pending = _pendingPersists.ToArray();
@@ -698,6 +713,7 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
 
     public void RefreshFromDrafts()
     {
+        foreach (var editor in _textEditors.Values) editor.Restore();
         RefreshDraftStatuses();
         LoadSelected();
     }
@@ -705,12 +721,14 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
     public void SetTransactionLocked(bool value)
     {
         _transactionLocked = value;
+        foreach (var editor in _textEditors.Values) editor.SetLocked(value);
         OnPropertyChanged(nameof(CanEditSelected));
         NotifyPackPosition();
     }
 
     public void Dispose()
     {
+        foreach (var editor in _textEditors.Values) editor.Dispose();
         foreach (var cancellation in _persistCancellations.Values)
         {
             cancellation.Cancel();
@@ -984,7 +1002,7 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
     private void RefreshDraftStatuses()
     {
         var resolved = DraftResolver.Resolve(_data.Units, null, _data, _draftStore.Operations)
-            .Where(item => item.Operation.TargetKind is DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity)
+            .Where(item => item.Operation.TargetKind is DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity or DraftTargetKind.DivisionText)
             .ToArray();
         foreach (var item in Divisions)
         {

@@ -24,7 +24,7 @@ public sealed class WeaponProjectLoader
         Task.Run(() =>
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (cache?.RestoreWeapons(units) is { } restored) return restored;
+            if (cache?.RestoreWeapons(units) is { } restored) { cache.SetWeapons(restored); return restored; }
             var result = Load(context, index, units, cancellationToken);
             if (result.Diagnostics.Count == 0) cache?.SetWeapons(result);
             return result;
@@ -47,7 +47,7 @@ public sealed class WeaponProjectLoader
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                sources[path] = File.ReadAllText(path);
+                sources[path] = WarnoLiteModdingTool.Core.Projects.ProjectReadScope.ReadAllText(path);
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
@@ -161,13 +161,22 @@ public sealed class WeaponProjectLoader
             weapons.Add(new WeaponRecord(descriptor, fields, mounts));
         }
 
+        return new WeaponWorkspaceData(weapons, ammo, units.Units, BuildReferences(weapons, ammo, units.Units), diagnostics);
+    }
+
+    internal static WeaponReferenceIndex BuildReferences(IReadOnlyList<WeaponRecord> weapons, IReadOnlyList<AmmoRecord> ammo, IReadOnlyList<UnitRecord> units)
+    {
+        var byWeapon = units.SelectMany(u => u.Weapons.Select(w => (Weapon: w, Unit: u.Name)))
+            .GroupBy(p => p.Weapon, StringComparer.Ordinal).ToDictionary(g => g.Key, g => (IReadOnlyList<string>)g.Select(p => p.Unit).Distinct().Order(StringComparer.Ordinal).ToArray(), StringComparer.Ordinal);
+        var byAmmo = weapons.SelectMany(w => w.Mounts.Select(m => (Ammo: m.AmmoName, Weapon: w.Name)))
+            .GroupBy(p => p.Ammo, StringComparer.Ordinal).ToDictionary(g => g.Key, g => (IReadOnlyList<string>)g.Select(p => p.Weapon).Distinct().Order(StringComparer.Ordinal).ToArray(), StringComparer.Ordinal);
         var weaponUnits = weapons.ToDictionary(
             weapon => weapon.Name,
-            weapon => (IReadOnlyList<string>)units.Units.Where(unit => unit.Weapons.Contains(weapon.Name, StringComparer.Ordinal)).Select(unit => unit.Name).Order(StringComparer.Ordinal).ToArray(),
+            weapon => byWeapon.GetValueOrDefault(weapon.Name) ?? [],
             StringComparer.Ordinal);
         var ammoWeapons = ammo.ToDictionary(
             item => item.Name,
-            item => (IReadOnlyList<string>)weapons.Where(weapon => weapon.Mounts.Any(mount => mount.AmmoName == item.Name)).Select(weapon => weapon.Name).Order(StringComparer.Ordinal).ToArray(),
+            item => byAmmo.GetValueOrDefault(item.Name) ?? [],
             StringComparer.Ordinal);
         var ammoUnits = ammo.ToDictionary(
             item => item.Name,
@@ -178,12 +187,7 @@ public sealed class WeaponProjectLoader
                 .ToArray(),
             StringComparer.Ordinal);
 
-        return new WeaponWorkspaceData(
-            weapons,
-            ammo,
-            units.Units,
-            new WeaponReferenceIndex(weaponUnits, ammoWeapons, ammoUnits),
-            diagnostics);
+        return new WeaponReferenceIndex(weaponUnits, ammoWeapons, ammoUnits);
     }
 
     private static IReadOnlyList<NdfValueSpan> LocateAmmoField(

@@ -1,10 +1,43 @@
-# WARNO Lite Modding Tool 发布说明
+﻿# WARNO Lite Modding Tool 发布说明
 
 [中文](#chinese) | [English](#english)
 
 <a id="chinese"></a>
 
 仅列出功能更新和影响使用的问题修复。
+
+## 1.9.15 — 2026-09-24
+
+- 加快缓存打开：按源文件复用索引与解析数据，共享读取和单位候选；缓存保存移至后台。
+- 应用完成后只回读本次变更和检测到外部变化的文件，重建相关数据，保留页面、对象、搜索、筛选、排序、勾选、折叠与滚动。
+- 单位字段、名称、共享弹药、局部武器、师正文、规则、结构操作和单位图片沿用同一刷新入口；未选草稿按新数据重新解析。
+- 正式预览和提交继续使用新鲜读取、字节校验及备份；已写入但刷新失败时明确提示重新打开，避免重复应用。
+- 本版升级后旧缓存会自动重建一次；未修改真实Mod，未运行生成器或游戏验证。
+
+## 1.9.14 — 2026-09-24
+
+- 修正地形规则标题比其他规则分类更小、更细的问题；规则、经验与地形共用标题层级及主题样式。
+- 统一地形分层缩进与间距，长标签/参数换行后数值框和布尔选择框保持对齐，窄空间下自动换行。
+- 师简介统一分段标题样式；保留原有数据、草稿与应用操作。
+- 新增同屏格式对照与控件位置验证，相关WPF回归通过；检查中英文、基础/专业、明暗主题和模拟布局缩放。未做真实跨屏DPI、生成器或游戏验证。
+
+## 1.9.13 — 2026-09-24
+
+- 战术师新增“师简介”：直接从本机游戏包提取游戏玩法与历史正文，支持中英文原文参考、缓存、刷新、取消及多段落编辑，无需另装解包工具。
+- 正文加入草稿后，通过独立token联合写入师字段与UNITS.csv；保留其他使用者原文，支持同批名称修改、预览及备份恢复。切换参考语言不覆盖输入；自定义文本为所有语言的默认正文，不自动翻译。
+- 游戏规则新增地形规则。基础模式只保留已识别的既有步兵减伤组合；专业模式编辑既有承伤倍率、隐蔽、视线、通行、航空和可燃性字段，高度只读。
+- 按当前Mod扫描地形，支持仅地形规则项目；不为缺少组合补零，不启用注释，不开放组合或地形定义增删。重复键、异常结构和过期提交阻止写入。
+- 修复首次打开规则页时对象页面可能残留的问题。完整120/120回归通过，并完成本机原版正文只读提取核对。
+- 未修改真实Mod，未运行官方生成器或游戏验证。
+
+## 1.9.12 — 2026-09-22
+
+- 弹药列表新增独立勾选、全选当前筛选、清空选择及隐藏已选数量；多选后原右栏切换批量检查器，交互沿用单位页。
+- 共有字段分组统一设值，混合值留空；固定值/百分比与专业公式、上下限及显式取整，按每条弹药的有效草稿值计算。
+- 完整逐行预览及可搜索使用者列表。弹药页始终修改共享本体并显示全部影响，支持未使用弹药和仅有弹药文件的项目。
+- 复用弹药草稿、关联应用与备份恢复；阻止局部同字段覆盖、历史批次冲突、过期文件/引用/草稿提交，保留源文件未改内容与换行。
+- 撤下旧“批量修改武器”窗口入口，保留历史草稿应用/移除与备份恢复。修正窗口版本显示，保留单位图片等现有功能。
+- 未修改真实Mod，未运行官方生成器或游戏验证。
 
 ## 1.9.11 — 2026-09-20
 
@@ -219,6 +252,39 @@
 [中文](#chinese) | [English](#english)
 
 Feature updates and fixes that affect everyday use.
+
+## 1.9.15 — 2026-09-24
+
+- Faster cached opening through per-file reuse, shared source reads and shared unit choices. Cache files are saved in the background.
+- Applying changes refreshes affected data without reopening the entire project, preserving navigation and editor state.
+- Remaining drafts are resolved against the updated data. Fresh preview validation, byte comparisons and backups remain in place.
+- If files were applied successfully but the display could not refresh, the editor asks you to reopen the project instead of applying again.
+- Existing caches rebuild once after upgrading. No real mod files were changed and no generator or game validation was performed during development.
+
+## 1.9.14 — 2026-09-24
+
+- Fixed terrain headings appearing smaller and lighter than adjacent categories. Rules, experience and terrain now share heading styles and theme resources.
+- Aligned terrain indentation and spacing. Numeric and boolean editors stay aligned when labels or parameters wrap; fields reflow in narrow spaces.
+- Unified division-text section headings while preserving existing data, draft and apply workflows.
+- Added same-window typography and control-position checks. Related WPF regressions passed across both languages/modes, light/dark themes and simulated layout scaling. Physical cross-monitor DPI, official generator and in-game validation were not performed.
+
+## 1.9.13 — 2026-09-24
+
+- Added Division text with direct local extraction of gameplay summaries and history, Chinese/English references, caching, refresh, cancellation and paragraph editing. No separate extraction tools are needed.
+- Saves independent text tokens through combined division-field and UNITS.csv drafts, preserving other users of the original text. Supports name edits in the same application, preview and backup recovery. Reference-language changes preserve input; custom text is the default for all languages, without automatic translation.
+- Added Terrain rules. Basic mode exposes recognized existing infantry damage-reduction combinations. Professional mode edits existing multipliers, concealment, visibility, movement-blocking, aviation and flammability fields; height remains read-only.
+- Discovers terrain from the selected Mod, including terrain-only projects. Missing combinations are not zero-filled, comments are not activated, and combinations/definitions cannot be added or deleted. Duplicate keys, unsupported structures and stale submissions block writes.
+- Fixed object-page content remaining visible when opening the rules page for the first time. All 120 regression tests passed; original text extraction was also verified read-only against a local game installation.
+- No real Mod files were modified; official generator and in-game validation remain pending.
+
+## 1.9.12 — 2026-09-22
+
+- Added independent ammunition checkboxes, select-all-filtered, clear selection and hidden selection counts. Multiple checked records switch the existing right pane to a batch inspector, matching the Units workflow.
+- Grouped common fields support explicit uniform values with blank mixed values. Fixed values, percentages, advanced arithmetic, limits and explicit rounding use each record's effective draft value.
+- Preview every result and search the complete usage list. Ammunition edits always affect the shared object and all its users; unused ammunition and ammunition-only projects are supported.
+- Reuses ammunition drafts, dependency-aware application and backup recovery. Rejects local-field overwrites, historical batch conflicts and stale files, references or drafts; preserves untouched source text and line endings.
+- Removed the old weapon-mount batch window entry while retaining existing draft application/removal and backup recovery. Corrected the displayed version and retained unit picture editing.
+- No real Mod files were modified; official generator and in-game validation remain pending.
 
 ## 1.9.11 — 2026-09-20
 

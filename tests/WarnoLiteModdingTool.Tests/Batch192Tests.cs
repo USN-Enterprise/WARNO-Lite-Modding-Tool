@@ -55,6 +55,8 @@ internal static partial class Program
             TestAssert.Equal(0xCBF43926u,GameNameCache.Crc32(Encoding.ASCII.GetBytes("123456789")),"标准CRC32向量");
             var before = File.ReadAllBytes(cachePath); TestAssert.True(!before.Take(3).SequenceEqual(new byte[]{239,187,191}),"缓存无BOM");
             var bad = File.ReadAllBytes(archive); bad[^1] ^= 1; File.WriteAllBytes(archive,bad);
+            // Cache invalidation is metadata based; do not depend on the filesystem clock advancing between these tiny writes.
+            File.SetLastWriteTimeUtc(archive, DateTime.UtcNow.AddSeconds(2));
             bool rejected = false; try { cache.Load(game); } catch(InvalidDataException) { rejected=true; }
             TestAssert.True(rejected && before.SequenceEqual(File.ReadAllBytes(cachePath)),"坏包失败保留原缓存");
             Archive192(archive,"Base"); var patch=Path.Combine(game,"Data/PC/100/200/ZZ_1.dat"); Archive192(patch,"Updated",3);

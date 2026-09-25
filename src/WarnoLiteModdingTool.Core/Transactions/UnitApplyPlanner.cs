@@ -30,6 +30,8 @@ public sealed class UnitApplyPlanner(
         IReadOnlyList<DraftOperation> operations,
         CancellationToken cancellationToken = default)
     {
+        var readSnapshot = new ProjectReadScope();
+        using var readScope = readSnapshot.Enter();
         if (operations.Count == 0)
         {
             throw new TransactionValidationException("没有可应用的草稿。");
@@ -48,7 +50,9 @@ public sealed class UnitApplyPlanner(
         var deleteNames = allOperations.Where(o=>o.TargetKind==DraftTargetKind.UnitDelete).Select(o=>o.ObjectName).ToHashSet();
         operations = allOperations.Where(o=>!deleteNames.Contains(o.ObjectName)||o.TargetKind==DraftTargetKind.UnitDelete).ToArray();
         var lifecycle = allOperations.Any(o=>UnitDraftLinks.Lifecycle(o)||o.TargetKind is DraftTargetKind.UnitCreate or DraftTargetKind.UnitPicture or DraftTargetKind.WeaponBatch);
-        var unitReview = lifecycle ? new UnitProjectGraph(root).Dependencies : null;
+        var sharedAmmo = allOperations.Any(Batch.AmmoBatchPlanner.IsShared);
+        var reviewInputs = lifecycle || sharedAmmo || allOperations.Any(o => o.TargetKind is DraftTargetKind.DivisionText or DraftTargetKind.TerrainField);
+        var unitReview = reviewInputs ? new UnitProjectGraph(root).Dependencies : null;
         var historyPath = Path.Combine(root,UnitCreationHistory.LedgerPath);
         if(unitReview is not null) unitReview[UnitCreationHistory.LedgerPath] = File.Exists(historyPath)?File.ReadAllBytes(historyPath):[];
 
@@ -60,7 +64,7 @@ public sealed class UnitApplyPlanner(
 
         var index = await _indexer.IndexAsync(context, cancellationToken: cancellationToken);
         var unitCapability = index.Modules.FirstOrDefault(item => item.Key == "units");
-        if (operations.Any(o => o.TargetKind is not (DraftTargetKind.StrategicPlan or DraftTargetKind.StrategicPack or DraftTargetKind.GlobalRule or DraftTargetKind.ExperienceLevel)) &&
+        if (operations.Any(o => !Batch.AmmoBatchPlanner.IsShared(o) && o.TargetKind != DraftTargetKind.AmmoName && o.TargetKind is not (DraftTargetKind.StrategicPlan or DraftTargetKind.StrategicPack or DraftTargetKind.GlobalRule or DraftTargetKind.ExperienceLevel or DraftTargetKind.TerrainField or DraftTargetKind.DivisionText)) &&
             (unitCapability?.CanScan != true || unitCapability.Availability == ModuleAvailability.ParseError))
         {
             throw new TransactionValidationException("单位模块当前不可安全写入；请先处理扫描诊断。");
@@ -72,7 +76,8 @@ public sealed class UnitApplyPlanner(
         {
             var weaponCapability = index.Modules.FirstOrDefault(item => item.Key == "weapons");
             var ammoCapability = index.Modules.FirstOrDefault(item => item.Key == "ammo");
-            if (weaponCapability?.CanScan != true || weaponCapability.Availability == ModuleAvailability.ParseError ||
+            var needsWeapons = operations.Any(o => o.TargetKind is DraftTargetKind.WeaponField or DraftTargetKind.MountedWeaponAmmo or DraftTargetKind.UnitWeaponReference or DraftTargetKind.UnitCreate or DraftTargetKind.WeaponBatch || o.TargetKind == DraftTargetKind.AmmoField && !Batch.AmmoBatchPlanner.IsShared(o));
+            if ((needsWeapons && weaponCapability?.CanScan != true) || weaponCapability?.Availability == ModuleAvailability.ParseError || unitCapability?.Availability == ModuleAvailability.ParseError ||
                 ammoCapability?.CanScan != true || ammoCapability.Availability == ModuleAvailability.ParseError)
             {
                 throw new TransactionValidationException("Weapon/Ammo 模块当前不完整或存在解析错误，无法安全计算共享影响。");
@@ -86,7 +91,7 @@ public sealed class UnitApplyPlanner(
             weaponWorkspace = await _weaponLoader.LoadAsync(context, index, workspace, cancellationToken);
         }
         DivisionWorkspaceData? divisionWorkspace = null;
-        if (operations.Any(item => item.TargetKind is DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity || item.TargetKind==DraftTargetKind.UnitCreate && UnitCreation.Read(item).Divisions.Count>0))
+        if (operations.Any(item => item.TargetKind is DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity or DraftTargetKind.DivisionText || item.TargetKind==DraftTargetKind.UnitCreate && UnitCreation.Read(item).Divisions.Count>0))
         {
             var divisionCapability = index.Modules.FirstOrDefault(item => item.Key == "divisions");
             if (divisionCapability?.CanScan != true || divisionCapability.Availability == ModuleAvailability.ParseError)
@@ -117,6 +122,7 @@ public sealed class UnitApplyPlanner(
         if (weaponWorkspace is not null)
         {
             ValidateDamageFamilies(workspace, weaponWorkspace, operations);
+            Batch.AmmoBatchPlanner.ValidateFinal(workspace, weaponWorkspace, operations);
         }
         var units = workspace.Units.ToDictionary(item => item.Name, StringComparer.Ordinal);
         var snapshots = new Dictionary<string, TextFileSnapshot>(StringComparer.OrdinalIgnoreCase);
@@ -298,6 +304,8 @@ public sealed class UnitApplyPlanner(
         if(operations.Any(o=>o.TargetKind==DraftTargetKind.UnitCreate))UnitCreation.Plan(root,workspace,weaponWorkspace!,divisionWorkspace,index,operations,plannedFiles);
         if(weaponWorkspace is not null)AmmoNames.Plan(root,workspace,weaponWorkspace,operations,plannedFiles);
         if(strategic is not null)StrategicPackEditing.Plan(strategic,operations,plannedFiles);
+        DivisionText.Plan(root, divisionWorkspace, operations, currentDrafts.Operations, plannedFiles);
+        workspace.Rules?.Terrain.Plan(operations, plannedFiles);
         var experienceEdits = operations.Any(o => o.TargetKind == DraftTargetKind.ExperienceLevel) ? workspace.Rules!.Experience : null;
         var finalExperience = experienceEdits?.Plan(operations, plannedFiles);
         var experience = operations.Any(o=>o.FieldKey=="experience.type") ? ExperienceCatalog.Load(root) : null;
@@ -345,13 +353,14 @@ public sealed class UnitApplyPlanner(
         var logText = BuildApplyLog(backupId, preparedUtc, operations, plannedFiles, validation);
         plannedFiles.Add(ToWriteChange(logSnapshot, logText, ["写入本次应用记录"]));
 
+        if (!readSnapshot.IsStable()) throw new TransactionValidationException("准备预览期间源文件发生变化，请重新预览。");
         return new ApplyPreview(
             root,
             backupId,
             preparedUtc,
             allOperations.ToArray(),
             plannedFiles,
-            validation.ToArray()) { PictureReadDependencies = pictureDependencies, ReadDependencies = experience?.Dependencies ?? new(), ExperienceReview = experienceEdits?.Review(operations), UnitReadDependencies = unitReview, DraftReview = lifecycle ? currentDrafts.Operations.ToArray() : null };
+            validation.ToArray()) { PictureReadDependencies = pictureDependencies, ReadDependencies = experience?.Dependencies ?? new(), ExperienceReview = experienceEdits?.Review(operations), UnitReadDependencies = unitReview, DraftReview = reviewInputs ? currentDrafts.Operations.ToArray() : null };
     }
 
     internal static string CreateBackupId(string prefix) =>
@@ -380,10 +389,10 @@ public sealed class UnitApplyPlanner(
             {
                 DraftTargetKind.WeaponField or DraftTargetKind.MountedWeaponAmmo or DraftTargetKind.WeaponBatch => "weapons",
                 DraftTargetKind.AmmoField or DraftTargetKind.AmmoName => "ammo",
-                DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity => "divisions",
+                DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity or DraftTargetKind.DivisionText => "divisions",
                 DraftTargetKind.StrategicPlan => "strategic",
                 DraftTargetKind.StrategicPack => "sp",
-                DraftTargetKind.GlobalRule or DraftTargetKind.ExperienceLevel => "rules",
+                DraftTargetKind.GlobalRule or DraftTargetKind.ExperienceLevel or DraftTargetKind.TerrainField => "rules",
                 _ => "units"
             };
             if (!string.Equals(operation.Module, expectedModule, StringComparison.Ordinal) ||

@@ -31,6 +31,7 @@ internal static partial class Program
     private static async Task<int> Main(string[] args)
     {
         VanillaNames.Replace(SyntheticNames());
+        if (args is ["--performance-1915", var perfRoot, var perfCount]) { await Performance1915(perfRoot, int.Parse(perfCount)); return 0; }
         if(args is ["--scan-lifecycle",var scan199Root])
         {
             var graph=new UnitProjectGraph(scan199Root);
@@ -45,6 +46,17 @@ internal static partial class Program
             return choices.All(c=>c.Error is null)&&failures.Count==0?0:1;
         }
 
+        if (args is ["--verify-text-1913", var textGame, var textCache])
+        {
+            var snapshot = new GameNameCache(textCache, true).Load(textGame, true);
+            VanillaNames.ReplaceUnits(snapshot.Names);
+            foreach(var lang in new[]{"SC","US"}) foreach(var token in new[]{"SUMSOV1G","HISSOV1G"})
+            {
+                var value=VanillaNames.Lookup("UNITS",token,lang) ?? throw new InvalidDataException("正文未提取");
+                Console.WriteLine($"{lang}/{token}: chars={value.Length}; lineBreaks={value.Count(c=>c=='\n')}");
+            }
+            Console.WriteLine($"Sources={snapshot.Sources.Length}; cache={textCache}"); return 0;
+        }
         if (args is ["--benchmark-cache", var modRoot193, var cache193]) { await BenchmarkCache193(modRoot193, cache193); return 0; }
         if (args is ["--verify-local-names", var gameDirectory, var cacheFile])
         {
@@ -93,6 +105,18 @@ internal static partial class Program
 
         var tests = new (string Name, Func<Task> Run)[]
         {
+            ("1.9.15 分区缓存与共享读取", Cache1915Partitions),
+            ("1.9.15 局部刷新与完整重读等价", Refresh1915Composition),
+            ("1.9.15 外部变化与刷新失败保护", Refresh1915Guards),
+            ("1.9.13 地形字段事务与原文", Terrain1913Transactions),
+            ("1.9.13 独立地形与结构限制", Terrain1913Standalone),
+            ("1.9.13 师正文组合与重开", DivisionText1913Composition),
+            ("1.9.13 师正文冲突与失败恢复", DivisionText1913GuardsRecovery),
+            ("1.9.13 正文本地提取与离线缓存", DivisionText1913Cache),
+            ("1.9.12 弹药公式与共有字段", Ammo1912Formulas),
+            ("1.9.12 弹药草稿作用域组合", Ammo1912DraftComposition),
+            ("1.9.12 独立弹药应用与提交保护", Ammo1912StandaloneAndGuards),
+            ("1.9.12 弹药原文与失败恢复", Ammo1912PreserveRecovery),
             ("1.9.11 武器批量精确隔离与恢复", Weapon1911Isolation),
             ("1.9.11 武器公式与语义预览", Weapon1911Formulas),
             ("1.9.11 武器多作用域组合", Weapon1911Composition),
@@ -1861,6 +1885,7 @@ internal static partial class Program
                     RunWithDispatcher(viewModel.OpenProjectAsync(root), window.Dispatcher);
                     DrainDispatcher(window.Dispatcher);
                     TestAssert.False(viewModel.LastOpenUsedCache, "首次窗口打开未命中缓存");
+                    RunWithDispatcher(viewModel.CacheSaveTask, window.Dispatcher);
                     RunWithDispatcher(viewModel.OpenProjectAsync(root), window.Dispatcher);
                     TestAssert.True(viewModel.LastOpenUsedCache, "再次窗口打开实际命中缓存");
                     TestAssert.True(viewModel.UnitWorkspace is not null, "打开完整 Unit Mod 后应建立工作区");
@@ -2027,6 +2052,9 @@ internal static partial class Program
                     Verify199Ui(window);
                     Verify1910Ui(window);
                     Verify1911Ui(window);
+                    Verify1912Ui(viewModel,window,root);
+                    Verify1913Ui(viewModel,window,root);
+                    Verify1915Ui(viewModel,window,root);
                     Verify186Ui(viewModel, window, root);
                     application.Shutdown();
                     if (failure is not null)

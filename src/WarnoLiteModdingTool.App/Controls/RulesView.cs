@@ -29,7 +29,7 @@ public sealed class RulesView : UserControl
             foreach(var category in vm.View.Cast<RuleGroupViewModel>().GroupBy(g=>g.Group.Definition.Category).OrderBy(g=>vm.Categories.ToList().IndexOf(g.Key)))
             {
                 var children=new StackPanel { Margin=new Thickness(12,8,0,0) };
-                var parent=new Expander { Header=new TextBlock {Text=UiText.T(category.Key)+" · "+category.Count(),FontSize=15,FontWeight=FontWeights.SemiBold}, Tag=category.Key, Content=children, Margin=new Thickness(0,0,0,8), Padding=new Thickness(8) };
+                var parent=new Expander { Header=RulePresentation.Heading(UiText.T(category.Key)+" · "+category.Count(), "RuleCategoryHeading"), Tag=category.Key, Content=children, Margin=new Thickness(0,0,0,8), Padding=new Thickness(8) };
                 parent.SetResourceReference(BackgroundProperty,"SurfaceBrush");
                 parent.IsExpanded=vm.Search.Length>0 || _expanded.GetValueOrDefault(category.Key);
                 parent.Expanded+=(_,e)=>{if(ReferenceEquals(e.OriginalSource,parent)&&vm.Search.Length==0)_expanded[category.Key]=true;};
@@ -47,6 +47,8 @@ public sealed class RulesView : UserControl
             }
             if (vm.Category is "全部" or "经验与老练度" || vm.Search.Length > 0)
                 list.Children.Add(ExperienceRulesView.Build(vm, _expanded));
+            if (vm.Category is "全部" or "地形规则" || vm.Search.Length > 0)
+                list.Children.Add(TerrainRulesView.Build(vm, _expanded));
         }
         _observed=vm.View;_render=(_,_)=>Render();_observed.CollectionChanged+=_render;Render();
         panel.Children.Add(new ScrollViewer{Content=list,VerticalScrollBarVisibility=ScrollBarVisibility.Auto});Content=panel;

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -48,7 +48,7 @@ public sealed class ExperienceWorkspace
             .Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.Ordinal).ToArray();
         foreach (var relative in paths)
         {
-            try { result._sources[relative] = candidates?.GetValueOrDefault(relative) ?? File.ReadAllText(Path.Combine(root, relative)); }
+            try { result._sources[relative] = candidates?.GetValueOrDefault(relative) ?? WarnoLiteModdingTool.Core.Projects.ProjectReadScope.ReadAllText(Path.Combine(root, relative)); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             { result.Diagnostics.Add(relative + ": " + ex.Message); }
         }
@@ -56,25 +56,14 @@ public sealed class ExperienceWorkspace
         { result._sources.Clear(); return result; }
         foreach (var (relative, text) in result._sources)
         {
-            var parsed = MaskBlockComments(text);
-            var scan = new NdfTopLevelScanner().Scan(parsed, Path.Combine(root, relative), "rules", root);
-            foreach (var o in scan.Objects)
+            var parsed = Projects.ProjectReadScope.FileValue("experience-symbols:" + relative, Path.Combine(root, relative), text,
+                candidates?.ContainsKey(relative) != true, () => ParseSource(root, relative, text));
+            foreach (var item in parsed.Declarations)
             {
-                var item = new Declaration(o.Name, o.TypeName, relative, text.Substring(o.CharacterOffset, o.CharacterLength),
-                    o.CharacterOffset, !scan.Diagnostics.Any(d => d.Severity == NdfDiagnosticSeverity.Error));
-                if (!result._objects.TryGetValue(o.Name, out var declarations)) result._objects[o.Name] = declarations = [];
+                if (!result._objects.TryGetValue(item.Name, out var declarations)) result._objects[item.Name] = declarations = [];
                 declarations.Add(item);
             }
-            var doc = new NdfSyntaxDocument(parsed);
-            var objectIndex = 0;
-            foreach (var r in doc.FindReferences("").Where(r => r.Raw.StartsWith("~/") || r.Raw.StartsWith("$/")))
-            {
-                var offset = doc.StartOffset(r.Span);
-                while (objectIndex < scan.Objects.Count && scan.Objects[objectIndex].CharacterOffset + scan.Objects[objectIndex].CharacterLength <= offset) objectIndex++;
-                var owner = objectIndex < scan.Objects.Count && scan.Objects[objectIndex].CharacterOffset <= offset
-                    ? scan.Objects[objectIndex].Name : "@" + relative;
-                result._references.Add(new(r.Leaf, owner, relative, offset, r.Raw));
-            }
+            result._references.AddRange(parsed.References);
         }
         foreach (var reference in result._references)
         {
@@ -90,6 +79,26 @@ public sealed class ExperienceWorkspace
         result.Routes.Sort((a, b) => Array.IndexOf(order, a.Alias) != Array.IndexOf(order, b.Alias)
             ? Array.IndexOf(order, a.Alias).CompareTo(Array.IndexOf(order, b.Alias)) : string.CompareOrdinal(a.Name, b.Name));
         return result;
+    }
+    private sealed record ParsedSource(Declaration[] Declarations, Reference[] References);
+    private static ParsedSource ParseSource(string root, string relative, string text)
+    {
+        var parsed = MaskBlockComments(text);
+        var scan = new NdfTopLevelScanner().Scan(parsed, Path.Combine(root, relative), "rules", root);
+        var declarations = scan.Objects.Select(o => new Declaration(o.Name, o.TypeName, relative,
+            o.TypeName is "TExperienceLevelsPackDescriptor" or "TEffectsPackDescriptor" ? text.Substring(o.CharacterOffset, o.CharacterLength) : "",
+            o.CharacterOffset, !scan.Diagnostics.Any(d => d.Severity == NdfDiagnosticSeverity.Error))).ToArray();
+        var references = new List<Reference>();
+        var doc = new NdfSyntaxDocument(parsed);
+        var objectIndex = 0;
+        foreach (var r in doc.FindReferences("").Where(r => r.Raw.StartsWith("~/") || r.Raw.StartsWith("$/")))
+        {
+            var offset = doc.StartOffset(r.Span);
+            while (objectIndex < scan.Objects.Count && scan.Objects[objectIndex].CharacterOffset + scan.Objects[objectIndex].CharacterLength <= offset) objectIndex++;
+            var owner = objectIndex < scan.Objects.Count && scan.Objects[objectIndex].CharacterOffset <= offset ? scan.Objects[objectIndex].Name : "@" + relative;
+            references.Add(new(r.Leaf, owner, relative, offset, r.Raw));
+        }
+        return new(declarations, references.ToArray());
     }
     private static string MaskBlockComments(string text) => Regex.Replace(text,
         "//[^\\r\\n]*|\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|/\\*[\\s\\S]*?\\*/",

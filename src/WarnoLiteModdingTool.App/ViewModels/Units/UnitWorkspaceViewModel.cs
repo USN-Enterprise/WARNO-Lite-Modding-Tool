@@ -24,6 +24,8 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
     private readonly PendingFieldEdits<UnitFieldViewModel> _fieldEdits;
     private readonly Action<string> _setStatus;
     private readonly Func<Task> _reloadProject;
+    private readonly Func<ApplyPreview, Task>? _refreshAfterApply;
+    public bool RefreshRequired { get; private set; }
     private readonly UnitTransactionService _transactions = new();
     private readonly ICollectionView _unitsView;
     private readonly IReadOnlyDictionary<string, UnitFilterDimensionViewModel> _filterDimensions;
@@ -53,7 +55,7 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
         DraftStore draftStore,
         DraftLoadResult loadResult,
         Action<string> setStatus,
-        Func<Task> reloadProject)
+        Func<Task> reloadProject, Func<ApplyPreview, Task>? refreshAfterApply = null)
     {
         _data = data;
         _weaponData = weaponData;
@@ -61,6 +63,7 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
         _draftStore = draftStore;
         _setStatus = setStatus;
         _reloadProject = reloadProject;
+        _refreshAfterApply = refreshAfterApply;
         Units = new ObservableCollection<UnitListItemViewModel>(data.Units.Select(unit => new UnitListItemViewModel(unit, BatchSelectionChanged)));
         Fields = [];
         _fieldEdits = new(Fields, field => field.FlushAsync(), field => field.HasUnsavedEdit);
@@ -711,7 +714,18 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
             _setStatus($"正在应用 · 备份 {preview.BackupId}");
             var result = await _transactions.CommitApplyAsync(preview, _draftStore);
             _setStatus($"{result.Message} · 备份 {result.BackupId}");
-            await _reloadProject();
+            try
+            {
+                if (_refreshAfterApply is null) await _reloadProject();
+                else await _refreshAfterApply(preview);
+            }
+            catch (Exception ex)
+            {
+                RefreshRequired = true;
+                var warning = "正式文件已应用，但界面刷新失败；请重新打开项目后继续编辑：" + ex.Message;
+                _setStatus(warning);
+                return result with { Message = "应用完成，但界面刷新失败", Warnings = result.Warnings.Append(warning).ToArray() };
+            }
             return result;
         }
         catch
@@ -721,7 +735,7 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
         }
         finally
         {
-            SetTransactionBusy(false);
+            if (!RefreshRequired) SetTransactionBusy(false);
         }
     }
 

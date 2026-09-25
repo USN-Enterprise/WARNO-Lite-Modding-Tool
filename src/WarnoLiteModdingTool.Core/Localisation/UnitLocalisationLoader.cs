@@ -13,7 +13,7 @@ public sealed class UnitLocalisationLoader
         {
             try
             {
-                var source = File.ReadAllText(dictionary);
+                var source = WarnoLiteModdingTool.Core.Projects.ProjectReadScope.ReadAllText(dictionary);
                 var document = new NdfSyntaxDocument(source);
                 var declarations = document.FindAssignmentsAnywhere("FileName")
                     .Concat(document.FindAssignmentsAnywhere("CsvFile"));
@@ -52,7 +52,7 @@ public sealed class UnitLocalisationLoader
 
             try
             {
-                var rows = SemicolonCsvReader.Read(File.ReadAllText(path));
+                var rows = SemicolonCsvReader.Read(WarnoLiteModdingTool.Core.Projects.ProjectReadScope.ReadAllText(path));
                 foreach (var row in rows.Skip(1).Where(row => row.Count >= 2))
                 {
                     var token = row[0].Trim();

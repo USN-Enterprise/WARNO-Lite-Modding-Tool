@@ -46,6 +46,7 @@ public static class WeaponBatch
     public static string Shape(WeaponRecord w) => JsonSerializer.Serialize(new { w.Source.RelativeSourceFile, w.Source.TypeName,
         Mounts = w.Mounts.Select(m => new { m.Index, m.TurretIndex, m.AmmoBoxIndex, m.AmmoName, m.TurretType, m.EffectTag, m.WeaponAlternative, m.AnimationKeys, m.PresentationReferences }),
         Fields = w.Fields.Concat(w.Mounts.SelectMany(m => m.Fields)).Select(f => new { f.Key, f.Location.FieldPath }) });
+    public static IReadOnlyList<WeaponBatchCell> ReadCells(DraftOperation o) => Read(o).Cells;
     public static WeaponBatchState Read(DraftOperation o)
     {
         try

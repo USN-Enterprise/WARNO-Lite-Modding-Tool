@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -11,6 +11,8 @@ using WarnoLiteModdingTool.Core.Units;
 namespace WarnoLiteModdingTool.App.Controls;
 public sealed class UnitPortrait : Button
 {
+    public static readonly DependencyProperty TexturesProperty=DependencyProperty.Register(nameof(Textures),typeof(IReadOnlyList<TextureChoice>),typeof(UnitPortrait),new PropertyMetadata(null,Changed));
+    public IReadOnlyList<TextureChoice>? Textures {get=>(IReadOnlyList<TextureChoice>?)GetValue(TexturesProperty);set=>SetValue(TexturesProperty,value);}
     public static readonly DependencyProperty UnitProperty=DependencyProperty.Register(nameof(Unit),typeof(UnitRecord),typeof(UnitPortrait),new PropertyMetadata(null,Changed));
     public static readonly DependencyProperty RootProperty=DependencyProperty.Register(nameof(Root),typeof(string),typeof(UnitPortrait),new PropertyMetadata(null,Changed));
     public static readonly DependencyProperty PictureProperty=DependencyProperty.Register(nameof(Picture),typeof(UnitPictureState),typeof(UnitPortrait),new PropertyMetadata(null,Changed));
@@ -26,7 +28,7 @@ public sealed class UnitPortrait : Button
     private async void Reload()
     {
         _cancel?.Cancel();_cancel?.Dispose();_cancel=new();var token=_cancel.Token;_bitmap=null;_popup.IsOpen=false;_status="加载图片…";Refresh();
-        try{var unit=Unit;var root=Root;var picture=Picture;if(unit is null||root is null)return;var bitmap=await Task.Run(async()=>{if(picture?.PngBase64 is {} png)return EmblemEditorWindow.Decode(PngAssets.Decode(png));var key=picture?.Key??ModTextures.UnitKey(unit);if(key is null)return null;var source=ModTextures.Read(root).SingleOrDefault(t=>t.Key==key)?.Source;return source is null?null:await LocalGameImages.LoadAsync(root,source,token);},token);if(token.IsCancellationRequested)return;_bitmap=bitmap;_status=bitmap is null?"暂无图片":"查看图片";}
+        try{var unit=Unit;var root=Root;var picture=Picture;var textures=Textures;if(unit is null||root is null)return;var bitmap=await Task.Run(async()=>{if(picture?.PngBase64 is {} png)return EmblemEditorWindow.Decode(PngAssets.Decode(png));var key=picture?.Key??ModTextures.UnitKey(unit);if(key is null)return null;var source=(textures??ModTextures.Read(root)).SingleOrDefault(t=>t.Key==key)?.Source;return source is null?null:await LocalGameImages.LoadAsync(root,source,token);},token);if(token.IsCancellationRequested)return;_bitmap=bitmap;_status=bitmap is null?"暂无图片":"查看图片";}
         catch(OperationCanceledException){return;}
         catch(Exception ex)when(ex is FormatException or IOException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException or ArgumentException or NotSupportedException or OverflowException or KeyNotFoundException or IndexOutOfRangeException or ZstdSharp.ZstdException){if(token.IsCancellationRequested)return;_status="暂无图片";}
         finally{if(!token.IsCancellationRequested)Refresh();}

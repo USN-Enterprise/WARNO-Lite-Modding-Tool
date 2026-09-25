@@ -73,7 +73,7 @@ public sealed class WeaponFieldViewModel : ObservableObject
         }
     }
 
-    public string StatusText { get => BatchLocked ? "存在相关批量草稿，请在批量窗口调整或移除批次" : _status; private set => SetProperty(ref _status, value); }
+    public string StatusText { get => BatchLocked ? "存在相关批量草稿，请在草稿中心应用或移除相关批次" : _status; private set => SetProperty(ref _status, value); }
 
     public async Task FlushAsync()
     {

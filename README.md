@@ -1,14 +1,22 @@
-# WARNO Lite Modding Tool
+﻿# WARNO Lite Modding Tool
 
 [中文](#chinese) | [English](#english)
 
 <a id="chinese"></a>
 
-当前版本：**1.9.11**。新增武器批量修改：跨单位、跨Weapon选择实际挂载，调整库存、射界与弹药参数。
+当前版本：**1.9.15**。加快缓存打开；应用后按实际变更刷新，保留当前页面、选择、筛选与滚动位置。正式预览、备份和写入校验继续保留。
 
-武器页点击“批量修改武器”，明确选择当前勾选单位、单位筛选全部结果或筛选后的挂载，选择参数及运算，预览或直接加入草稿。支持固定值、百分比；专业模式增加乘加减、上下限与全部引用。整数可显式取整，小数默认不取整。完整结果与影响可切换查看，同箱库存和同炮塔射界只计算一次；局部弹药调整精确隔离所选挂载。
+1.9.13功能继续保留：新增战术师简介本地提取与编辑，以及按基础/专业模式划分的地形规则编辑。
 
-批次保存在草稿中；重叠修改需勾选“替换重叠的批量草稿范围”，旧单字段冲突需在草稿中心处理。应用时自动包含共享Weapon/Ammo的关联批次，独立武器仍可部分应用。待创建单位需先应用创建，待删除单位不能批改。已有相关批量草稿时，普通字段显示锁定提示，回批量窗口调整或移除批次。未运行官方生成器或游戏验证。
+战术师 → 师简介：直接读取本机WARNO中的游戏玩法和历史正文，支持选择目录、提取/刷新、中英文原文参考、多段落编辑。点击“加入草稿”，再到草稿中心预览并应用；正文使用独立引用，保留其他师的原文。自定义正文是各语言共用的默认文本，不自动翻译。
+
+游戏规则 → 地形规则：基础模式只编辑已识别步兵伤害组合的减伤百分比；专业模式编辑既有倍率及隐蔽、视线、通行、航空和可燃性参数。地形高度只读，不提供新增/删除组合或地形定义。所有地形改动影响当前Mod中双方符合条件的单位，具体限制见各项说明。
+
+1.9.12保留功能：弹药页新增与单位页一致的批量编辑：勾选多条弹药后，原右侧切换为批量检查器。
+
+可选择已勾选弹药或当前筛选的全部结果；浏览单条不改变勾选，筛选后保留隐藏选择。共有字段可统一设值，混合值留空；公式逐条基于有效当前值计算。基础模式支持固定值和百分比，专业模式增加乘加减、上下限；整数明确取整，小数默认不取整。输入后需点击“加入草稿”，正式修改仍通过“预览并应用全部”。
+
+弹药页直接修改共享Ammo本体，影响全部使用者；预览提供完整结果和可搜索的使用者列表。支持未被使用的弹药及仅有弹药文件的项目。旧武器挂载批量窗口入口已撤下，已有批量草稿仍可在草稿中心应用或移除，已应用修改可按原备份流程恢复。未运行官方生成器或游戏验证。
 
 单位检查器点击“修改单位图片”，从当前Mod已有单位图片中选择，或打开独立图片编辑窗口导入/编辑。保存草稿后可重开预览；正式应用时为自定义图片生成独立PNG与纹理键，仅改变所选单位。保留原图，支持备份恢复；应用后需按原流程生成Mod。PNG/JPEG输入不超过8MB、边长不超过4096像素；自定义输出PNG草稿数据最多8,000,000个Base64字符。此版本未做生成器和游戏内显示验证。
 
@@ -41,7 +49,7 @@
 
 单位检查器宽栏显示小图，窄栏显示“查看图片”，点击可放大。图片按当前 Mod 引用读取，优先自定义 PNG；官方图片使用设置中的 WARNO 目录并缓存至 `%LOCALAPPDATA%/WarnoLiteModdingTool/images/v1/`。本工具不分发游戏图片，缺图仍可编辑参数。
 
-战术师页“新建战术师”选择模板、名称和已有师徽；同一入口可继续编辑待创建草稿。“名称与徽章”修改所选已有师。应用后，新师可在普通师编辑页修改单位池、费用与默认牌组。简介/历史及模型等沿用模板，本版不提供自定义师徽图片导入。
+战术师页“新建战术师”选择模板、名称和已有师徽；同一入口可继续编辑待创建草稿。“名称与徽章”修改所选已有师。应用后，新师可在普通师编辑页修改单位池、费用与默认牌组。创建时简介/历史沿用模板，应用后可在“师简介”页单独修改；自定义师徽继续使用既有图片编辑入口。
 
 新单位创建向导第3页可逐槽更换已有 Ammo，自动复制改动的 Weapon，保留槽位/炮塔/挂架。引用替换不会自动创建新模型或适配发射动画。
 
@@ -125,11 +133,19 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 <a id="english"></a>
 
-Current version: **1.9.11**. Batch-edit weapons across units, Weapon descriptors and individual mounts.
+Current version: **1.9.15**. Faster cached opening and targeted refresh after applying changes, preserving the current page, selection, filters and scroll position. Preview validation, backups and commit checks remain in place.
 
-Open **Batch edit weapons** from the Weapons page. Select checked units, all filtered units, or filtered mounts; choose a parameter and operation, then preview or add to drafts. Fixed values and percentages are available in basic mode; advanced mode adds arithmetic, limits and explicit shared-object editing. Integer rounding is explicit; decimals retain fractions. Inspect every result and the full impact list. Shared ammo boxes/turrets are calculated once, and local ammunition edits isolate the selected mounts.
+Retained from 1.9.13: Added local extraction and editing of division text, plus terrain rules split between basic and professional modes.
 
-Overlapping batches require explicit scope replacement; conflicting legacy single-field drafts must be resolved in the draft center. Applying a batch includes connected Weapon/Ammo drafts while independent batches remain selectable. Apply unit creation before batch editing; units pending deletion are excluded. Related single-field editors show a lock message until their batch is adjusted or removed. No official generator or in-game verification was performed.
+Divisions → Division text reads gameplay summaries and history from your WARNO installation. Choose the game folder, extract/refresh original text, inspect Chinese or English references, and edit paragraphs. Click Add to drafts, then preview and apply in the draft center. Each changed section receives an independent reference. Custom text is the default for all languages and is not translated automatically.
+
+Game Rules → Terrain rules provides damage-reduction percentages for recognized existing infantry combinations in basic mode. Professional mode edits existing multipliers, concealment, visibility, movement-blocking, aviation and flammability fields. Terrain height is read-only; adding/deleting combinations or terrain definitions is not supported. Shared changes affect eligible units on both sides in the current Mod; field notes explain the limits.
+
+Retained from 1.9.12: The Ammunition page now follows the Units page: checking multiple ammunition records switches the existing right pane to a batch inspector.
+
+Target checked ammunition or all filtered results. Browsing does not change checkboxes; filtering preserves hidden selections. Set shared fields together, with mixed values left blank, or calculate each record from its effective current value. Basic mode provides fixed values and percentages; advanced mode adds arithmetic and limits. Integer rounding is explicit; decimals retain fractions. Click **Add to drafts** to save, then **Preview and apply all** to update Mod files.
+
+Ammunition edits change the shared Ammo object and affect every user. Preview includes all results and a searchable usage list. Unused ammunition and ammunition-only projects are supported. The former weapon-mount batch window entry has been removed; existing batch drafts can still be applied or removed in the draft center, and applied changes can be restored through their backups. No official generator or in-game validation was performed.
 
 Click “Change unit picture” in the unit inspector. Choose an existing picture from the current Mod or import/edit one in the separate image editor. Save a draft, apply it, then generate the Mod. Custom pictures receive independent PNG files and texture keys; other units keep their pictures. Drafts retain image data and support reopening, and applied changes support backup restoration. Input PNG/JPEG files are limited to 8 MB and 4096 pixels per side; output PNG draft data is limited to 8,000,000 Base64 characters. Generator and in-game display validation are still pending.
 
@@ -160,7 +176,7 @@ Starting with 1.9.2, the source tree and new release packages no longer embed ex
 
 The unit inspector shows a small portrait in wide panes or a View image button in narrow panes. Click to enlarge. Mod PNGs take priority; official images are loaded from the configured WARNO directory and cached in `%LOCALAPPDATA%/WarnoLiteModdingTool/images/v1/`. Game images are not distributed with this tool.
 
-Use Create tactical division to choose a template, name and existing emblem. Pending creations can be reopened there. Name and emblem edits the selected existing division. Apply the draft before editing the new division roster, costs or default deck. Summary/history text is inherited; custom emblem imports are outside this release.
+Use Create tactical division to choose a template, name and existing emblem. Pending creations can be reopened there. Name and emblem edits the selected existing division. Apply the draft before editing the new division roster, costs or default deck. Summary/history text is inherited at creation and can be edited in Division text after applying. Custom emblems continue to use the existing image editor.
 
 New-unit creation supports existing Ammo selection per fixed slot. Changed Weapons are copied automatically. Replacing Ammo does not create or adapt models, mounts or animations.
 

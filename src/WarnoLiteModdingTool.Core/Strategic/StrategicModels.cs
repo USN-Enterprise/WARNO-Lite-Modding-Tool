@@ -38,6 +38,20 @@ public sealed class StrategicWorkspace
     public Dictionary<string, HashSet<string>> Choices { get; } = new(StringComparer.Ordinal);
     public List<string> Diagnostics { get; } = [];
     public bool HasRoster { get; set; }
+    internal StrategicWorkspace WithUnits(UnitWorkspaceData units)
+    {
+        var next = new StrategicWorkspace { Root = Root, Units = units, HasRoster = HasRoster };
+        next.Records.AddRange(Records); next.Diagnostics.AddRange(Diagnostics);
+        foreach (var p in Packs) next.Packs.Add(p.Key, p.Value);
+        foreach (var p in CombatGroups) next.CombatGroups.Add(p.Key, p.Value);
+        foreach (var p in Decks) next.Decks.Add(p.Key, p.Value);
+        foreach (var p in GroupUsers) next.GroupUsers.Add(p.Key, p.Value);
+        foreach (var p in DeckUsers) next.DeckUsers.Add(p.Key, p.Value);
+        foreach (var p in CsvPaths) next.CsvPaths.Add(p.Key, p.Value);
+        foreach (var p in Names) next.Names.Add(p.Key, p.Value);
+        foreach (var p in Choices) next.Choices.Add(p.Key, p.Value);
+        return next;
+    }
     public string Name(string kind, string token) => Names.GetValueOrDefault(kind)?.GetValueOrDefault(token) ?? token;
 }
 

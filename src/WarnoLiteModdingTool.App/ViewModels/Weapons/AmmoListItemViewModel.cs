@@ -12,6 +12,8 @@ public sealed class AmmoListItemViewModel : ObservableObject
         UnitCount = references.AmmoUnits.GetValueOrDefault(ammo.Name)?.Count ?? 0;
     }
 
+    private bool _isBatchSelected;
+    public bool IsBatchSelected { get => _isBatchSelected; set => SetProperty(ref _isBatchSelected,value); }
     public AmmoRecord Ammo { get; }
     public string Name => Ammo.Name;
     private string? _draftName;

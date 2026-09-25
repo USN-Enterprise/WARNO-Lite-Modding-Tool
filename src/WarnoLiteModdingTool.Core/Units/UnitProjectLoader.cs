@@ -32,7 +32,7 @@ public sealed class UnitProjectLoader(
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                sources[path] = File.ReadAllText(path);
+                sources[path] = WarnoLiteModdingTool.Core.Projects.ProjectReadScope.ReadAllText(path);
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
@@ -41,23 +41,33 @@ public sealed class UnitProjectLoader(
         }
 
         var unitObjects = index.Objects.Where(item => item.ModuleKey == "units").ToArray();
-        var restored = cache?.RestoreUnits(sources);
-        var units = restored ?? _catalogBuilder.Build(unitObjects, sources, cancellationToken).ToArray();
-        var damageResistance = DamageResistanceCatalog.Load(context);
+        var restored = cache?.RestoreUnits(sources) ?? [];
+        foreach (var unit in restored)
+        {
+            UnitCatalogBuilder.Remember(unit);
+            _ = ProjectReadScope.ObjectValue("unit-links:" + unit.Source.SourceFile + ":" + unit.Name, unit.SourceSnapshot!,
+                unit.Source.CharacterOffset, unit.Source.CharacterLength, () => new UnitLinks(unit.Weapons, unit.PresentationReferences));
+        }
+        var restoredBySource = restored.ToDictionary(u => (u.Source.SourceFile, u.Source.CharacterOffset));
+        var rebuilt = _catalogBuilder.Build(unitObjects.Where(o => !restoredBySource.ContainsKey((o.SourceFile, o.CharacterOffset))).ToArray(), sources, cancellationToken, applyChoices: false);
+        foreach (var unit in rebuilt) restoredBySource.Add((unit.Source.SourceFile, unit.Source.CharacterOffset), unit);
+        var units = unitObjects.Where(o => restoredBySource.ContainsKey((o.SourceFile, o.CharacterOffset))).Select(o => restoredBySource[(o.SourceFile, o.CharacterOffset)]).ToArray();
+        var damageResistance = ProjectReadScope.Memo("damage-resistance", () => DamageResistanceCatalog.Load(context));
         diagnostics.AddRange(damageResistance.Diagnostics);
         var localisation = _localisationLoader.Load(context);
         diagnostics.AddRange(localisation.Diagnostics);
         ReadNames(units, sources, localisation);
         UnitCatalogBuilder.ApplyChoices(units, damageResistance);
-        ExperienceCatalog.Load(context.Layout.RootPath).Apply(units);
+        ProjectReadScope.Memo("experience-catalog", () => ExperienceCatalog.Load(context.Layout.RootPath)).Apply(units);
 
-        if (restored is not null)
+        if (restored.Length == units.Length && cache?.RelationshipsUnchanged == true && units.Select(u => u.Name).Distinct(StringComparer.Ordinal).Count() == units.Length)
         {
+            if (diagnostics.Count == 0) cache.SetUnits(units);
             return new UnitWorkspaceData(units, new UnitReferenceIndex(
                 units.ToDictionary(u => u.Name, u => u.Weapons, StringComparer.Ordinal),
                 units.ToDictionary(u => u.Name, u => u.Ammunition, StringComparer.Ordinal),
                 units.ToDictionary(u => u.Name, u => u.Divisions, StringComparer.Ordinal)),
-                localisation, damageResistance, diagnostics) { Rules = Rules.RuleWorkspace.Load(context.Layout.RootPath) };
+                localisation, damageResistance, diagnostics) { Rules = ProjectReadScope.Memo("rules", () => Rules.RuleWorkspace.Load(context.Layout.RootPath)) };
         }
 
         var weaponAmmo = BuildWeaponAmmo(index, sources, cancellationToken);
@@ -71,16 +81,21 @@ public sealed class UnitProjectLoader(
                 continue;
             }
 
-            var document = new NdfSyntaxDocument(source, unit.Source.CharacterOffset, unit.Source.CharacterLength);
-            var weapons = document.FindReferenceLeaves("WeaponDescriptor_");
-            unit.PresentationReferences = document.FindReferenceLeaves(string.Empty)
+            var links = ProjectReadScope.ObjectValue("unit-links:" + unit.Source.SourceFile + ":" + unit.Name, source,
+                unit.Source.CharacterOffset, unit.Source.CharacterLength, () =>
+            {
+                var document = new NdfSyntaxDocument(source, unit.Source.CharacterOffset, unit.Source.CharacterLength);
+                return new UnitLinks(document.FindReferenceLeaves("WeaponDescriptor_"), document.FindReferenceLeaves(string.Empty)
                 .Where(item => item.Contains("MissileCarriage", StringComparison.OrdinalIgnoreCase) ||
                                item.Contains("Depiction", StringComparison.OrdinalIgnoreCase) ||
                                item.StartsWith("Modele_", StringComparison.Ordinal) ||
                                item.StartsWith("Texture_Button", StringComparison.Ordinal))
                 .Distinct(StringComparer.Ordinal)
                 .Order(StringComparer.Ordinal)
-                .ToArray();
+                .ToArray());
+            });
+            var weapons = links.Weapons;
+            unit.PresentationReferences = links.Presentation;
             var ammo = weapons
                 .SelectMany(weapon => weaponAmmo.TryGetValue(weapon, out var values) ? values : [])
                 .Distinct(StringComparer.Ordinal)
@@ -111,7 +126,7 @@ public sealed class UnitProjectLoader(
             new UnitReferenceIndex(unitWeapons, unitAmmo, unitDivisions),
             localisation,
             damageResistance,
-            diagnostics) { Rules = Rules.RuleWorkspace.Load(context.Layout.RootPath) };
+            diagnostics) { Rules = ProjectReadScope.Memo("rules", () => Rules.RuleWorkspace.Load(context.Layout.RootPath)) };
     }
 
     private void ReadNames(
@@ -129,17 +144,15 @@ public sealed class UnitProjectLoader(
                 continue;
             }
 
-            var document = new NdfSyntaxDocument(source, unit.Source.CharacterOffset, unit.Source.CharacterLength);
-            var match = _locator.Locate(document, new NdfFieldSelector("TUnitUIModuleDescriptor", "NameToken"));
-            uniqueNameFields[unit.Name] = match.Values.Count == 1;
-            if (match.Values.Count == 1)
+            if (unit.HasUniqueNameField is null)
             {
-                unit.NameToken = NdfSyntaxDocument.Unquote(document.Raw(match.Values[0]));
-                if (!string.IsNullOrWhiteSpace(unit.NameToken))
-                {
-                    tokens.Add(unit.NameToken);
-                }
+                var document = new NdfSyntaxDocument(source, unit.Source.CharacterOffset, unit.Source.CharacterLength);
+                var match = _locator.Locate(document, new NdfFieldSelector("TUnitUIModuleDescriptor", "NameToken"));
+                unit.HasUniqueNameField = match.Values.Count == 1;
+                if (match.Values.Count == 1) unit.NameToken = NdfSyntaxDocument.Unquote(document.Raw(match.Values[0]));
             }
+            uniqueNameFields[unit.Name] = unit.HasUniqueNameField == true;
+            if (!string.IsNullOrWhiteSpace(unit.NameToken)) tokens.Add(unit.NameToken);
 
             if (localisation.TryResolve(unit.NameToken, out var localised))
             {
@@ -184,6 +197,8 @@ public sealed class UnitProjectLoader(
         }
     }
 
+    private sealed record UnitLinks(IReadOnlyList<string> Weapons, IReadOnlyList<string> Presentation);
+
     private static IReadOnlyDictionary<string, IReadOnlyList<string>> BuildWeaponAmmo(
         ProjectIndexResult index,
         IReadOnlyDictionary<string, string> sources,
@@ -195,8 +210,8 @@ public sealed class UnitProjectLoader(
             cancellationToken.ThrowIfCancellationRequested();
             if (sources.TryGetValue(weapon.SourceFile, out var source))
             {
-                var document = new NdfSyntaxDocument(source, weapon.CharacterOffset, weapon.CharacterLength);
-                result[weapon.Name] = document.FindReferenceLeaves("Ammo_");
+                result[weapon.Name] = ProjectReadScope.ObjectValue("weapon-ammo:" + weapon.SourceFile + ":" + weapon.Name,
+                    source, weapon.CharacterOffset, weapon.CharacterLength, () => new NdfSyntaxDocument(source, weapon.CharacterOffset, weapon.CharacterLength).FindReferenceLeaves("Ammo_").ToArray());
             }
         }
 
@@ -215,8 +230,8 @@ public sealed class UnitProjectLoader(
             cancellationToken.ThrowIfCancellationRequested();
             if (sources.TryGetValue(division.SourceFile, out var source))
             {
-                var document = new NdfSyntaxDocument(source, division.CharacterOffset, division.CharacterLength);
-                result[division.DisplayName] = document.FindReferenceLeaves("Descriptor_Unit_");
+                result[division.DisplayName] = ProjectReadScope.ObjectValue("division-units:" + division.SourceFile + ":" + division.Name,
+                    source, division.CharacterOffset, division.CharacterLength, () => new NdfSyntaxDocument(source, division.CharacterOffset, division.CharacterLength).FindReferenceLeaves("Descriptor_Unit_").ToArray());
             }
         }
 

@@ -40,8 +40,8 @@
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
-                            <TabControl Grid.Row="0" Margin="12" IsEnabled="{Binding DivisionWorkspace.CanEditSelected}">
-                                <TabItem Header="{l:Loc Key='单位池'}">
+                            <TabControl Grid.Row="0" Margin="12">
+                                <TabItem Header="{l:Loc Key='单位池'}" IsEnabled="{Binding DivisionWorkspace.CanEditSelected}">
                                     <Grid Margin="12">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
@@ -128,7 +128,7 @@
                                     </Grid>
                                 </TabItem>
 
-                                <TabItem Header="{l:Loc Key='师级设置与费用'}">
+                                <TabItem Header="{l:Loc Key='师级设置与费用'}" IsEnabled="{Binding DivisionWorkspace.CanEditSelected}">
                                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                                         <StackPanel Margin="12">
                                             <Grid>
@@ -182,6 +182,7 @@
                                         </StackPanel>
                                     </ScrollViewer>
                                 </TabItem>
+                                <TabItem Header="{l:Loc Key='师简介'}"><controls:DivisionTextView DataContext="{Binding DivisionWorkspace.TextEditor}" /></TabItem>
                             </TabControl>
 
                             <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="12">

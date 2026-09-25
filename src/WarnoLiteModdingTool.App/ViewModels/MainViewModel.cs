@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
@@ -19,13 +19,9 @@ using WarnoLiteModdingTool.Core.Weapons;
 
 namespace WarnoLiteModdingTool.App.ViewModels;
 
-public sealed class MainViewModel : ObservableObject, IDisposable
+public sealed partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly ModProjectDetector _detector = new();
-    private readonly ProjectIndexer _indexer = new();
-    private readonly UnitProjectLoader _unitLoader = new();
-    private readonly WeaponProjectLoader _weaponLoader = new();
-    private readonly DivisionProjectLoader _divisionLoader = new();
     private readonly RecentProjectStore _recentProjectStore;
     private readonly WarnoModsRootStore _modsRootStore;
     private readonly ModCreationService _modCreationService;
@@ -106,7 +102,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         UnitWorkspace?.RefreshMode();
         RulesWorkspace?.Refresh();
         WeaponWorkspace?.RefreshMode();
-        if (AmmoWorkspace is not null) foreach (var field in AmmoWorkspace.Fields) field.RefreshMode();
+        AmmoWorkspace?.RefreshMode();
     }
 
     public ObservableCollection<RecentProjectEntry> RecentProjects { get; } = [];
@@ -350,6 +346,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public async Task SaveBeforeLeavingAsync()
     {
+        if (UnitWorkspace?.RefreshRequired == true) return; // Inputs were flushed before the committed transaction; do not restage stale controls.
         if (_isSavingBeforeLeave) throw new InvalidOperationException("正在保存草稿，请稍候。");
         _isSavingBeforeLeave = true;
         OnPropertyChanged(nameof(IsSavingBeforeLeave));
@@ -478,14 +475,21 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public Func<string, ProjectLoadCache?>? OpenLoadCache { get; set; }
     public bool LastOpenUsedCache { get; private set; }
     public long LastOpenMilliseconds { get; private set; }
+    public IReadOnlyDictionary<string, long> LastLoadTimings { get; private set; } = new Dictionary<string, long>();
 
     public async Task OpenProjectAsync(string selectedRoot)
     {
         await SaveBeforeLeavingAsync();
         var loadTimer = System.Diagnostics.Stopwatch.StartNew();
+        var timings = new Dictionary<string, long>();
+        LastLoadTimings = timings;
+        long previousTime = 0;
+        void Mark(string stage) { var now = loadTimer.ElapsedMilliseconds; timings[stage] = now - previousTime; previousTime = now; }
         LastOpenUsedCache = false;
         CancelScan();
         ResetProjectResults();
+        var sourceReads = new ProjectReadScope();
+        using var sourceScope = sourceReads.Enter();
 
         ModProjectContext context;
         try
@@ -544,14 +548,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         IsScanning = true;
         ScanPercent = 0;
         StatusText = "准备扫描只读数据";
-        var progress = new Progress<IndexProgress>(item =>
-        {
-            if (_scanCancellation == scanCancellation)
-            {
-                ScanPercent = item.Percent;
-                StatusText = item.Message;
-            }
-        });
+
 
         try
         {
@@ -562,16 +559,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 scanCancellation.Token.ThrowIfCancellationRequested();
             }
             var loadCache = await Task.Run(() => OpenLoadCache?.Invoke(context.Layout.RootPath), scanCancellation.Token);
-            var result = await _indexer.IndexAsync(
-                context,
-                progress,
-                scanCancellation.Token, loadCache);
+            Mark("detect-names-cache");
+            var snapshot = await ProjectWorkspaceSnapshot.LoadAsync(context, loadCache ?? ProjectLoadCache.CreateSession(context.Layout.RootPath), scanCancellation.Token, sourceReads: sourceReads);
+            var result = snapshot.Index;
             if (_scanCancellation != scanCancellation)
             {
                 return;
             }
 
+            _snapshot = snapshot;
             ApplyIndexResult(result);
+            Mark("core-load-and-index-view");
             var unitCapability = result.Modules.FirstOrDefault(module => module.Key == "units");
             var weaponCapability = result.Modules.FirstOrDefault(module => module.Key == "weapons");
             var ammoCapability = result.Modules.FirstOrDefault(module => module.Key == "ammo");
@@ -582,7 +580,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 divisionCapability?.CanScan == true || result.Modules.Any(m => m.Key is "strategic" or "sp" or "rules" && m.CanScan))
             {
                 StatusText = "正在建立项目字段、名称与引用索引";
-                var unitData = await _unitLoader.LoadAsync(context, result, scanCancellation.Token, loadCache);
+                var unitData = snapshot.Units;
+                Mark("units-rules");
                 foreach (var diagnostic in unitData.Diagnostics)
                 {
                     Diagnostics.Add(new DiagnosticItemViewModel("P2 单位工作区", diagnostic));
@@ -601,7 +600,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 if (weaponCapability?.CanScan == true || ammoCapability?.CanScan == true)
                 {
                     StatusText = "正在建立 Weapon/Ammo 关系与共享影响索引";
-                    weaponData = await _weaponLoader.LoadAsync(context, result, unitData, scanCancellation.Token, loadCache);
+                    weaponData = snapshot.Weapons!;
+                    Mark("drafts-weapons");
                     foreach (var diagnostic in weaponData.Diagnostics)
                     {
                         Diagnostics.Add(new DiagnosticItemViewModel("P4 Weapon/Ammo 工作区", diagnostic));
@@ -613,7 +613,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 if (divisionCapability?.CanScan == true && divisionCapability.Availability != ModuleAvailability.ParseError)
                 {
                     StatusText = "正在建立战术师、单位池、默认 Deck 与费用索引";
-                    divisionData = await _divisionLoader.LoadAsync(context, result, unitData, scanCancellation.Token);
+                    divisionData = snapshot.Divisions!;
+                    Mark("divisions");
                     foreach (var diagnostic in divisionData.Diagnostics)
                     {
                         Diagnostics.Add(new DiagnosticItemViewModel("P5 战术师工作区", diagnostic));
@@ -621,58 +622,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     }
                 }
 
-                _creationUnits=unitData;_creationWeapons=weaponData;_creationDivisions=divisionData;
-                UnitWorkspace = new UnitWorkspaceViewModel(
-                    unitData,
-                    weaponData,
-                    divisionData,
-                    _draftStore,
-                    draftLoad,
-                    SetStatusText,
-                    () => OpenProjectAsync(context.Layout.RootPath));
-                if (weaponData is not null)
-                {
-                    if (weaponCapability?.CanScan == true && weaponData.Weapons.Count > 0)
-                    {
-                        WeaponWorkspace = new WeaponWorkspaceViewModel(weaponData, _draftStore, UnitWorkspace, SetStatusText);
-                    }
-                    if (ammoCapability?.CanScan == true && weaponData.Ammunition.Count > 0)
-                    {
-                        AmmoWorkspace = new AmmoWorkspaceViewModel(weaponData, _draftStore, UnitWorkspace, SetStatusText);
-                    }
-                }
-                if (divisionData?.HasCompleteFileSet == true && divisionData.Divisions.Count > 0)
-                {
-                    DivisionWorkspace = new DivisionWorkspaceViewModel(divisionData, _draftStore, SetStatusText, UnitWorkspace.RefreshExternalDraftState);
-                }
-
-                if (result.Modules.Any(m => m.Key is "strategic" or "sp" && m.CanScan))
-                {
-                    var strategic = await new WarnoLiteModdingTool.Core.Strategic.StrategicLoader().LoadAsync(context, result, unitData, scanCancellation.Token);
-                    UnitWorkspace.StrategicData = strategic;
-                    StrategicWorkspace = new StrategicWorkspaceViewModel(strategic, _draftStore, UnitWorkspace.RefreshExternalDraftState, SetStatusText);
-                    UnitWorkspace.RefreshExternalDraftState();
-                    OnPropertyChanged(nameof(StrategicWorkspace));
-                    OnPropertyChanged(nameof(IsStrategicModule));OnPropertyChanged(nameof(IsPackModule));
-                OnPropertyChanged(nameof(IsRulesModule));
-                    foreach (var diagnostic in strategic.Diagnostics) Diagnostics.Add(new DiagnosticItemViewModel("将军模式", diagnostic));
-                }
-                Modules.Add(new ModuleItemViewModel(new ModuleCapability(
-                    "drafts",
-                    "草稿总览",
-                    ModuleAvailability.Available,
-                    "查看当前项目全部未应用修改",
-                    [],
-                    [])));
-
-                RulesWorkspace = new RulesWorkspaceViewModel(unitData.Rules!, _draftStore, UnitWorkspace.RefreshExternalDraftState);
-                OnPropertyChanged(nameof(RulesWorkspace)); OnPropertyChanged(nameof(IsRulesModule));
-                ProjectSummary = $"1.9.11 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
+                InstallWorkspaces(snapshot, draftLoad);
             }
 
             RefreshMode();
+            Mark("presentation");
             if (loadCache is not null && !result.Diagnostics.Any(d => d.Severity == NdfDiagnosticSeverity.Error))
-                await Task.Run(() => loadCache.Save(scanCancellation.Token), scanCancellation.Token);
+                QueueCacheSave(snapshot);
+            Mark("cache-save");
+            foreach (var phase in snapshot.Timings) timings["core-" + phase.Key] = phase.Value;
+            if (Application.Current is { } application)
+                await application.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ContextIdle);
             LastOpenUsedCache = loadCache?.IsHit == true;
             LastOpenMilliseconds = loadTimer.ElapsedMilliseconds;
             ScanPercent = 100;
@@ -818,6 +778,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void ResetProjectResults()
     {
+        ProjectLoadCache.CancelPendingSave();
+        _snapshot = null;
         DivisionWorkspace?.Dispose();
         _draftStore?.Dispose();
         _draftStore = null;_creationUnits=null;_creationWeapons=null;_creationDivisions=null;

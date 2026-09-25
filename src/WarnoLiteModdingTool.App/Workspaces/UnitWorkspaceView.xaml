@@ -1,4 +1,4 @@
-<UserControl x:Class="WarnoLiteModdingTool.App.Workspaces.UnitWorkspaceView"
+﻿<UserControl x:Class="WarnoLiteModdingTool.App.Workspaces.UnitWorkspaceView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:l="clr-namespace:WarnoLiteModdingTool.App.Localisation"
@@ -176,7 +176,7 @@
                                 <Border.Style><Style TargetType="Border"><Style.Triggers><DataTrigger Binding="{Binding UnitWorkspace.HasBatchInspector}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Border.Style>
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                                     <StackPanel Margin="16">
-                                        <DockPanel LastChildFill="True"><controls:UnitPortrait Picture="{Binding UnitWorkspace.SelectedPicture}" DockPanel.Dock="Right" Unit="{Binding UnitWorkspace.SelectedUnit.Unit}" Root="{Binding UnitWorkspace.Data.Localisation.ProjectRoot}"/><StackPanel>
+                                        <DockPanel LastChildFill="True"><controls:UnitPortrait Textures="{Binding UnitWorkspace.PictureTextures}" Picture="{Binding UnitWorkspace.SelectedPicture}" DockPanel.Dock="Right" Unit="{Binding UnitWorkspace.SelectedUnit.Unit}" Root="{Binding UnitWorkspace.Data.Localisation.ProjectRoot}"/><StackPanel>
                                         <TextBlock Text="{l:Loc Key='单位检查器'}" FontWeight="SemiBold" FontSize="16" />
                                         <TextBlock Text="{Binding UnitWorkspace.SelectedUnit.DisplayName, TargetNullValue=尚未选择单位}" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0" TextWrapping="Wrap" />
                                         </StackPanel></DockPanel>

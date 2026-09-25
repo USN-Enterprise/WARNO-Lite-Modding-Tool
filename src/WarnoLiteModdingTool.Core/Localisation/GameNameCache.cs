@@ -6,46 +6,59 @@ using System.Text.Json;
 namespace WarnoLiteModdingTool.Core.Localisation;
 
 /// <summary>Reads only display dictionaries; never extracts archive paths onto disk.</summary>
-public sealed class GameNameCache(string cachePath)
+public sealed class GameNameCache(string cachePath, bool unitsOnly = false)
 {
+    private Snapshot? _memory;
     public sealed record Source(string Path, long Size, long Modified);
-    public sealed record Snapshot(int Version, string Root, Source[] Sources, Dictionary<string, Dictionary<string, string>> Names);
+    public sealed record Snapshot(int Version, string Root, Source[] Sources, Dictionary<string, Dictionary<string, string>> Names, DateTimeOffset ExtractedUtc = default);
     public static readonly string[] Keys = ["US/UNITS", "US/COMPANIES", "US/PLATOONS", "SC/UNITS", "SC/COMPANIES", "SC/PLATOONS"];
 
-    public Snapshot Load(string? gameRoot, bool force = false, CancellationToken cancellation = default)
+    public bool Offline { get; private set; }
+    public Snapshot Load(string? gameRoot, bool force = false, CancellationToken cancellation = default, Action<string>? progress = null)
     {
-        Snapshot? cached = null;
+        cancellation.ThrowIfCancellationRequested();
+        Offline = false;
+        Snapshot? cached = _memory;
         try
         {
-            cached = JsonSerializer.Deserialize<Snapshot>(File.ReadAllText(cachePath));
+            cached ??= JsonSerializer.Deserialize<Snapshot>(File.ReadAllText(cachePath));
             if (cached is null || cached.Version != 1 || !Complete(cached.Names) || cached.Sources is null) cached = null;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) { }
         if (string.IsNullOrWhiteSpace(gameRoot))
+        {
+            Offline = cached is not null;
             return cached ?? throw new InvalidDataException("请在设置中选择 WARNO 游戏目录以加载原版名称。");
+        }
         var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(gameRoot));
         var dataRoot = Path.Combine(root, "Data", "PC");
         if (!Directory.Exists(dataRoot))
         {
-            if (!force && cached is not null && string.Equals(cached.Root, root, StringComparison.OrdinalIgnoreCase)) return cached;
+            if (!force && cached is not null && string.Equals(cached.Root, root, StringComparison.OrdinalIgnoreCase)) { Offline = true; return cached; }
             throw new InvalidDataException("所选目录缺少 WARNO Data/PC。");
         }
         var sources = Directory.EnumerateFiles(dataRoot, "ZZ_1.dat", SearchOption.AllDirectories)
             .Select(p => new FileInfo(p)).Select(f => new Source(Path.GetRelativePath(dataRoot, f.FullName), f.Length, f.LastWriteTimeUtc.Ticks))
             .OrderBy(s => Revision(s.Path), StringComparer.Ordinal).ThenBy(s => s.Path, StringComparer.Ordinal).ToArray();
         cancellation.ThrowIfCancellationRequested();
-        if (!force && cached is not null && string.Equals(cached.Root, root, StringComparison.OrdinalIgnoreCase) && cached.Sources.SequenceEqual(sources)) return cached;
+        if (!force && cached is not null && string.Equals(cached.Root, root, StringComparison.OrdinalIgnoreCase) && cached.Sources.SequenceEqual(sources)) return _memory = cached;
         var names = new Dictionary<string, Dictionary<string, string>>();
         foreach (var source in sources)
         {
             cancellation.ThrowIfCancellationRequested();
+            progress?.Invoke(source.Path);
             ReadArchive(Path.Combine(dataRoot, source.Path), names, cancellation);
         }
-        if (!Complete(names)) throw new InvalidDataException("游戏数据缺少完整的中英文名称词典。");
+        if (!Complete(names)) throw new InvalidDataException(unitsOnly ? "游戏数据没有可用的UNITS正文词典。" : "游戏数据缺少完整的中英文名称词典。");
         // Do not publish a cache assembled while Steam was replacing its sources.
         if (sources.Any(s => { var f = new FileInfo(Path.Combine(dataRoot, s.Path)); return !f.Exists || f.Length != s.Size || f.LastWriteTimeUtc.Ticks != s.Modified; }))
             throw new IOException("游戏数据正在更新，请稍后刷新名称。");
-        var result = new Snapshot(1, root, sources, names);
+        var currentSources = Directory.EnumerateFiles(dataRoot, "ZZ_1.dat", SearchOption.AllDirectories)
+            .Select(p => new FileInfo(p)).Select(f => new Source(Path.GetRelativePath(dataRoot, f.FullName), f.Length, f.LastWriteTimeUtc.Ticks))
+            .OrderBy(s => Revision(s.Path), StringComparer.Ordinal).ThenBy(s => s.Path, StringComparer.Ordinal).ToArray();
+        if (!currentSources.SequenceEqual(sources)) throw new IOException("游戏数据正在更新，请稍后刷新名称。");
+        cancellation.ThrowIfCancellationRequested();
+        var result = new Snapshot(1, root, sources, names, DateTimeOffset.UtcNow);
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(cachePath))!);
         var temporary = cachePath + ".tmp";
         try
@@ -55,11 +68,11 @@ public sealed class GameNameCache(string cachePath)
             File.Move(temporary, cachePath, true);
         }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
-        return result;
+        return _memory = result;
     }
 
     private static string Revision(string path) => string.Join("/", path.Replace('\\', '/').Split('/').Where(s => ulong.TryParse(s, out _)).Select(s => ulong.Parse(s).ToString("D20", System.Globalization.CultureInfo.InvariantCulture)));
-    private static bool Complete(Dictionary<string, Dictionary<string, string>>? names) => names is not null && Keys.All(k => names.TryGetValue(k, out var rows) && rows is not null && rows.Count > 0 && rows.All(p => ulong.TryParse(p.Key, out _) && p.Value is not null));
+    private bool Complete(Dictionary<string, Dictionary<string, string>>? names) => names is not null && (unitsOnly ? Keys.Where(k => k.EndsWith("/UNITS")).Any(k => names.ContainsKey(k)) : Keys.All(k => names.ContainsKey(k))) && (unitsOnly ? Keys.Where(k => k.EndsWith("/UNITS") && names.ContainsKey(k)) : Keys).All(k => names.TryGetValue(k, out var rows) && rows is not null && rows.Count > 0 && rows.All(p => ulong.TryParse(p.Key, out _) && p.Value is not null));
 
     public static void ReadArchive(string path, Dictionary<string, Dictionary<string, string>> result, CancellationToken cancellation = default)
     {

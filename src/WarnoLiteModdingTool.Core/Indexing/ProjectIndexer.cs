@@ -15,8 +15,8 @@ public sealed class ProjectIndexer(NdfTopLevelScanner? scanner = null)
         Task.Run(() =>
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (cache?.Index is { } saved) return saved;
-            var result = Index(context, progress, cancellationToken);
+            if (cache?.Index is { } saved) { cache.SetIndex(saved); return saved; }
+            var result = Index(context, progress, cancellationToken, cache);
             cache?.SetIndex(result);
             return result;
         }, cancellationToken);
@@ -24,7 +24,7 @@ public sealed class ProjectIndexer(NdfTopLevelScanner? scanner = null)
     private ProjectIndexResult Index(
         ModProjectContext context,
         IProgress<IndexProgress>? progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, ProjectLoadCache? cache)
     {
         var objects = new List<NdfObjectInfo>();
         var diagnostics = new List<NdfDiagnostic>();
@@ -54,7 +54,14 @@ public sealed class ProjectIndexer(NdfTopLevelScanner? scanner = null)
 
                 try
                 {
-                    var source = File.ReadAllText(sourceFile);
+                    if (cache is not null && cache.RestoreIndexFile(sourceFile, module.Key, out var savedObjects, out var savedDiagnostics))
+                    {
+                        objects.AddRange(savedObjects); diagnostics.AddRange(savedDiagnostics);
+                        moduleObjectCount += savedObjects.Length;
+                        moduleHasErrors |= savedDiagnostics.Any(d => d.Severity == NdfDiagnosticSeverity.Error);
+                        completedFiles++; continue;
+                    }
+                    var source = WarnoLiteModdingTool.Core.Projects.ProjectReadScope.ReadAllText(sourceFile);
                     var scan = _scanner.Scan(
                         source,
                         sourceFile,

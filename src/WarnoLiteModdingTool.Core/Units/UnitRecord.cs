@@ -23,6 +23,7 @@ public sealed class UnitRecord
     public string DisplayName { get; internal set; }
 
     public string? NameToken { get; internal set; }
+    internal bool? HasUniqueNameField { get; set; }
 
     public bool NameTokenRequiresReplacement { get; internal set; }
 

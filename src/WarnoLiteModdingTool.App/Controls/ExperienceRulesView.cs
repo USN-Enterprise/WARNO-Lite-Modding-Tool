@@ -39,13 +39,13 @@ public static class ExperienceRulesView
             content.Children.Add(Expand(UiText.T(route.Alias) + (route.Alias == "自定义" ? " · " + route.Name : ""), "experience:" + route.File + ":" + route.Name, routeContent));
         }
         var parent = Expand(UiText.T("经验与老练度"), "experience", content);
-        parent.Header = new TextBlock { Text = UiText.T("经验与老练度"), FontSize = 15, FontWeight = FontWeights.SemiBold };
+        parent.Header = RulePresentation.Heading(UiText.T("经验与老练度"), "RuleCategoryHeading");
         parent.SetResourceReference(Control.BackgroundProperty, "SurfaceBrush");
         return parent;
 
         Expander Expand(string title, string key, UIElement child)
         {
-            var e = new Expander { Header = new TextBlock { Text = title, FontSize = 14, FontWeight = FontWeights.SemiBold }, Tag = key, Content = child, Margin = new Thickness(0, 0, 0, 8), Padding = new Thickness(8), IsExpanded = vm.Search.Length > 0 || expanded.GetValueOrDefault(key) };
+            var e = new Expander { Header = RulePresentation.Heading(title, "RuleObjectHeading"), Tag = key, Content = child, Margin = new Thickness(0, 0, 0, 8), Padding = new Thickness(8), IsExpanded = vm.Search.Length > 0 || expanded.GetValueOrDefault(key) };
             e.Expanded += (_, args) => { if (ReferenceEquals(args.OriginalSource, e) && vm.Search.Length == 0) expanded[key] = true; };
             e.Collapsed += (_, args) => { if (ReferenceEquals(args.OriginalSource, e) && vm.Search.Length == 0) expanded[key] = false; };
             return e;

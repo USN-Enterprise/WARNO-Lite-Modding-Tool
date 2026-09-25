@@ -33,6 +33,7 @@ public partial class MainWindow : Window
         : this(new MainViewModel
         {
             PrepareNamesAsync = Settings.LocalGameNames.PrepareAsync,
+            CanSaveCache = () => new Settings.UiSettings().Load().CacheLastMod,
             OpenLoadCache = root => WarnoLiteModdingTool.Core.Projects.ProjectLoadCache.Open(root, new Settings.UiSettings().Load().CacheLastMod)
         })
     {
@@ -48,6 +49,9 @@ public partial class MainWindow : Window
         _windowLayoutReady = true;
         DataContext = _viewModel;
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        _viewModel.WorkspaceRefreshing += CaptureWorkspacePosition;
+        _viewModel.WorkspaceRefreshed += RestoreWorkspacePosition;
+        Closed += (_, _) => { _viewModel.WorkspaceRefreshing -= CaptureWorkspacePosition; _viewModel.WorkspaceRefreshed -= RestoreWorkspacePosition; };
         _viewModel.AdvancedMode = new Settings.UiSettings().Load().AdvancedMode;
         ThemeSelector.SelectedIndex = ThemeManager.IsDark ? 0 : 1;
         _themeSelectorReady = true;
@@ -496,10 +500,11 @@ public partial class MainWindow : Window
         try
         {
             var result = await workspace.CommitApplyAsync(preview);
-            _viewModel.WeaponWorkspace?.SetTransactionLocked(false);
-            _viewModel.AmmoWorkspace?.SetTransactionLocked(false);
-            _viewModel.DivisionWorkspace?.SetTransactionLocked(false);
-            _viewModel.StrategicWorkspace?.SetTransactionLocked(false);
+            var refreshRequired = _viewModel.UnitWorkspace?.RefreshRequired == true;
+            _viewModel.WeaponWorkspace?.SetTransactionLocked(refreshRequired);
+            _viewModel.AmmoWorkspace?.SetTransactionLocked(refreshRequired);
+            _viewModel.DivisionWorkspace?.SetTransactionLocked(refreshRequired);
+            _viewModel.StrategicWorkspace?.SetTransactionLocked(refreshRequired);
             var warning = result.Warnings.Count == 0 ? string.Empty : $"\n\n{string.Join("\n", result.Warnings)}";
             MessageBox.Show(
                 this,

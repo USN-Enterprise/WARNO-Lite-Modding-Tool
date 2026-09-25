@@ -48,6 +48,7 @@ public sealed class SettingsWindow : Window
         cacheMod.Click += (_, _) =>
         {
             _preferences = _preferences with { CacheLastMod = cacheMod.IsChecked == true };
+            if (!_preferences.CacheLastMod) WarnoLiteModdingTool.Core.Projects.ProjectLoadCache.CancelPendingSave();
             Save();
         };
         general.Children.Add(cacheMod);

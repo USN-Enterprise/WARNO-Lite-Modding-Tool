@@ -19,6 +19,7 @@ public sealed record DamageResistanceCatalog(
     public static DamageResistanceCatalog Load(ModProjectContext context)
     {
         var path = Path.Combine(context.Layout.GameplayPath, "Gfx", "DamageResistance.ndf");
+        ProjectReadScope.Track(path);
         if (!File.Exists(path))
         {
             return new([], [], [$"缺少 {Path.GetRelativePath(context.Layout.RootPath, path)}；护甲族与伤害族仅保留原值。"]);
@@ -26,7 +27,7 @@ public sealed record DamageResistanceCatalog(
 
         try
         {
-            var source = File.ReadAllText(path);
+            var source = WarnoLiteModdingTool.Core.Projects.ProjectReadScope.ReadAllText(path);
             var document = new NdfSyntaxDocument(source);
             var roots = document.FindConstructors("TGameplayDamageResistanceContainer");
             if (roots.Count != 1)

@@ -68,6 +68,7 @@ public sealed class TextFileSnapshot
     {
         var root = Path.GetFullPath(projectRoot);
         var fullPath = ResolveInsideRoot(root, relativePath);
+        WarnoLiteModdingTool.Core.Projects.ProjectReadScope.Track(fullPath);
         if (!File.Exists(fullPath))
         {
             if (!allowMissing)
@@ -88,7 +89,7 @@ public sealed class TextFileSnapshot
                 null);
         }
 
-        var bytes = File.ReadAllBytes(fullPath);
+        var bytes = WarnoLiteModdingTool.Core.Projects.ProjectReadScope.ReadAllBytes(fullPath);
         if(kind==FormalTextFileKind.Binary) return new TextFileSnapshot(root,relativePath,fullPath,kind,true,bytes,string.Empty,StrictUtf8NoBom,[],File.GetLastWriteTimeUtc(fullPath));
         Encoding encoding;
         byte[] preamble;

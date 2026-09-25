@@ -28,7 +28,7 @@ public static class WeaponBatchApplyPlanner
             var record = data.Ammo(group.Key.Ammo)!;
             var final = record.Fields.ToDictionary(f => f.Key, f => f.DisplayValue);
             foreach (var c in cells.Where(c => Ammo(c) && c.Unit.Length == 0 && c.Ammo == record.Name).Concat(group)) final[c.Key] = c.Value;
-            foreach (var prefix in new[] { "ammo.range.ground", "ammo.range.heli", "ammo.range.air", "ammo.range.projectile", "ammo.dispersion" })
+            foreach (var prefix in new[] { "ammo.range.ground", "ammo.range.heli", "ammo.range.air", "ammo.range.projectile" })
                 if (double.TryParse(final.GetValueOrDefault(prefix+".min"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var min) &&
                     double.TryParse(final.GetValueOrDefault(prefix+".max"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var max) && min > max)
                     throw new TransactionValidationException("最小值大于最大值：" + record.Name + " / " + prefix);

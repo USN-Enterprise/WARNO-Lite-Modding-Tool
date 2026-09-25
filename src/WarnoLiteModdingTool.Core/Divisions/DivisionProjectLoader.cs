@@ -24,7 +24,7 @@ public sealed class DivisionProjectLoader
         CancellationToken cancellationToken = default) =>
         Task.Run(() => Load(context, index, units, cancellationToken), cancellationToken);
 
-    private static DivisionWorkspaceData Load(
+    internal static DivisionWorkspaceData Load(
         ModProjectContext context,
         ProjectIndexResult index,
         UnitWorkspaceData units,
@@ -38,7 +38,7 @@ public sealed class DivisionProjectLoader
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                sources[path] = File.ReadAllText(path);
+                sources[path] = WarnoLiteModdingTool.Core.Projects.ProjectReadScope.ReadAllText(path);
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {

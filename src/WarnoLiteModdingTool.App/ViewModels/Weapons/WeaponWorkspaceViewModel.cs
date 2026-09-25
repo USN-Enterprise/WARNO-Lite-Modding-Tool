@@ -298,7 +298,7 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
 
     private async Task PersistFieldAsync(WeaponFieldViewModel viewModel, string? weaponName, int? mountIndex, DraftEditScope scope, string scopeLabel, IReadOnlyList<string> selectedUnits)
     {
-        if (viewModel.BatchLocked) throw new InvalidOperationException("存在相关批量草稿，请在批量窗口调整或移除批次");
+        if (viewModel.BatchLocked) throw new InvalidOperationException("存在相关批量草稿，请在草稿中心应用或移除相关批次");
         if (!WeaponValueConverter.TryFormat(viewModel.Field, viewModel.EditValue, out var normalized, out var raw, out var error))
         {
             viewModel.Revert(error);

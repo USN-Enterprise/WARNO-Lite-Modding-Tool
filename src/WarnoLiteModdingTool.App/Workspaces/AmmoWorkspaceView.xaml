@@ -17,6 +17,12 @@
                             </Grid.RowDefinitions>
                             <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="12,10">
                                 <StackPanel>
+                                    <WrapPanel Margin="0,0,0,7">
+                                        <Button Content="{l:Loc Key='全选当前筛选'}" Style="{StaticResource SecondaryButton}" Click="SelectAmmoBatch_Click" Margin="0,0,6,4"/>
+                                        <Button Content="{l:Loc Key='清空选择'}" Style="{StaticResource SecondaryButton}" Click="ClearAmmoBatch_Click" Margin="0,0,6,4"/>
+                                        <ToggleButton Content="{l:Loc Key='批量编辑'}" IsChecked="{Binding AmmoWorkspace.BatchOpen}"/>
+                                    </WrapPanel>
+                                    <TextBlock Text="{Binding AmmoWorkspace.BatchSelectionText}" TextWrapping="Wrap" Margin="0,0,0,7"/>
                                     <DockPanel Margin="0,0,0,7">
                                         <TextBlock Text="{l:Loc Key='Ammo 列表'}" FontWeight="SemiBold" />
                                         <TextBlock DockPanel.Dock="Right" Foreground="{DynamicResource MutedTextBrush}" FontSize="10">
@@ -45,6 +51,9 @@
                                       RowHeaderWidth="0"
                                       RowHeight="38">
                                 <DataGrid.Columns>
+                                    <DataGridTemplateColumn Header="{l:Loc Key='选'}" Width="42">
+                                        <DataGridTemplateColumn.CellTemplate><DataTemplate><CheckBox IsChecked="{Binding IsBatchSelected, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center"/></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
                                     <DataGridTextColumn Header="Ammo" Binding="{Binding DisplayName}" ElementStyle="{StaticResource IndexPrimaryGridText}" HeaderStyle="{StaticResource IndexGridColumnHeader}" Width="2*" MinWidth="180" />
                                     <DataGridTextColumn Header="{l:Loc Key='引用'}" Binding="{Binding ReferencesText}" ElementStyle="{StaticResource SecondaryGridText}" Width="1.2*" MinWidth="90" />
                                 </DataGrid.Columns>
@@ -54,6 +63,7 @@
                         <GridSplitter x:Name="AmmoPaneSplitter" Grid.Column="1" Style="{StaticResource PaneSplitter}" />
 
                         <Grid Grid.Column="2" Margin="14">
+                            <Grid.Style><Style TargetType="Grid"><Style.Triggers><DataTrigger Binding="{Binding AmmoWorkspace.HasBatchInspector}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Grid.Style>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
@@ -147,5 +157,6 @@
                                 </DockPanel>
                             </Border>
                         </Grid>
-                    </Grid>
+                                            <controls:AmmoBatchInspector Grid.Column="2" DataContext="{Binding AmmoWorkspace}" Visibility="{Binding HasBatchInspector, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="14"/>
+</Grid>
 </UserControl>

@@ -8,7 +8,7 @@ using WarnoLiteModdingTool.Core.Weapons;
 
 namespace WarnoLiteModdingTool.App.ViewModels.Weapons;
 
-public sealed class AmmoWorkspaceViewModel : ObservableObject
+public sealed partial class AmmoWorkspaceViewModel : ObservableObject
 {
     private readonly WeaponWorkspaceData _data;
     private readonly DraftStore _draftStore;
@@ -52,6 +52,7 @@ public sealed class AmmoWorkspaceViewModel : ObservableObject
         References = [];
         AmmunitionView.Filter = MatchesSearch;
         RefreshNames();SelectedAmmo = Ammunition.FirstOrDefault();
+        InitializeBatch();
     }
 
     public IReadOnlyList<Controls.FilterRow> FilterRows { get; private set; } = [];
@@ -87,6 +88,7 @@ public sealed class AmmoWorkspaceViewModel : ObservableObject
             {
                 AmmunitionView.Refresh();
                 OnPropertyChanged(nameof(VisibleAmmoCount));
+                RebuildBatch();
             }
         }
     }
@@ -127,11 +129,12 @@ public sealed class AmmoWorkspaceViewModel : ObservableObject
         RebuildReferences();
         RefreshFilter();
     }
-    public void RefreshFilter(){var changed=_draftStore.Operations.Select(o=>o.ObjectName).ToHashSet();foreach(var row in FilterRows)((Dictionary<string,string[]>)row.Values)["草稿"]=[changed.Contains(row.Id)?"有草稿":"无草稿"];AmmunitionView.Refresh();OnPropertyChanged(nameof(VisibleAmmoCount));}
+    public void RefreshFilter(){var changed=_draftStore.Operations.Select(o=>o.ObjectName).ToHashSet();foreach(var row in FilterRows)((Dictionary<string,string[]>)row.Values)["草稿"]=[changed.Contains(row.Id)?"有草稿":"无草稿"];AmmunitionView.Refresh();OnPropertyChanged(nameof(VisibleAmmoCount));RebuildBatch();}
 
     public async Task FlushAsync()
     {
         await _fieldEdits.FlushAsync();
+        await _batchPending;
     }
 
     public async Task UndoFieldAsync(WeaponFieldViewModel field)
@@ -152,6 +155,7 @@ public sealed class AmmoWorkspaceViewModel : ObservableObject
 
     public void SetTransactionLocked(bool locked)
     {
+        OnPropertyChanged(nameof(CanEditBatch)); OnPropertyChanged(nameof(CanCalculateBatch));
         foreach (var field in Fields)
         {
             field.SetLocked(locked);
@@ -160,7 +164,7 @@ public sealed class AmmoWorkspaceViewModel : ObservableObject
 
     private async Task PersistFieldAsync(WeaponFieldViewModel viewModel)
     {
-        if (viewModel.BatchLocked) throw new InvalidOperationException("存在相关批量草稿，请在批量窗口调整或移除批次");
+        if (viewModel.BatchLocked) throw new InvalidOperationException("存在相关批量草稿，请在草稿中心应用或移除相关批次");
         if(viewModel.Field.Key=="ammo.name"){
             var ammo=_data.Ammo(viewModel.Field.OwnerObjectName)!;var input=viewModel.EditValue.Trim();if(input.Length==0){viewModel.Revert("名称不能为空");return;}
             var existing=_draftStore.Operations.FirstOrDefault(o=>o.TargetKind==DraftTargetKind.AmmoName&&o.ObjectName==ammo.Name);
@@ -175,6 +179,8 @@ public sealed class AmmoWorkspaceViewModel : ObservableObject
         }
 
         var field = viewModel.Field;
+        var oldScope = _draftStore.Operations.FirstOrDefault(o => o.TargetKind == DraftTargetKind.AmmoField && o.ObjectName == field.OwnerObjectName && o.FieldKey == field.Key);
+        if (oldScope is not null && oldScope.EditScope != DraftEditScope.AllReferences) throw new InvalidOperationException("存在局部弹药草稿，请先应用或移除，不能覆盖为共享修改");
         var operation = new DraftOperation(
             DraftOperation.CreateId(DraftTargetKind.AmmoField, field.Location.RelativeSourceFile, field.OwnerObjectName, field.Key),
             null,

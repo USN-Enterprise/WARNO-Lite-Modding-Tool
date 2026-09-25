@@ -19,7 +19,7 @@ public static class UnitPictures
         foreach (var path in UnitProjectGraph.InputFiles(root))
         {
             var candidate = files?.SingleOrDefault(f => f.RelativePath.Equals(path, StringComparison.OrdinalIgnoreCase));
-            var text = candidate is null ? File.ReadAllText(TextFileSnapshot.ResolveInsideRoot(root,path)) : System.Text.Encoding.UTF8.GetString(candidate.CandidateBytes);
+            var text = candidate is null ? Projects.ProjectReadScope.ReadAllText(TextFileSnapshot.ResolveInsideRoot(root,path)) : System.Text.Encoding.UTF8.GetString(candidate.CandidateBytes);
             if (!text.Contains("TBUCKToolAdditionalTextureBank", StringComparison.Ordinal)) continue;
             var scan = new NdfTopLevelScanner().Scan(text, Path.Combine(root,path), "textures", root);
             if (scan.Diagnostics.Any(d => d.Severity == NdfDiagnosticSeverity.Error)) throw new InvalidDataException("单位图片纹理文件结构无效：" + path);

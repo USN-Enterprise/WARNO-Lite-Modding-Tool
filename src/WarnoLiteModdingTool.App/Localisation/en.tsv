@@ -1,4 +1,4 @@
-设置|Settings
+﻿设置|Settings
 常规|General
 外观|Appearance
 关于|About
@@ -1094,7 +1094,7 @@ AI 难度|AI difficulty
 将修改|Will change
 不变|Unchanged
 跳过：字段不存在|Skipped: field unavailable
-存在相关批量草稿，请在批量窗口调整或移除批次|Related batch drafts exist. Adjust or remove them in the batch window.
+存在相关批量草稿，请在草稿中心应用或移除相关批次|Related batch drafts exist. Apply or remove them in the draft center.
 批量修改武器：{0} 个字段|Batch edit weapons: {0} fields
 批量武器：{0} 个 Weapon 副本、{1} 个 Ammo 副本|Weapon batch: {0} Weapon copies, {1} Ammo copies
 按最终单位、挂载与字段组合隔离；同结果复用副本|Isolation uses final unit, mount and field combinations; identical results share a copy.
@@ -1131,3 +1131,157 @@ AI 难度|AI difficulty
 增加固定值|Add a fixed value
 减少固定值|Subtract a fixed value
 同箱或同炮塔连带影响|Shared ammo box or turret impact
+
+批量弹药检查器|Batch ammunition inspector
+批量修改弹药|Batch edit ammunition
+已勾选弹药|Checked ammunition
+已选弹药|Selected ammunition
+目标弹药|Target ammunition
+直接修改弹药本体，影响全部使用者；筛选不限制使用者范围。|Edits shared ammunition objects and affects all users; filters do not limit the users affected.
+所选弹药没有共有可编辑字段|Selected ammunition has no common editable fields
+请先选择弹药|Select ammunition first
+请选择已有弹药参数|Select an existing ammunition parameter
+公式调整|Formula adjustments
+输入不会自动保存；加入草稿时重新计算。|Input is not saved automatically; adding to drafts recalculates the result.
+弹药批量草稿已保存，正式文件未改变。|Ammunition batch drafts saved; Mod files are unchanged.
+预览未保存；请检查结果及全部使用者。|Preview not saved; inspect the results and all users.
+全部使用者|All users
+搜索弹药、武器或单位|Search ammunition, weapons or units
+只显示目标弹药共有的可编辑字段；多种值留空，加入草稿后才保存。|Only common editable fields are shown. Mixed values remain blank; save explicitly with Add to drafts.
+更新已有共享草稿|Update existing shared draft
+恢复正式基线|Restore file baseline
+变化|Changed
+内部名|Internal ID
+草稿已变化，请重新预览|Drafts changed. Preview again.
+弹药或引用模块解析失败，请处理项目诊断|Ammunition or reference parsing failed. Resolve project diagnostics first.
+存在局部弹药草稿，请先应用或移除，不能覆盖为共享修改|A local ammunition draft exists. Apply or remove it before editing the shared object.
+存在局部弹药草稿，请先应用或移除，不能覆盖为共享修改：{0}|A local ammunition draft exists. Apply or remove it before editing the shared object: {0}
+弹药缺少可编辑字段：{0}|Ammunition has no editable field: {0}
+弹药不存在或来源已变化：{0}|Ammunition is missing or its source changed: {0}
+最小射程不能大于最大射程：{0}|Minimum range cannot exceed maximum range: {0}
+存在历史武器批次，请在草稿中心移除冲突项：{0}|A historical weapon batch exists. Remove the conflict in the draft center: {0}
+伤害索引超出当前伤害族范围：{0}|Damage index is outside the current damage family range: {0}
+弹药字段有重复草稿：{0}|Duplicate ammunition field drafts: {0}
+共享弹药草稿目标冲突：{0}|Shared ammunition draft targets conflict: {0}
+师简介|Division text
+地形规则|Terrain rules
+专业地形参数|Advanced terrain parameters
+地形承伤|Terrain damage
+承伤倍率|Damage taken multiplier
+减伤（%）|Damage reduction (%)
+减伤比例必须在0%至100%之间|Damage reduction must be between 0% and 100%.
+地形隐蔽|Terrain concealment
+地地遮蔽|Ground-to-ground concealment
+地空遮蔽|Ground-to-air concealment
+阻挡视线|Block line of sight
+阻挡步兵|Block infantry
+阻挡车辆|Block vehicles
+阻挡两栖|Block amphibious movement
+阻挡降落|Block landing
+允许近地飞行|Allow near-ground flight
+可燃性概率|Flammability probability
+地形高度（米）|Terrain height (m)
+原始隐蔽数值，不是百分比或固定发现距离|Raw concealment value, not a percentage or fixed detection distance.
+视线效果还取决于观察位置和地形高度|Line of sight also depends on observer position and terrain height.
+原始遮蔽参数，不是米数或百分比|Raw concealment parameter, not metres or a percentage.
+普通通行与房屋驻扎是不同机制|Walking through terrain and occupying a building are separate mechanisms.
+关闭阻挡不保证可通行；还需检查单位地形速度表|Disabling this block does not guarantee passage; check the unit's terrain speed factors.
+不会赋予单位两栖能力，还需检查运动与速度配置|Does not grant amphibious capability; movement and speed settings still apply.
+关闭此项不解除单位和坡度等其他降落限制|Other unit and slope restrictions on landing still apply.
+与允许降落分开，不解除全部飞行限制|Separate from landing permission; other flight restrictions still apply.
+范围0至1；设0不保证阻止忽略可燃性条件的弹药|Range 0–1. Zero does not necessarily stop ammunition that ignores flammability conditions.
+不等于地图高程或模型高度|Not the map elevation or visual model height.
+具体引擎作用尚未验证，本版只读|Engine behaviour is not yet verified; read-only in this version.
+此组合影响双方符合条件的单位；不是最终伤害的全部公式|Affects matching units on both sides; this is only one factor in damage calculation.
+修改当前Mod的共享地形规则，影响双方符合条件的单位。仅编辑已有条目。|Edits shared terrain rules in this mod, affecting matching units on both sides. Existing entries only.
+当前模式没有匹配的可编辑地形条目|No matching editable terrain entries in this mode.
+来源与作用范围|Source and scope
+说明|Details
+轻林|Light forest
+密林|Dense forest
+建筑|Building
+小建筑|Small building
+废墟|Ruins
+普通地面|Default terrain
+阻挡区|Blocker
+浅水|Shallow water
+深水|Deep water
+岩石|Rock
+烟雾|Smoke
+建造阻挡区|Construction blocker
+字段多义或不是支持的直接值|Ambiguous field or unsupported literal value.
+地形身份重复或部分文件不可读取，无法安全定位|Duplicate terrain identity or unreadable files; cannot locate safely.
+倍率不是支持的直接数值|Multiplier is not a supported numeric literal.
+伤害修正表重复|Duplicate damage modifier map.
+伤害族重复|Duplicate damage family.
+目标抗性族重复|Duplicate resistance family.
+可燃性概率必须在0至1之间|Flammability probability must be between 0 and 1.
+请输入有效的地形参数|Enter a valid terrain value.
+地形参数基线已变化|The terrain value has changed externally.
+地形参数无法编辑，请先处理冲突|Resolve the conflict before editing this terrain parameter.
+地形候选字段冲突|Conflicting terrain changes.
+地形候选验证失败|Terrain candidate validation failed.
+地形文件存在语法错误|The terrain file contains syntax errors.
+地形条目不是唯一内联对象|Terrain entry is not a unique inline object.
+地形注册数组不唯一或不支持|Terrain registration array is ambiguous or unsupported.
+不支持的地形伤害MAP|Unsupported terrain damage map.
+地形伤害MAP条目无效|Invalid terrain damage map entry.
+地形身份不能唯一定位：{0}|Cannot uniquely locate terrain identity: {0}
+地形共享规则（双方适用）；仅修改既有参数|Shared terrain rules (both sides); existing parameters only.
+地形规则 · {0} · {1}|Terrain rules · {0} · {1}
+游戏玩法简介|Gameplay summary
+历史介绍|History
+当前Mod默认正文|Current mod default text
+原版SC|Original Chinese
+原版US|Original English
+原版SC（回退）|Original Chinese (fallback)
+原版US（回退）|Original English (fallback)
+来源未解析|Source unavailable
+（来源未解析）|(Source unavailable)
+正式内容|Saved content
+本页有未加入草稿的输入|This page has changes not yet added to drafts.
+师正文草稿已保存|Division text draft saved.
+自定义正文作为默认文本使用，不会自动翻译；旧token的其他语言译文不会自动继承。|Custom text is the default for all languages. It is not translated automatically and does not inherit translations from the old token.
+选择WARNO游戏目录|Choose the WARNO game folder
+从本机提取 / 刷新原版简介|Extract / refresh original division text
+取消提取|Cancel extraction
+正在提取原版简介|Extracting original division text…
+正在读取：{0}|Reading: {0}
+原版简介已提取|Original division text extracted.
+离线缓存，未核对游戏更新|Offline cache; game updates have not been checked.
+提取已取消，已有正文和缓存保留|Extraction cancelled. Existing text and cache are preserved.
+提取失败：{0}|Extraction failed: {0}
+已解析师正文：{0}/{1}|Resolved division text entries: {0}/{1}
+原版参考语言（切换不替换编辑内容）|Original reference language (does not replace your edits)
+原版参考与token|Original reference and token
+采用当前参考文字|Use this reference text
+撤销本页输入|Revert page input
+招牌单位在“师级设置与费用 → 特色单位”中修改。|Edit standout units under Division settings and costs → Standout units.
+当前无法保存师正文|Division text cannot be saved right now.
+师正文草稿冲突，请先撤销或重新加载|Conflicting division text draft; discard it or reload first.
+正文不能包含空字符|Text cannot contain null characters.
+本版不支持清空正文，请输入非空内容|Clearing text is not supported in this release. Enter non-empty text.
+请先提取原版中英文UNITS词典，以核对正文token占用|Extract the original Chinese and English UNITS dictionaries to check token availability.
+请先处理本地化声明或CSV诊断|Resolve localisation declaration or CSV diagnostics first.
+无法唯一定位UNITS.csv|Cannot uniquely locate UNITS.csv.
+当前Mod正文token重复|Duplicate text token in the current mod.
+师正文草稿为空|Empty division text draft.
+师正文草稿身份无效|Invalid division text draft identity.
+师正文引用基线已变化：{0}|Division text reference changed: {0}
+正文词典声明不可用或已变化|Text dictionary declaration is unavailable or has changed.
+当前Mod原正文已变化|The original mod text has changed.
+师正文token已占用|Division text token is already in use.
+正文CSV格式或token冲突|Invalid text CSV format or token collision.
+正文CSV回读失败|Text CSV verification failed.
+师正文候选引用冲突|Conflicting division text references.
+不支持的师正文字段|Unsupported division text field.
+正文引用不是支持的字符串|Text reference is not a supported string literal.
+目标师不存在|Target division does not exist.
+当前师独立简介/历史正文；默认文本不自动翻译，旧词条保留|Independent text for this division; no automatic translation, old entries preserved.
+{0}：请先在师简介页加入草稿或撤销本页输入|{0}: add the division text to drafts or revert page input first.
+游戏数据没有可用的UNITS正文词典。|No usable UNITS text dictionary was found in the game data.
+当前倍率超出普通范围，请在专业模式处理|The current multiplier is outside the basic range. Edit it in professional mode.
+
+正在更新本次修改及关联数据…|Updating changes and related data…
+应用完成，关联数据已更新|Applied; related data updated
+应用完成；原选中单位已移除，已选择相邻单位|Applied; the selected unit was removed, so a neighbouring unit is selected

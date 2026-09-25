@@ -4,10 +4,26 @@ namespace WarnoLiteModdingTool.Core.Localisation;
 public static class VanillaNames
 {
     private static Dictionary<string, Dictionary<string,string>> Data = new();
+    public static long Revision { get; private set; }
     public static bool Available => GameNameCache.Keys.All(k => Data.ContainsKey(k));
     public static void Replace(Dictionary<string, Dictionary<string,string>> names)
     {
-        lock (Translations) { Data = names; Translations.Clear(); }
+        lock (Translations) { if (ReferenceEquals(Data, names)) return; Data = names; Translations.Clear(); Revision++; }
+    }
+    public static bool UnitsAvailable => new[] { "US/UNITS", "SC/UNITS" }.All(k => Data.TryGetValue(k, out var rows) && rows.Count > 0);
+    public static void ReplaceUnits(Dictionary<string, Dictionary<string, string>> names)
+    {
+        lock (Translations)
+        {
+            var next = new Dictionary<string, Dictionary<string,string>>(Data);
+            foreach (var key in new[] { "US/UNITS", "SC/UNITS" })
+                if (names.TryGetValue(key, out var values)) next[key] = values; else next.Remove(key);
+            Data = next; Translations.Clear(); Revision++;
+        }
+    }
+    public static void RequireUnitsAvailable()
+    {
+        if (!UnitsAvailable) throw new InvalidOperationException("请先提取原版中英文UNITS词典，以核对正文token占用");
     }
     public static void RequireAvailable()
     {

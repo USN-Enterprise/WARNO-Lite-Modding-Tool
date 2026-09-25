@@ -15,8 +15,8 @@ public sealed class ExperienceCatalog
         var dir=Path.Combine(root,"GameData");if(!Directory.Exists(dir))return result;
         foreach(var path in Directory.EnumerateFiles(dir,"*.ndf",SearchOption.AllDirectories))
         {
-            var text=File.ReadAllText(path);if(!text.Contains("TExperienceLevelsPackDescriptor")&&!text.Contains("TEffectsPackDescriptor"))continue;
-            result.Dependencies[Path.GetRelativePath(root,path).Replace('\\','/')]=File.ReadAllBytes(path);
+            var text=WarnoLiteModdingTool.Core.Projects.ProjectReadScope.ReadAllText(path);if(!text.Contains("TExperienceLevelsPackDescriptor")&&!text.Contains("TEffectsPackDescriptor"))continue;
+            result.Dependencies[Path.GetRelativePath(root,path).Replace('\\','/')]=WarnoLiteModdingTool.Core.Projects.ProjectReadScope.ReadAllBytes(path);
             foreach(var o in new NdfTopLevelScanner().Scan(text,path,"experience",root).Objects)
             {if(!objects.TryGetValue(o.Name,out var list))objects[o.Name]=list=[];list.Add((o.TypeName,text.Substring(o.CharacterOffset,o.CharacterLength)));}
         }

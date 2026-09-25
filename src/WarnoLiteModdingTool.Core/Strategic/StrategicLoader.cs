@@ -27,7 +27,7 @@ public sealed class StrategicLoader
             try
             {
                 if (!files.TryGetValue(obj.RelativeSourceFile, out var text))
-                    files[obj.RelativeSourceFile] = text = overrides?.GetValueOrDefault(obj.RelativeSourceFile.Replace('\\', '/')) ?? File.ReadAllText(obj.SourceFile);
+                    files[obj.RelativeSourceFile] = text = overrides?.GetValueOrDefault(obj.RelativeSourceFile.Replace('\\', '/')) ?? WarnoLiteModdingTool.Core.Projects.ProjectReadScope.ReadAllText(obj.SourceFile);
                 var source = new StrategicSource(obj with { RelativeSourceFile = obj.RelativeSourceFile.Replace('\\', '/') }, text.Substring(obj.CharacterOffset, obj.CharacterLength));
                 if (obj.TypeName == "DeckPackDescriptor")
                 {
@@ -173,7 +173,7 @@ public sealed class StrategicLoader
             var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var dictionary in context.LocalisationDictionaries)
             {
-                var doc = new NdfSyntaxDocument(File.ReadAllText(dictionary));
+                var doc = new NdfSyntaxDocument(WarnoLiteModdingTool.Core.Projects.ProjectReadScope.ReadAllText(dictionary));
                 foreach (var span in doc.FindAssignmentsAnywhere("FileName").Concat(doc.FindAssignmentsAnywhere("CsvFile")))
                 {
                     var raw = NdfSyntaxDocument.Unquote(doc.Raw(span));

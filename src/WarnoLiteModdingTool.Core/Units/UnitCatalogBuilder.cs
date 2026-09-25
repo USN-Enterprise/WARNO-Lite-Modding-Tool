@@ -9,7 +9,7 @@ public sealed class UnitCatalogBuilder(NdfFieldLocator? locator = null)
     public IReadOnlyList<UnitRecord> Build(
         IReadOnlyList<NdfObjectInfo> unitObjects,
         IReadOnlyDictionary<string, string> sources,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, bool applyChoices = true)
     {
         var units = new List<UnitRecord>(unitObjects.Count);
         foreach (var objectInfo in unitObjects)
@@ -20,16 +20,34 @@ public sealed class UnitCatalogBuilder(NdfFieldLocator? locator = null)
                 continue;
             }
 
-            var document = new NdfSyntaxDocument(source, objectInfo.CharacterOffset, objectInfo.CharacterLength);
-            var fields = UnitFieldDefinitions.All
-                .Select(definition => ReadField(definition, document, objectInfo, source))
-                .ToArray();
-            var hasUniqueTransporterModule = document.FindConstructors("TTransporterModuleDescriptor").Count == 1;
-            units.Add(new UnitRecord(objectInfo, fields, hasUniqueTransporterModule){SourceSnapshot=source});
+            var parsed = Projects.ProjectReadScope.ObjectValue("unit:" + objectInfo.SourceFile + ":" + objectInfo.Name, source,
+                objectInfo.CharacterOffset, objectInfo.CharacterLength, () =>
+                {
+                    var document = new NdfSyntaxDocument(source, objectInfo.CharacterOffset, objectInfo.CharacterLength);
+                    var fields = UnitFieldDefinitions.All.Select(definition => ReadField(definition, document, objectInfo, source)).ToArray();
+                    var name = _locator.Locate(document, new NdfFieldSelector("TUnitUIModuleDescriptor", "NameToken"));
+                    return new ParsedUnit(objectInfo.CharacterOffset, objectInfo.LineNumber, fields,
+                        document.FindConstructors("TTransporterModuleDescriptor").Count == 1,
+                        name.Values.Count == 1 ? NdfSyntaxDocument.Unquote(document.Raw(name.Values[0])) : null, name.Values.Count == 1);
+                });
+            var offsetDelta = objectInfo.CharacterOffset - parsed.Offset;
+            var lineDelta = objectInfo.LineNumber - parsed.Line;
+            var currentFields = parsed.Fields.Select(f => f.Location is not { } location ? f : f with
+            { Location = location with { CharacterOffset = location.CharacterOffset + offsetDelta, LineNumber = location.LineNumber + lineDelta } }).ToArray();
+            units.Add(new UnitRecord(objectInfo, currentFields, parsed.Transporter)
+            { SourceSnapshot = source, NameToken = parsed.Token, HasUniqueNameField = parsed.UniqueName });
         }
 
-        ApplyChoices(units);
+        if (applyChoices) ApplyChoices(units);
         return units;
+    }
+    private sealed record ParsedUnit(int Offset, int Line, UnitFieldValue[] Fields, bool Transporter, string? Token, bool UniqueName);
+    internal static void Remember(UnitRecord unit)
+    {
+        if (unit.SourceSnapshot is not { } source) return;
+        _ = Projects.ProjectReadScope.ObjectValue("unit:" + unit.Source.SourceFile + ":" + unit.Name, source,
+            unit.Source.CharacterOffset, unit.Source.CharacterLength, () => new ParsedUnit(unit.Source.CharacterOffset, unit.Source.LineNumber,
+                unit.Fields.Select(f => f with { Choices = [] }).ToArray(), unit.HasUniqueTransporterModule, unit.NameToken, unit.HasUniqueNameField == true));
     }
 
     private UnitFieldValue ReadField(
@@ -128,8 +146,10 @@ public sealed class UnitCatalogBuilder(NdfFieldLocator? locator = null)
 
         var upgradeChoices = units
             .Select(unit => new UnitChoice(unit.Name, unit.Name))
+            .DistinctBy(choice => choice.RawValue, StringComparer.Ordinal)
             .OrderBy(choice => choice.Display, StringComparer.CurrentCultureIgnoreCase)
             .ToArray();
+        var upgradeIndexes = upgradeChoices.Select((choice, i) => (choice.RawValue, i)).ToDictionary(p => p.RawValue, p => p.i, StringComparer.Ordinal);
 
         foreach (var unit in units)
         {
@@ -137,7 +157,7 @@ public sealed class UnitCatalogBuilder(NdfFieldLocator? locator = null)
             {
                 if (field.Definition.ValueKind == UnitValueKind.UnitReference)
                 {
-                    return field with { Choices = upgradeChoices.Where(choice => choice.RawValue != unit.Name).ToArray() };
+                    return field with { Choices = new UnitReferenceChoices(upgradeChoices, upgradeIndexes.GetValueOrDefault(unit.Name, -1)) };
                 }
 
                 return choicesByField.TryGetValue(field.Definition.Key, out var choices)

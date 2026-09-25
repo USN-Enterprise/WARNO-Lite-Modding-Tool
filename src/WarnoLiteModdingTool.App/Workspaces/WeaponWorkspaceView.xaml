@@ -50,7 +50,6 @@
                         <Border Grid.Column="2" Background="{DynamicResource SurfaceAltBrush}" Padding="14">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel>
-                                    <Button Content="{l:Loc Key='批量修改武器'}" Style="{StaticResource SecondaryButton}" Click="WeaponBatch_Click" Margin="0,0,0,12" />
                                     <TextBlock Text="{l:Loc Key='挂载与作用域'}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock Text="{l:Loc Key='当前 Unit'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,12,0,4" />
                                     <TextBlock Text="{Binding WeaponWorkspace.SelectedUnit.DisplayName}" FontWeight="SemiBold" TextWrapping="Wrap" />
