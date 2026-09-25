@@ -1,263 +1,101 @@
-﻿# WARNO Lite Modding Tool
+# WARNO Lite Modding Tool
 
 [中文](#chinese) | [English](#english)
 
 <a id="chinese"></a>
 
-当前版本：**1.9.15**。加快缓存打开；应用后按实际变更刷新，保留当前页面、选择、筛选与滚动位置。正式预览、备份和写入校验继续保留。
+面向新手和 Mod 作者的 **Windows WARNO 图形化编辑器**。通过界面调整单位、武器、弹药、战术师、将军模式和游戏规则，无需手写代码；支持单位卡片图片和师徽编辑。
 
-1.9.13功能继续保留：新增战术师简介本地提取与编辑，以及按基础/专业模式划分的地形规则编辑。
+当前版本：**1.9.15** · Windows x64 · 便携运行
 
-战术师 → 师简介：直接读取本机WARNO中的游戏玩法和历史正文，支持选择目录、提取/刷新、中英文原文参考、多段落编辑。点击“加入草稿”，再到草稿中心预览并应用；正文使用独立引用，保留其他师的原文。自定义正文是各语言共用的默认文本，不自动翻译。
+**[下载发布包](https://github.com/USN-Enterprise/WARNO-Lite-Modding-Tool/releases/latest)** · **[中文使用教程](使用教程.md)** · [版本更新](RELEASE_NOTES.md#chinese)
 
-游戏规则 → 地形规则：基础模式只编辑已识别步兵伤害组合的减伤百分比；专业模式编辑既有倍率及隐蔽、视线、通行、航空和可燃性参数。地形高度只读，不提供新增/删除组合或地形定义。所有地形改动影响当前Mod中双方符合条件的单位，具体限制见各项说明。
+## 主要功能
 
-1.9.12保留功能：弹药页新增与单位页一致的批量编辑：勾选多条弹药后，原右侧切换为批量检查器。
+| 模块 | 可以做什么 |
+| --- | --- |
+| 单位 | 编辑数值、名称、经验类型与能力，批量修改，从模板创建单位，修改卡片图片 |
+| 武器与弹药 | 编辑挂载、炮塔和弹药参数，按单位隔离修改，或编辑共享弹药并查看全部使用者 |
+| 战术师 | 调整单位池、运输和费用，从模板创建战术师，修改名称、师徽与简介 |
+| 将军模式与战略 Pack | 编辑现有营编制、棋子属性，以及共享 Pack 的单位、运输和老练度 |
+| 游戏规则 | 调整对局、经济、AI、战斗、后勤、将军模式、空军、经验路线及地形规则 |
 
-可选择已勾选弹药或当前筛选的全部结果；浏览单条不改变勾选，筛选后保留隐藏选择。共有字段可统一设值，混合值留空；公式逐条基于有效当前值计算。基础模式支持固定值和百分比，专业模式增加乘加减、上下限；整数明确取整，小数默认不取整。输入后需点击“加入草稿”，正式修改仍通过“预览并应用全部”。
+提供搜索筛选、基础/专业模式、中英文界面、主题与面板调整；修改通过草稿、预览和备份流程应用。
 
-弹药页直接修改共享Ammo本体，影响全部使用者；预览提供完整结果和可搜索的使用者列表。支持未被使用的弹药及仅有弹药文件的项目。旧武器挂载批量窗口入口已撤下，已有批量草稿仍可在草稿中心应用或移除，已应用修改可按原备份流程恢复。未运行官方生成器或游戏验证。
+## 快速开始
 
-单位检查器点击“修改单位图片”，从当前Mod已有单位图片中选择，或打开独立图片编辑窗口导入/编辑。保存草稿后可重开预览；正式应用时为自定义图片生成独立PNG与纹理键，仅改变所选单位。保留原图，支持备份恢复；应用后需按原流程生成Mod。PNG/JPEG输入不超过8MB、边长不超过4096像素；自定义输出PNG草稿数据最多8,000,000个Base64字符。此版本未做生成器和游戏内显示验证。
+1. 下载完整的 Windows x64 发布 ZIP，解压后运行 `WarnoLiteModdingTool.exe`。无需安装 .NET SDK 或 Python。
+2. 使用“自动查找 Mod”，或打开包含 `GameData` 的 **Mod 根目录**；没有 Mod 时可从“Mod 工具”创建。
+3. 选择对象并编辑。普通字段自动保存草稿；带“加入草稿”或“保存草稿”的操作需点击相应按钮。
+4. 打开“草稿总览”，检查修改对象、前后值和影响范围，再预览并应用。
+5. 点击“生成 / 编译 Mod”，检查生成结果，然后在游戏中启用并验证。
 
-单位检查器新增“特性与实际能力”：基础模式提供15类配套，专业模式可搜索当前Mod已有能力并添加、替换、移除或清空。显示标签可单独编辑，展开特性查看当前Mod参数。新建向导沿用同一套能力操作，默认变量名按母版递增；专业模式可改变量名，应用时联动可确认引用。“检查单位注册”可生成定向修复草稿，保持原编号。
+第一次使用建议跟着[完整修改示例](使用教程.md#first-edit)操作；各模块步骤、批量修改、备份恢复和排错见[使用教程](使用教程.md)。
 
-“删除新建单位 / 撤销删除”可取消未应用创建；已应用单位须能核对本项目创建备份和身份，删除进入草稿并列出引用。师规则和可安全移除的运输候选联动清理，其他使用者先选择替代或解除引用；武器、弹药等共享资源保留。删除前可撤销，应用后通过文件级备份恢复。不要清理仍需用于来源核对的创建备份。无法唯一确认的引用或结构会阻止相关操作；生成器和游戏内效果尚未在本版验证。
+## 使用前了解
 
-1.9.8新增游戏规则 → 经验与老练度 → 经验路线 → 等级，可修改各级门槛和已有效果数值。共享路线影响全部引用者，可展开使用者列表；改动自动保存到草稿，在草稿中心预览并应用。单位页继续用于选择路线。缺少或未支持的效果保留原文，多处共用的效果当前只读；不创建独立路线，不自动同步游戏提示文字。
+- 功能取决于所选 Mod 的文件和结构；缺少某类资料只影响相关功能。编辑器可放在游戏目录之外。
+- 原版名称、图片与师简介从本机 WARNO 提取，不随工具分发；找不到游戏时可在设置中指定目录。
+- **武器页**可限定当前或所选单位；**弹药页**修改共享本体，会影响全部使用者。
+- **保存草稿、应用文件和生成 Mod 是三个步骤**。应用时创建备份，游戏内效果仍需生成后检查。
+- 单位与战术师支持模板创建；单位删除仅支持来源可核对的本工具创建单位。不提供模型/动画制作、任意武器槽增删或战役地图/剧情编辑。详见[当前边界](使用教程.md#limits)。
 
+## 文档与交流
 
-这是一款面向 WARNO Mod 新手和不熟悉代码的玩家、易于上手的 Windows 图形化数值编辑器。通过可视化界面调整单位、武器、弹药等数值与相关参数，无需手写代码。编辑范围以数值和规则配置为主，并支持单位卡片与战术师师徽PNG图片编辑；不提供模型或动画制作。
-
-**QQ 交流群：1013181135**
-
-欢迎进群交流使用心得、反馈问题，一起探讨 Mod 制作。
+- [中文使用教程](使用教程.md) · [English user guide](USER_GUIDE.md)
+- [发布说明](RELEASE_NOTES.md) · [开发与构建](DEVELOPMENT.md)
+- **QQ 交流群：1013181135**。反馈问题时请附工具版本、操作步骤和“问题”中的完整诊断。
 
 ## 许可证
 
-本项目原创代码与文档采用 [MIT 许可证](LICENSE)，允许修改、分发和商用，需保留版权与许可声明。
-
-1.9.2 起源码和新发布包不再内嵌游戏名称词典。名称从用户本机 WARNO 安装读取，仅在本机缓存；游戏资料不属于本项目 MIT 授权范围。
-
-## 原版名称
-
-打开 Mod 时自动查找 WARNO 并在后台提取中英文名称，无需安装解包工具。缓存保存在 `%LOCALAPPDATA%/WarnoLiteModdingTool/names/cache-v1.json`；游戏包变化时重建。找不到游戏时，在“设置 → 常规 → 原版名称”选择游戏安装目录；“刷新名称”在关闭设置后执行并重载当前项目，原草稿会先保存。
-
-当前 Mod 的 CSV 名称优先。没有可用词典时保留内部标识与普通参数编辑；创建或修改名称前需先加载词典以完成 token 冲突检查。营“类型”取自当前 Mod 的战略地图图标分类，未知分类保留原值。
-
-## 单位图片与战术师
-
-单位检查器宽栏显示小图，窄栏显示“查看图片”，点击可放大。图片按当前 Mod 引用读取，优先自定义 PNG；官方图片使用设置中的 WARNO 目录并缓存至 `%LOCALAPPDATA%/WarnoLiteModdingTool/images/v1/`。本工具不分发游戏图片，缺图仍可编辑参数。
-
-战术师页“新建战术师”选择模板、名称和已有师徽；同一入口可继续编辑待创建草稿。“名称与徽章”修改所选已有师。应用后，新师可在普通师编辑页修改单位池、费用与默认牌组。创建时简介/历史沿用模板，应用后可在“师简介”页单独修改；自定义师徽继续使用既有图片编辑入口。
-
-新单位创建向导第3页可逐槽更换已有 Ammo，自动复制改动的 Weapon，保留槽位/炮塔/挂架。引用替换不会自动创建新模型或适配发射动画。
-
-图片解码使用随包提供的 [ZstdSharp.Port（MIT）](licenses/ZstdSharp-MIT.txt)，无需用户安装额外工具。
-## 直接使用
-
-1. 解压完整发布 ZIP；本机未压缩目录可直接运行其中的 EXE。
-2. 运行 `WarnoLiteModdingTool.exe`。1.8.7 起同一 Windows 登录会话只允许一个实例；重复启动提示“已在运行”。升级时请先关闭旧版。
-3. 点击“自动查找 Mod”，或从“Mod 工具”使用同名入口，选择检测到的 Mod；也可手动打开包含 `GameData` 的 Mod 根目录。
-4. 打开左下角“设置”，选择跟随系统 / 简体中文 / English、默认编辑模式和七套主题和自定义图片背景；首次启动或无有效主题配置默认白蓝，已有有效主题偏好保留；项目栏、Unit 列表与检查器、Weapon 三栏、战术师列表与编辑器，以及对象索引与高级详情之间的分隔条都可拖动，程序会保留各栏最低可用宽度。
-5. 在“单位”模块中使用常驻搜索框；点较大的“筛选”按钮呼出阵营、国家、原子单位类别、生产栏位、角色、所属师和草稿状态。可切换“全部条件 / 任一条件”，收起后只留下带 × 的已选标签。
-6. Unit、Weapon 和 Ammo 数值按大类折叠、小类标题分块；字段使用统一的名称/原参数/输入行。Unit 类别/角色/标签、战术师类型/标签采用独立标签选择，常用项来自当前 Mod。ECM 用正百分比显示；护甲类型、伤害族及索引由当前 Mod 的 `DamageResistance.ndf` 校验，步兵护甲索引锁为 1。前置部署可直接填写非负数值，也可选当前 Mod 动态档位；精确值 `2473.49823322` / `3533.56890459` 会分别标注“侦察”/“空降”。缺失模块仅在严格锚点成立时安全补建。
-7. 单位列表常驻“全选当前筛选”“清空选择”和已选数量；展开“批量编辑”后选择已勾选 Unit 或当前完整筛选结果，再选择字段与操作。乘系数默认向上取整；普通模式提供固定值和增减百分比；高级模式另有乘法、固定数值加减、取整和可选上下限可预览命中数、样本与关联影响，也可直接加入草稿，加入时仍会校验。勾选至少两个 Unit 时，同一个右侧检查器自动切换为批量编辑，不增加第三栏；共有字段不同的值显示“多种值”且输入留空，填写目标值后才允许加入草稿。清空选择返回单选编辑；也可手动点击“批量编辑”处理当前完整筛选结果。
-8. 在“武器”模块中可按显示名或内部名任意片段搜索 Unit、Weapon、MountedWeapon、挂载使用的 Ammo 与替换候选；Unit 作用域列表同样常驻全选当前筛选、清空和计数。可编辑现有 Salves、Ammo 引用、隐藏开关、炮塔射界及 Ammo 字段。默认“仅当前 Unit”，也可选择多个 Unit；高级模式另有“全部引用”；局部修改按需克隆最小 `Ammo → Weapon → Unit` 链。
-9. 在“弹药”模块中可以搜索并选择 Ammo，编辑现有射程、伤害族与索引、物理/压制伤害及两类溅射、精度、散布、射击、弹道、补给和行为字段；展开“查看引用”可搜索 Ammo → Weapon → Unit 链。这里编辑的是共享 Ammo 本体，草稿固定为“全部引用”；需要局部隔离时请从“武器”模块按 Unit 修改。
-10. 界面显示 `AmmoBoxIndex`、Salves、每齐射射弹数及推导总弹量；EffectTag、WeaponAlternative、动画键和可识别表现引用只读显示，不开放自由新增/删除武器槽。
-11. 在“战术师”模块编辑现有师：加入 Unit 与选择运输均支持显示名/内部名任意片段搜索，以及国家、阵营、栏位、角色小筛选；运输面板只把具有唯一运输模块的 Unit 作为新增候选，可一次勾选多项并以标签管理。既有但无法确认运输能力的兼容值会保留并标注。还可设置卡数、单卡数量和老练度倍率；师级标签和类型为标签选择，费用曲线在普通模式显示每类十个独立数值格，额外尾部值只在高级模式处理。
-12. 默认卡组编辑页已移除；既有 `Decks`/`DeckPacks` 只读保留并参与基线冲突检查。战术师草稿检查同师 UnitRule 唯一、运输引用、数值范围与费用曲线，旧版本改变默认卡组的草稿会明确标为冲突。
-13. 点击顶栏或左侧“草稿总览”可查看当前项目全部未应用草稿；列表显示修改摘要、模块、状态和源文件，点选后显示原值→目标值、作用域、对象、字段和更新时间。批量修改收在可展开父项下，可复选子项后“应用所选”或“删除所选”。
-14. 在通用对象索引中，名称采用主信息字号，内部类型、源文件和位置采用次要小字。默认排序为“源文件升序 → 行号升序”，同一行以字符偏移稳定兜底；表头箭头与排序说明会随点击更新。
-15. 打开“高级模式”可查看 NDF 原值、字段路径、源文件位置、换算来源、引用影响和诊断；Unit 表右键也可快速查看内部名和引用关系。
-16. 在任一编辑模块的事务中心预览并应用全部草稿；点击后会先显示忙碌状态，并在后台按草稿类型重索引和构建安全候选，完成后才弹出准确确认框。每次应用会在 `.warno-editor/backups/<备份编号>/` 保存原件和事务清单，并在目标 Mod 的 `logs/` 写入记录，可在草稿总览的“事务备份与恢复”再次确认后恢复。
-17. “生成 / 编译 Mod”常驻顶栏；“Mod 工具”菜单提供打开项目、启动开发模式和上传入口。官方流程按当前项目能力独立探测、确认后手动运行并保留输出。上传 BAT 还会调用官方备份，应以完整输出为准；编辑器自有事务备份始终是正式写入的安全基础。
-18. 点“创建新 Mod”可调用 WARNO `Mods/CreateNewMod.bat`。选择包含官方脚本和 `ModData/base.zip` 的 `Mods` 目录，名称只能是 1–32 位英文字母/数字，且不得与现有 Mod 重名。
-19. 顶栏“问题”进入诊断中心：“Mod 问题”显示项目、解析、草稿/事务和官方流程问题，“工具问题”显示程序自身异常。可复制带错误编号的完整诊断或打开日志目录；上次致命异常会在下次启动提示。
-
-切换项目或正常关闭窗口前，程序会等待各模块的草稿保存；保存失败时保留当前项目和输入，修正问题后可重试。左侧模块列表可滚动，表格列宽随可用空间调整。
-
-编辑阶段只写 `<目标 Mod>/.warno-editor/draft-v1.json`；正式文件只在应用确认后由事务写入。NDF 使用 UTF-8 无 BOM 精确字段补丁，CSV 保留原编码与换行；预览后发现外部修改、候选校验失败或提交异常时不会静默覆盖。程序另在当前 Windows 用户的本地应用数据目录保存最近项目列表。
-
-程序不依赖当前开发用的 `Exp`，也不要求自身位于 WARNO 安装目录。编辑功能不需要 Python；只有用户主动调用 WARNO 官方 BAT 时，对应入口才依赖游戏自带的 `Utils`。战术师编辑需要 `Divisions.ndf`、`DivisionRules.ndf`、`DivisionCostMatrix.ndf`、`DeckPacks.ndf` 和 `Decks.ndf`；目标缺少某类文件时，只禁用对应模块。
-
-## 将军模式与高级工作区
-
-- 选择“将军模式”，搜索并选中已有战略营。中间编制树按营/团→连→排/组→单位展开，右侧修改选中项；可新增、删除、移动、排序、设置 HQ、改名，以及修改单位、数量、老练度和运输。
-- “棋子属性”显示当前对象能够唯一识别的行动点、恢复、移动、角色、控制区、支援范围、战略影响、名称和已有图标引用。未识别字段不猜测写入。
-- 编制修改实时进入草稿。应用时自动重算 PackIndex，共享定义按当前目标隔离；正式文件和必要名称 CSV 同事务备份、写入，失败回滚。
-- 普通模式采用轻度精简，常用性能与编制功能保留。普通模式可编辑已显示字段并使用独立弹药模块；高级模式增加数字索引/复杂公式，打开“引用工作台”追踪引用并跳转，搜索当前对象字段及编辑受控原值。
-- 高级应用预览按文件提供可翻页的修改前/后源码；普通模式同样可选择应用全部或部分草稿。切换模式不会丢弃任何已保存草稿。
-- 英文选项翻译编辑器界面资源；用户名称、内部描述符、外部工具输出及未映射技术诊断保留原文。
-
-## 1.7.1 使用边界
-
-- 批量公式覆盖当前已支持的 Unit 字段；Weapon/Ammo 继续使用“当前 Unit / 所选 Unit / 全部引用”作用域编辑，第一版不保存跨 Mod 批量预设。
-- 可以编辑现有 Unit、Weapon/Ammo 引用链和现有战术师规则；不编辑默认卡组，不克隆或删除 Unit，不创建/复制/删除整师；将军模式编辑现有战略营及其棋子属性，不创建整营或修改战役地图/事件/剧情。
-- 不自由新增或删除武器槽，也不自动重建模型、贴图、动画等表现资源。
-- 发布基线为 Windows x64 自包含 .NET 8 目录；最低 Windows 版本仍需更多干净环境验证。
-
-## 开发与验证
-
-需要 Microsoft .NET 8 x64 SDK。项目使用 ZstdSharp.Port 0.8.8（MIT）解码本机游戏图片；首次还原需访问 NuGet.org。
-
-```powershell
-dotnet restore WarnoLiteModdingTool.sln --source https://api.nuget.org/v3/index.json
-dotnet build WarnoLiteModdingTool.sln -c Release --no-restore
-dotnet run --project tests/WarnoLiteModdingTool.Tests/WarnoLiteModdingTool.Tests.csproj -c Release --no-build
-```
-
-自包含 Windows x64 发布：
-
-```powershell
-dotnet restore src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -r win-x64 --source https://api.nuget.org/v3/index.json
-dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c Release -r win-x64 --self-contained true --no-restore -p:PublishSingleFile=false -o publish/win-x64-portable
-```
-
-## 1.8 新操作
-
-单位页“新增单位”启动五步向导；“编辑创建设置”可修改待创建单位。创建先进入草稿，应用时才一并写入身份、名称、牌组注册和所选师规则。母版外观沿用，可选择独立武器配置。暂不提供空白创建、跨 Mod 导入和正式单位删除。
-
-武器、弹药、将军与师内列表提供折叠筛选；战术师列表支持搜索。问题中心可多选忽略与恢复，忽略不跳过正式应用校验。详见 [发布说明](RELEASE_NOTES.md)。
-
-1.8.1：共用 NameToken 的单位可独立改名，自动新增名称 token；战术师默认按国家排序；切换单位仅展开最后手动展开的分区。
-
-1.8.2：弹药名称与独立 token 草稿、原版名称预加载、将军标签筛选和国家列、可读战略差异。详见 [发布说明](RELEASE_NOTES.md)。
-
-1.8.3：高级模式更名为专业模式。
-
-1.8.4 的版本变更见 [发布说明](RELEASE_NOTES.md)。
+项目原创代码与文档采用 [MIT 许可证](LICENSE)。游戏资料不属于本项目授权范围。图片解码使用 [ZstdSharp.Port（MIT）](licenses/ZstdSharp-MIT.txt)。
 
 ---
 
 <a id="english"></a>
 
-Current version: **1.9.15**. Faster cached opening and targeted refresh after applying changes, preserving the current page, selection, filters and scroll position. Preview validation, backups and commit checks remain in place.
+**A Windows graphical editor for WARNO Mods**, for beginners and Mod authors. Edit units, weapons, ammunition, divisions, Army General and game rules without writing code. Unit portraits and division emblems can also be edited.
 
-Retained from 1.9.13: Added local extraction and editing of division text, plus terrain rules split between basic and professional modes.
+Current version: **1.9.15** · Windows x64 · Portable
 
-Divisions → Division text reads gameplay summaries and history from your WARNO installation. Choose the game folder, extract/refresh original text, inspect Chinese or English references, and edit paragraphs. Click Add to drafts, then preview and apply in the draft center. Each changed section receives an independent reference. Custom text is the default for all languages and is not translated automatically.
+**[Download a release](https://github.com/USN-Enterprise/WARNO-Lite-Modding-Tool/releases/latest)** · **[English user guide](USER_GUIDE.md)** · [Release notes](RELEASE_NOTES.md#english)
 
-Game Rules → Terrain rules provides damage-reduction percentages for recognized existing infantry combinations in basic mode. Professional mode edits existing multipliers, concealment, visibility, movement-blocking, aviation and flammability fields. Terrain height is read-only; adding/deleting combinations or terrain definitions is not supported. Shared changes affect eligible units on both sides in the current Mod; field notes explain the limits.
+## Features
 
-Retained from 1.9.12: The Ammunition page now follows the Units page: checking multiple ammunition records switches the existing right pane to a batch inspector.
+| Module | What you can do |
+| --- | --- |
+| Units | Edit stats, names, experience types and abilities; batch edit; create units from templates; change portraits |
+| Weapons and ammunition | Edit mounts, turrets and ammunition; isolate changes to selected units or edit shared ammunition and inspect all users |
+| Divisions | Adjust unit pools, transport and costs; create divisions from templates; edit names, emblems and descriptive text |
+| Army General and Strategic Packs | Edit existing battalion formations, pawn properties and the units, transport and veterancy of shared Packs |
+| Game rules | Adjust match, economy, AI, combat, logistics, Army General, air, experience-route and terrain settings |
 
-Target checked ammunition or all filtered results. Browsing does not change checkboxes; filtering preserves hidden selections. Set shared fields together, with mixed values left blank, or calculate each record from its effective current value. Basic mode provides fixed values and percentages; advanced mode adds arithmetic and limits. Integer rounding is explicit; decimals retain fractions. Click **Add to drafts** to save, then **Preview and apply all** to update Mod files.
+Includes search and filters, basic/professional modes, Chinese/English UI, themes and adjustable panels. Changes use a draft, preview and backup workflow.
 
-Ammunition edits change the shared Ammo object and affect every user. Preview includes all results and a searchable usage list. Unused ammunition and ammunition-only projects are supported. The former weapon-mount batch window entry has been removed; existing batch drafts can still be applied or removed in the draft center, and applied changes can be restored through their backups. No official generator or in-game validation was performed.
+## Quick start
 
-Click “Change unit picture” in the unit inspector. Choose an existing picture from the current Mod or import/edit one in the separate image editor. Save a draft, apply it, then generate the Mod. Custom pictures receive independent PNG files and texture keys; other units keep their pictures. Drafts retain image data and support reopening, and applied changes support backup restoration. Input PNG/JPEG files are limited to 8 MB and 4096 pixels per side; output PNG draft data is limited to 8,000,000 Base64 characters. Generator and in-game display validation are still pending.
+1. Download and extract the complete Windows x64 release ZIP. Run `WarnoLiteModdingTool.exe`; no .NET SDK or Python installation is needed.
+2. Use automatic Mod discovery or open the **Mod root folder** containing `GameData`. To create a Mod, use Mod Tools.
+3. Select an object and edit it. Ordinary fields save drafts automatically; actions with **Add to drafts** or **Save draft** require that button.
+4. Open **Draft overview**, check the objects, before/after values and affected scope, then preview and apply.
+5. Use **Generate / compile Mod**, check the result, then enable and test the Mod in the game.
 
-The unit inspector provides 15 trait families with ability/display/tag pairing. Professional mode can search this Mod's existing abilities, add, replace, remove or clear references, and edit display labels independently. Expand a trait to inspect this Mod's parameters. The creation wizard shares these controls and suggests a sequential name based on its template. Professional renaming updates uniquely resolved references; registration repair preserves the original ID.
+Start with the [first-edit walkthrough](USER_GUIDE.md#first-edit). Module instructions, batch editing, restoration and troubleshooting are in the [user guide](USER_GUIDE.md).
 
-Delete created unit / Undo deletion cancels pending creation or stages deletion of an applied unit whose creation backup and identity can be verified. Eligible division rules and transport entries are removed together; other users require replacement or reference removal. Shared weapons, ammunition and resources remain. Undo a deletion draft before applying, or restore the file-level backup afterward. Keep creation backups needed for provenance. Ambiguous references or unsupported structures block the affected operation. This version has not been validated with the official generator or in game.
+## Before you start
 
-1.9.8 adds Game Rules → Experience and veterancy → Route → Level, with editable level thresholds and supported existing numeric effects. Shared edits affect all listed users and follow the draft, preview and apply workflow. Unit pages still select a route. Missing or unsupported effects are preserved; multiply referenced effects are read-only. This release does not create private routes or synchronize in-game hint text.
+- Available features depend on the selected Mod's files and structure. Missing data affects the relevant features only. The editor can run outside the game folder.
+- Original names, images and division text are extracted from your local WARNO installation and are not bundled. Set the game folder in Settings if discovery fails.
+- **Weapons** can limit changes to the current or selected units. **Ammunition** edits shared objects and affects every user.
+- **Saving drafts, applying files and generating the Mod are separate steps.** Applying creates backups; game effects still need checking after generation.
+- Units and divisions support template creation. Unit deletion is limited to verifiable units created by this tool. Model/animation authoring, arbitrary weapon-slot changes and campaign map/story editing are not provided. See [current limits](USER_GUIDE.md#limits).
 
+## Documentation and community
 
-# WARNO Lite Modding Tool — English
-
-[中文](#chinese) | [English](#english)
-
-A beginner-friendly Windows graphical editor for WARNO Mod creators and players who are unfamiliar with code. Use visual controls to adjust unit, weapon, and ammunition stats and related parameters without writing code. The editor focuses on numerical values and game rules, with PNG editing for division emblems. It does not create models or animations.
-
-**QQ community group: 1013181135**
-
-Join us to share tips, report issues, and discuss Mod creation.
+- [English user guide](USER_GUIDE.md) · [中文使用教程](使用教程.md)
+- [Release notes](RELEASE_NOTES.md#english) · [Development and building](DEVELOPMENT.md#english)
+- **QQ group: 1013181135**. For issue reports, include the tool version, steps to reproduce and the full diagnostic from Problems.
 
 ## License
 
-The project's original code and documentation are licensed under the [MIT License](LICENSE). Modification, redistribution, and commercial use are permitted, provided the copyright and license notices are retained.
-
-Starting with 1.9.2, the source tree and new release packages no longer embed extracted game-name dictionaries. Names are read from the user’s WARNO installation and cached locally. Game data is not covered by this project’s MIT license.
-
-## Images and tactical divisions
-
-The unit inspector shows a small portrait in wide panes or a View image button in narrow panes. Click to enlarge. Mod PNGs take priority; official images are loaded from the configured WARNO directory and cached in `%LOCALAPPDATA%/WarnoLiteModdingTool/images/v1/`. Game images are not distributed with this tool.
-
-Use Create tactical division to choose a template, name and existing emblem. Pending creations can be reopened there. Name and emblem edits the selected existing division. Apply the draft before editing the new division roster, costs or default deck. Summary/history text is inherited at creation and can be edited in Division text after applying. Custom emblems continue to use the existing image editor.
-
-New-unit creation supports existing Ammo selection per fixed slot. Changed Weapons are copied automatically. Replacing Ammo does not create or adapt models, mounts or animations.
-
-Image decompression uses bundled [ZstdSharp.Port (MIT)](licenses/ZstdSharp-MIT.txt); no extra tools are required.
-## Original game names
-
-Opening a Mod locates WARNO and reads the English/Chinese name dictionaries in the background. No extraction tools are required. The cache lives at `%LOCALAPPDATA%/WarnoLiteModdingTool/names/cache-v1.json` and rebuilds when game archives change. If needed, choose the game installation under Settings → General → Original game names. Refresh names takes effect when settings closes and reloads the project after saving its drafts.
-
-Mod CSV names take priority. Without a valid dictionary, identifiers and ordinary parameter editing remain available; load names before creating or changing names so token collisions can be checked. Battalion types use the current Mod’s strategic map-symbol category; unknown categories keep their original values.
-
-## Getting started
-
-1. Extract the entire release ZIP, or run the EXE directly from the local uncompressed release folder.
-2. Run `WarnoLiteModdingTool.exe`. Starting with 1.8.7, only one instance can run in the same Windows login session; duplicate launches display “Already running”. Close the old version before upgrading.
-3. Use the automatic Mod search button, also available in the Mod Tools menu, and select a detected Mod. You can also manually open a Mod root folder containing `GameData`.
-4. Open Settings at the bottom left to choose the system language, Simplified Chinese, or English; set the default editing mode; and choose from seven themes or a custom background image. Fresh or invalid settings default to white-blue; valid saved theme choices are preserved. Drag the dividers between the project panel, unit list and inspector, weapon panels, division list and editor, and object index and details. Each panel retains a minimum usable width.
-5. Use the search box in the Units module. Open Filters to select faction, country, unit category, production tab, role, division membership, and draft status. Switch between matching all or any conditions. When collapsed, the panel shows only the selected tags, each with a removal button.
-6. Unit, Weapon, and Ammo numerical fields are grouped into collapsible categories and shared label, source-parameter, and input rows. Unit categories, roles, tags, and division types and tags use selectors populated from the current Mod. ECM is shown as a positive percentage. Armor and damage types and indices are validated against the Mod's `DamageResistance.ndf`; the infantry armor index is fixed at 1. Forward deployment accepts a nonnegative value or a preset found in the current Mod. The exact values `2473.49823322` and `3533.56890459` are labeled Recon and Airborne. Missing modules are added only when their insertion location can be identified reliably.
-7. The unit list provides controls to select all filtered units, clear the selection, and view the selected count. In Batch Editing, choose selected units or all filtered results, then choose a field and operation. Multiplication rounds up by default. Basic mode offers fixed values and percentage increases or decreases; Advanced mode also offers multiplication, fixed additions and subtractions, rounding, and optional limits. Preview matches, samples, and related effects, or add changes directly to drafts with validation. Selecting at least two units switches the existing right inspector to batch editing without adding a third panel. Different values show a mixed-values notice and an empty input; enter a target value before adding a draft. Clear the selection to return to single-unit editing, or manually open Batch Editing for whole-filter operations.
-8. In Weapons, search any part of the display name or internal identifier of a Unit, Weapon, MountedWeapon, mounted Ammo, or replacement candidate. The unit scope list also provides select-all, clear, and count controls. Edit existing Salves, Ammo references, visibility toggles, turret firing arcs, and Ammo fields. The default scope is the current unit; multiple units can also be selected, and Advanced mode offers all references. Local changes clone only the required `Ammo → Weapon → Unit` references.
-9. In Ammunition, search and select Ammo to edit existing range, damage type and index, physical and suppression damage, both splash types, accuracy, dispersion, firing, ballistics, supply, and behavior fields. Expand the references view to search the `Ammo → Weapon → Unit` chain. This page edits the shared Ammo object and always affects all references. For changes limited to particular units, use Weapons instead.
-10. The interface shows `AmmoBoxIndex`, Salves, projectiles per salvo, and the calculated total ammunition. EffectTag, WeaponAlternative, animation keys, and identifiable visual references are read-only. Arbitrary weapon-slot creation or deletion is not supported.
-11. In Tactical Divisions, edit existing divisions. Unit and transport selectors support partial display-name or internal-name searches and country, faction, tab, and role filters. New transport candidates must have a uniquely identified transport module. Select multiple transports and manage them as tags; existing values whose transport capability cannot be confirmed are retained and marked. Edit card limits, units per card, and veterancy multipliers. Division tags and types use selectors. Basic mode shows ten separate cost inputs per category; additional entries are handled in Advanced mode.
-12. The default-deck editor has been removed. Existing `Decks` and `DeckPacks` remain read-only and participate in conflict checks. Division drafts validate unique UnitRules within each division, transport references, numerical ranges, and cost curves. Older drafts that change default decks are explicitly marked as conflicting.
-13. Open Draft Overview in the top bar or left navigation to see all unapplied changes in the current project. The list shows the change summary, module, status, and source file. Selecting an entry shows the original and target values, scope, object, field, and update time. Batch changes are grouped under expandable entries; select individual items to apply or delete them.
-14. In the general object index, names are prominent and internal types, files, and locations appear as secondary details. The default order is source file, then line number, both ascending, with character position resolving ties. Header arrows and the sort description update when clicked.
-15. Advanced mode shows raw NDF values, field paths, source locations, conversion references, affected references, and diagnostics. Right-click a unit to quickly inspect its internal name and references.
-16. Preview and apply drafts from an editing module's transaction area. A busy indicator appears while the relevant data is reindexed and candidate changes are validated in the background; the confirmation dialog opens when preparation is complete. Each application saves originals and a transaction manifest in `.warno-editor/backups/<backup-id>/` and writes a record to the target Mod's `logs/` folder. Backups can be restored after confirmation.
-17. Generate / Compile Mod is available in the top bar. Mod Tools provides project opening, development launch, and upload actions. Each official workflow is detected independently for the current project and runs manually after confirmation, with output retained. The upload BAT also invokes the official backup process; refer to its full output. The editor's own transaction backups remain the basis for safe file changes.
-18. Create New Mod invokes WARNO's `Mods/CreateNewMod.bat`. Select a `Mods` folder containing the official scripts and `ModData/base.zip`. Names must contain 1–32 English letters or digits and must not duplicate an existing Mod name.
-19. Open Problems in the top bar for diagnostics. Mod Problems covers project data, parsing, drafts, transactions, and official workflows; Tool Problems covers editor exceptions. Copy the full diagnostic with its error ID or open the log folder. A previous fatal exception is reported on the next launch.
-
-Before switching projects or closing the window normally, the editor waits for draft saves in every module. Failed saves keep the current project and input available for retry. The module sidebar scrolls, and table columns adapt to available space.
-
-During editing, only `<target Mod>/.warno-editor/draft-v1.json` is written. Actual Mod files are changed only after application is confirmed. NDF changes use precise UTF-8 field patches without a BOM; CSV files retain their original encoding and line endings. External changes after preview, failed validation, and commit errors do not cause silent overwrites. Recent projects are stored in the current Windows user's local application data folder.
-
-The editor does not depend on the development sample named `Exp` and does not need to be installed inside WARNO's folder. Editing does not require Python. Only explicitly invoked official WARNO BAT workflows depend on the game's bundled `Utils`. Tactical division editing requires `Divisions.ndf`, `DivisionRules.ndf`, `DivisionCostMatrix.ndf`, `DeckPacks.ndf`, and `Decks.ndf`. Missing files disable only the affected module.
-
-## Army General and the advanced workspace
-
-- Open Army General and select an existing strategic battalion. The central tree expands from battalion/regiment to company, platoon/group, and unit. Edit the selected item on the right: add, delete, move, reorder, set HQ status, rename, or change units, quantities, veterancy, and transport.
-- Pawn Properties exposes uniquely identified action points, recovery, movement, roles, zones of control, support range, strategic influence, names, and existing icon references. Unrecognized fields are not edited by guesswork.
-- Formation changes are saved as drafts immediately. Applying them recalculates PackIndex values and isolates shared definitions for the selected target. Data files and required name CSV entries are backed up and written together, with rollback on failure.
-- Basic mode keeps common stats and formation tools available, including editing visible fields and using the standalone Ammunition module. Advanced mode adds numerical indices and complex formulas. Use the Reference Workbench to trace and navigate references, search fields, and edit supported raw values.
-- Advanced previews show paginated before-and-after source text for each file. Basic mode also supports applying all or selected drafts. Switching modes does not discard saved drafts.
-- English translates the editor interface. User-created names, internal descriptors, external tool output, and unmapped technical diagnostics retain their original text.
-
-## Version 1.7.1 limitations
-
-- Batch formulas cover supported Unit fields. Weapon and Ammo editing uses the current-unit, selected-units, or all-references scope. Cross-Mod batch presets are not saved in this version.
-- Existing units, Weapon/Ammo references, and tactical division rules can be edited. This version does not edit default decks, clone or delete units, or create, copy, or delete whole divisions. Army General edits existing strategic battalions and their pawn properties; it does not create whole battalions or edit campaign maps, events, or stories.
-- Arbitrary weapon-slot addition or removal and automatic reconstruction of models, textures, animations, or other visual assets are not supported.
-- Releases use a self-contained Windows x64 .NET 8 folder. The minimum supported Windows version still needs further verification on clean systems.
-
-## Development and validation
-
-Requires the Microsoft .NET 8 x64 SDK. The project uses ZstdSharp.Port 0.8.8 (MIT) to decode local game images; initial restore requires access to NuGet.org.
-
-```powershell
-dotnet restore WarnoLiteModdingTool.sln --source https://api.nuget.org/v3/index.json
-dotnet build WarnoLiteModdingTool.sln -c Release --no-restore
-dotnet run --project tests/WarnoLiteModdingTool.Tests/WarnoLiteModdingTool.Tests.csproj -c Release --no-build
-```
-
-Create a self-contained Windows x64 release:
-
-```powershell
-dotnet restore src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -r win-x64 --source https://api.nuget.org/v3/index.json
-dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c Release -r win-x64 --self-contained true --no-restore -p:PublishSingleFile=false -o publish/win-x64-portable
-```
-
-## New operations in 1.8
-
-Add Unit on the Units page opens a five-step wizard. Edit Creation Settings updates a pending unit. Creation is saved as a draft first; identities, names, deck registration, and selected division rules are written together when applied. The new unit reuses its source unit's appearance and can have an independent weapon configuration. Creating units from scratch, importing across Mods, and deleting existing units are not supported.
-
-Weapons, Ammunition, Army General, and division unit lists have collapsible filters. Tactical divisions support search. The Problems panel supports selecting multiple entries to ignore or restore; ignoring a problem does not bypass validation when applying changes. See the [release notes](RELEASE_NOTES.md#english).
-
-1.8.1: Units sharing a NameToken can be renamed independently with a new name token. Tactical divisions sort by country. Switching units opens only the last manually expanded section.
-
-1.8.2: Ammunition names and independent name-token drafts, preloaded vanilla names, Army General tag filters and country column, and readable formation changes. See the [release notes](RELEASE_NOTES.md#english).
-
-1.8.3: Advanced mode was renamed Professional mode.
-
-See the [release notes](RELEASE_NOTES.md#english) for changes in 1.8.4.
+Original project code and documentation use the [MIT license](LICENSE). Game content is outside this license. Image decoding uses [ZstdSharp.Port (MIT)](licenses/ZstdSharp-MIT.txt).

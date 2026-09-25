@@ -25,7 +25,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\licenses\ZstdSharp-MIT.txt" Link="licenses\ZstdSharp-MIT.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\README.md" Link="使用说明.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\README.md" Link="README.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\使用教程.md" Link="使用教程.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\USER_GUIDE.md" Link="USER_GUIDE.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\DEVELOPMENT.md" Link="DEVELOPMENT.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\RELEASE_NOTES.md" Link="RELEASE_NOTES.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\RELEASE_NOTES.md" Link="发布说明.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
