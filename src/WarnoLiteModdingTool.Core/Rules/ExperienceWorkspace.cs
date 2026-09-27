@@ -1,5 +1,7 @@
 ﻿using System.Globalization;
 using System.Text;
+using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using WarnoLiteModdingTool.Core.Drafts;
@@ -10,7 +12,7 @@ namespace WarnoLiteModdingTool.Core.Rules;
 
 public sealed record ExperienceCell(string Key, string Label, string Field, string Raw, string File,
     int Offset, int Length, string Source, bool Nonnegative, string Error = "");
-public sealed record ExperienceLevel(int Index, IReadOnlyList<ExperienceCell> Cells, string Baseline,
+public sealed record ExperienceLevel(int Index, IReadOnlyList<ExperienceCell> Cells,
     IReadOnlyList<string> Notes, string Error);
 public sealed record ExperienceRoute(string Name, string File, string Alias, IReadOnlyList<ExperienceLevel> Levels,
     IReadOnlyList<string> Users, string Error);
@@ -24,6 +26,26 @@ public sealed class ExperienceWorkspace
     private readonly List<Reference> _references = [];
     private readonly Dictionary<string, List<Reference>> _incoming = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _sources = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, Lazy<IReadOnlyList<Reference>>> _impacts = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, Lazy<string>> _impactJson = new(StringComparer.Ordinal);
+    private const string CompactBaselinePrefix = "experience-v2:sha256:";
+    private sealed class BaselineEvidence(Func<string>[] dependencies)
+    {
+        public Lazy<string> Legacy { get; } = new(() => JsonSerializer.Serialize(dependencies.Select(get => get())));
+        public Lazy<string> Compact { get; } = new(() =>
+        {
+            // Hash the exact legacy UTF-8 JSON payload without allocating its giant outer string.
+            // The version fixes both evidence ordering and JSON encoding; old drafts retain Legacy.
+            using var hash = SHA256.Create();
+            using (var stream = new CryptoStream(Stream.Null, hash, CryptoStreamMode.Write))
+            {
+                JsonSerializer.Serialize(stream, dependencies.Select(get => get()));
+                stream.FlushFinalBlock();
+                return CompactBaselinePrefix + Convert.ToHexString(hash.Hash!);
+            }
+        });
+    }
+    private readonly Dictionary<(string File, string Route, int Level), BaselineEvidence> _baselines = new();
     public List<ExperienceRoute> Routes { get; } = [];
     public List<string> Diagnostics { get; } = [];
     public string Root { get; }
@@ -104,7 +126,11 @@ public sealed class ExperienceWorkspace
         "//[^\\r\\n]*|\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|/\\*[\\s\\S]*?\\*/",
         m => m.Value.StartsWith("/*", StringComparison.Ordinal) ? new string(m.Value.Select(c => c is '\r' or '\n' ? c : ' ').ToArray()) : m.Value);
 
-    private IReadOnlyList<Reference> Impact(string target)
+    private IReadOnlyList<Reference> Impact(string target) => _impacts.GetOrAdd(target,
+        key => new Lazy<IReadOnlyList<Reference>>(() => BuildImpact(key))).Value;
+    private string ImpactJson(string target) => _impactJson.GetOrAdd(target,
+        key => new Lazy<string>(() => JsonSerializer.Serialize(Impact(key).Select(r => new { r.File, r.Owner, r.Target, r.Raw })))).Value;
+    private IReadOnlyList<Reference> BuildImpact(string target)
     {
         var found = new HashSet<Reference>();
         var visited = new HashSet<string>(StringComparer.Ordinal);
@@ -134,7 +160,9 @@ public sealed class ExperienceWorkspace
         var elements = doc.ReadArrayElements(arrays[0]);
         for (var i = 0; i < elements.Count; i++)
         {
-            var cells = new List<ExperienceCell>(); var notes = new List<string>(); var dependencies = new List<string> { route.Text };
+            var cells = new List<ExperienceCell>(); var notes = new List<string>();
+            // Capture immutable snapshot evidence; never read files when evaluating a baseline later.
+            var dependencies = new List<Func<string>> { () => route.Text };
             var constructors = doc.FindConstructors("TExperienceLevelDescriptor", elements[i]);
             var error = "";
             if (constructors.Count != 1 || constructors[0].TypeTokenIndex != elements[i].StartTokenIndex ||
@@ -154,18 +182,19 @@ public sealed class ExperienceWorkspace
                         !_objects.TryGetValue(name, out var declarations) || declarations.Count != 1 || declarations[0].Type != "TEffectsPackDescriptor" || !declarations[0].Valid)
                     { error = "等级效果引用缺失、多义或不支持：" + raw; continue; }
                     var descriptor = declarations[0];
-                    dependencies.Add(descriptor.File + "\n" + descriptor.Text);
+                    dependencies.Add(() => descriptor.File + "\n" + descriptor.Text);
                     var incoming = _incoming.GetValueOrDefault(name) ?? [];
                     // First release edits exclusively referenced effects. Shared effects stay visible and read-only.
                     var shared = incoming.Count != 1 || incoming[0].Owner != route.Name;
                     var reason = shared ? "效果被多处引用，当前版本仅支持独占效果数值编辑" : "";
                     if (shared) notes.Add(reason + "：" + name + "\n" + string.Join("\n", Impact(name).Select(r => r.Owner + " · " + r.File).Distinct()));
                     ReadEffects(descriptor, cells, notes, reason);
-                    dependencies.Add(JsonSerializer.Serialize(Impact(name).Select(r => new { r.File, r.Owner, r.Target, r.Raw })));
+                    dependencies.Add(() => ImpactJson(name));
                 }
             }
-            dependencies.Add(JsonSerializer.Serialize(impact.Select(r => new { r.File, r.Owner, r.Target, r.Raw })));
-            levels.Add(new(i, cells, JsonSerializer.Serialize(dependencies), notes, error));
+            dependencies.Add(() => ImpactJson(route.Name));
+            _baselines.Add((route.File, route.Name, i), new BaselineEvidence(dependencies.ToArray()));
+            levels.Add(new(i, cells, notes, error));
         }
         return new(route.Name, route.File, Alias(route.Name), levels, users, elements.Count == 0 ? "等级数组为空" : "");
     }
@@ -220,6 +249,18 @@ public sealed class ExperienceWorkspace
     }
     public static Dictionary<string, string> Values(DraftOperation operation) =>
         JsonSerializer.Deserialize<Dictionary<string, string>>(operation.TargetRaw) ?? throw new InvalidDataException("草稿为空");
+    public string GetBaseline(ExperienceRoute route, ExperienceLevel level) => _baselines[(route.File, route.Name, level.Index)].Legacy.Value;
+    private string BaselineFor(ExperienceRoute route, ExperienceLevel level, string? previousBaseline)
+    {
+        var evidence = _baselines[(route.File, route.Name, level.Index)];
+        if (previousBaseline is null || previousBaseline.StartsWith(CompactBaselinePrefix, StringComparison.Ordinal)) return evidence.Compact.Value;
+        if (previousBaseline.StartsWith("[", StringComparison.Ordinal)) return evidence.Legacy.Value;
+        throw new InvalidDataException("不支持的经验草稿校验版本，请使用兼容版本打开");
+    }
+    public void PrepareDrafts(IEnumerable<DraftOperation> operations)
+    {
+        foreach (var operation in operations.Where(o => o.TargetKind == DraftTargetKind.ExperienceLevel)) Resolve(operation);
+    }
     public static void Validate(ExperienceRoute route, ExperienceLevel level, IReadOnlyDictionary<string, string> values)
     {
         var editable = level.Cells.Where(c => c.Error.Length == 0).ToArray();
@@ -229,7 +270,7 @@ public sealed class ExperienceWorkspace
             if (!decimal.TryParse(values[cell.Key], NumberStyles.Float, CultureInfo.InvariantCulture, out var number) || cell.Nonnegative && number < 0)
                 throw new InvalidDataException(cell.Label + "：请输入有效数值" + (cell.Nonnegative ? "（不小于0）" : ""));
     }
-    public DraftOperation Operation(ExperienceRoute route, ExperienceLevel level, IReadOnlyDictionary<string, string> values)
+    public DraftOperation Operation(ExperienceRoute route, ExperienceLevel level, IReadOnlyDictionary<string, string> values, string? previousBaseline = null)
     {
         Validate(route, level, values);
         var key = level.Index.ToString(CultureInfo.InvariantCulture);
@@ -237,7 +278,7 @@ public sealed class ExperienceWorkspace
         return new(DraftOperation.CreateId(DraftTargetKind.ExperienceLevel, route.File, route.Name, key), "experience:" + route.Name,
             DraftTargetKind.ExperienceLevel, "rules", route.File, route.Name, "TExperienceLevelsPackDescriptor", key,
             "ExperienceLevelsDescriptors[" + key + "]", "ExperienceCells", string.Join("；", changed.Select(c => c.Field + "=" + c.Raw)),
-            level.Baseline, string.Join("；", changed.Select(c => c.Field + "=" + values[c.Key])), JsonSerializer.Serialize(values),
+            BaselineFor(route, level, previousBaseline), string.Join("；", changed.Select(c => c.Field + "=" + values[c.Key])), JsonSerializer.Serialize(values),
             route.Alias + " · " + route.Name + " · 等级 " + key + " · " + string.Join("；", changed.Select(c => c.Label + "：" + c.Raw + " → " + values[c.Key])) +
             "；共享使用者 " + route.Users.Count, null, false, DateTimeOffset.UtcNow, EditScope: DraftEditScope.AllReferences);
     }
@@ -253,7 +294,7 @@ public sealed class ExperienceWorkspace
         {
             var (route, level) = Find(op);
             if (op.TargetKind != DraftTargetKind.ExperienceLevel || op.Module != "rules" || op.ObjectType != "TExperienceLevelsPackDescriptor" ||
-                op.EditScope != DraftEditScope.AllReferences || op.BaselineRaw != level.Baseline ||
+                op.EditScope != DraftEditScope.AllReferences || op.BaselineRaw != BaselineFor(route, level, op.BaselineRaw) ||
                 op.Id != DraftOperation.CreateId(op.TargetKind, route.File, route.Name, op.FieldKey)) throw new InvalidDataException("路线、效果或共享影响基线已变化，请撤销此项后重新编辑");
             Validate(route, level, Values(op));
             return new(op, DraftResolutionStatus.Active, "");
@@ -263,7 +304,7 @@ public sealed class ExperienceWorkspace
     }
     public string Review(IEnumerable<DraftOperation> operations) => JsonSerializer.Serialize(operations
         .Where(o => o.TargetKind == DraftTargetKind.ExperienceLevel).OrderBy(o => o.Id, StringComparer.Ordinal)
-        .Select(o => { var (route, level) = Find(o); return new { o.Id, level.Baseline, RouteError = route.Error, LevelError = level.Error }; }));
+        .Select(o => { var (route, level) = Find(o); return new { o.Id, Baseline = BaselineFor(route, level, o.BaselineRaw), RouteError = route.Error, LevelError = level.Error }; }));
 
     public ExperienceWorkspace Plan(IReadOnlyList<DraftOperation> operations, List<PlannedFileChange> planned)
     {

@@ -46,6 +46,16 @@ public static class UnitDraftLinks
         do
         {
             changed = false;
+            foreach (var structure in combined.Where(o => o.TargetKind == DraftTargetKind.WeaponStructure || o.TargetKind == DraftTargetKind.UnitCreate && UnitCreation.Read(o).WeaponStructures.Count > 0))
+            {
+                var states = Transactions.WeaponStructurePlanner.States([structure]);
+                var names = states.SelectMany(state => state.Added.Select(a => a.Source.Name).Append(state.Weapon.Name)
+                    .Concat(Weapons.WeaponStructure.Rows(state).Select(r => r.Ammo))).ToHashSet();
+                var related = combined.Where(o => o.Id == structure.Id || o.TargetKind == DraftTargetKind.UnitCreate && states.Any(s => o.ObjectName == s.CreationId) ||
+                    Weapons.WeaponBatch.IsWeaponEdit(o) && Weapons.WeaponBatch.Dependencies(o).Any(names.Contains)).ToArray();
+                if (!related.Any(o => result.ContainsKey(o.Id))) continue;
+                foreach (var op in related) if (result.TryAdd(op.Id, op)) changed = true;
+            }
             // Expand connected weapon/ammo plans; independent weapons remain separately applicable.
             if (combined.Any(o => o.TargetKind == DraftTargetKind.WeaponBatch || Batch.AmmoBatchPlanner.IsBatch(o)))
             {

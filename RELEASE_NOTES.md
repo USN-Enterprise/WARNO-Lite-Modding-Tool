@@ -6,6 +6,28 @@
 
 仅列出功能更新和影响使用的问题修复。
 
+## 1.9.18 — 2026-09-26
+
+- 修复自定义师徽只写图片与纹理声明、漏写纹理库登记的问题。新师徽的 PNG、声明、Normal 状态登记与师引用进入同一可恢复事务。
+- 支持修复旧版已应用的自定义师徽：在“名称与徽章”保持当前师徽，加入草稿并应用即可补登记；保留原 PNG、标识与名称，重复操作不重复登记。之后须重新完整生成 Mod。
+- 师徽提交前复核纹理库与现有 PNG；缺失图片、重复键、错误引用和歧义纹理库阻止写入。
+- 武器槽功能继续保留 1.9.17-preview.1 的适配边界与预览状态。本版未运行官方生成器或游戏验证。
+
+## 1.9.17-preview.1 — 2026-09-26
+
+- 增加武器槽编辑器：真实新增、复制、删除与撤销；独立或共用弹药箱，默认当前单位隔离，专业共享作用域，新槽参数可继续编辑。
+- 受控跨单位挂载移植、同类型炮塔参数复制、无武器初始化与解除武装；适配直接挂点瞬发/连续开火表现，未知、导弹下标及步兵手持关系明确阻止。
+- 新建单位和待创建草稿接入同一编辑器；批量按单位显式选定目标，再一次保存。草稿外层版本2保护旧程序，版本1原文备份保留。
+- 合成事务测试覆盖组合、来源冲突、共享隔离与失败恢复。新增窗口实际视觉验收被桌面自动审批阻止；未运行官方生成器和游戏验证，交付为本地预览版。
+
+## 1.9.16 — 2026-09-25
+
+- 大型 Mod 打开时复用 ZIP 缓存目录，经验校验基线按相关草稿/操作准备，减少首屏重复刷新；规则页和地形编辑器按显示/展开构建，加载提示跟随实际阶段。
+- 新经验草稿使用带版本的紧凑校验摘要，保留完整路线、效果与共享引用证据；旧草稿继续读取并按原格式编辑，新经验草稿须由 1.9.16 或后续兼容版本处理。经验自动保存移出界面线程，离开前等待最新输入保存。
+- 本修订升级后 Mod 缓存仍需重建一次；首次重建与之后的缓存打开耗时不同。
+- 修复 GSHG、M134 等弹药原有固定翼射程 35/0 导致压制伤害等无关批改无法加入草稿或应用的问题，保留原始射程。
+- 单条、批量及局部修改共用射程校验规则：最大射程为 0 时兼容原有正最小值；实际修改正最大射程的范围时仍拒绝上下限倒置。无变化批次不再因未改射程报错。
+
 ## 1.9.15 — 2026-09-24
 
 - 加快缓存打开：按源文件复用索引与解析数据，共享读取和单位候选；缓存保存移至后台。
@@ -252,6 +274,28 @@
 [中文](#chinese) | [English](#english)
 
 Feature updates and fixes that affect everyday use.
+
+## 1.9.18 — 2026-09-26
+
+- Fix custom emblems missing from the texture bank despite having a PNG and texture declaration. The image, declaration, Normal-state registration and division reference now share one recoverable transaction.
+- Repair previously applied custom emblems by keeping the current image in **Name and emblem**, adding the draft and applying it. Existing PNGs, keys and names are preserved, and repeated repairs do not duplicate registrations. Regenerate the complete Mod afterward.
+- Recheck texture bank inputs and existing PNGs before committing. Missing images, duplicate keys, incorrect references and ambiguous banks block writes.
+- Weapon slots retain the supported structures and preview status of 1.9.17-preview.1. Official generation and in-game validation have not been performed for this release.
+
+## 1.9.17-preview.1 — 2026-09-26
+
+- Adds a weapon slot editor with real addition, duplication, removal and undo, independent/shared boxes, local isolation, an explicit shared scope and editable new-slot parameters.
+- Supports controlled cross-unit transfers, compatible turret copying, initialization and disarming. Anchored instant/continuous-fire visuals are adapted; unknown structures, indexed missile consumers and infantry handheld relationships are blocked.
+- Integrates pending unit creation and explicit per-unit batches. Outer draft schema 2 protects against old readers; existing schema-1 drafts receive an unchanged backup.
+- Synthetic tests cover composition, source conflicts, isolation and rollback. Desktop automatic approval blocked actual visual inspection of the new windows. Official generation and in-game behavior remain unverified; this is a local preview delivery.
+
+## 1.9.16 — 2026-09-25
+
+- Large Mods reuse the ZIP directory during loading and prepare experience validation evidence only for relevant drafts or edits. Initial refreshes are reduced, rule views and terrain editors are built when shown or expanded, and progress follows actual loading stages.
+- New experience drafts use a versioned compact validation digest covering the same route, effect and shared-reference evidence. Existing drafts retain their original format; new experience drafts require 1.9.16 or a later compatible version. Experience autosave runs off the UI thread and leaving waits for the latest input to be saved.
+- The Mod cache is rebuilt once after upgrading; the first rebuild and subsequent cached opens have different timings.
+- Fixed unrelated edits, such as suppression damage, being blocked by existing aircraft ranges of 35/0 on ammunition such as GSHG and M134. Original ranges are preserved.
+- Single, batch and local edits share range validation: a zero maximum permits a positive minimum; edited ranges with a positive maximum must remain ordered. Unchanged ranges no longer cause errors in no-op batches.
 
 ## 1.9.15 — 2026-09-24
 

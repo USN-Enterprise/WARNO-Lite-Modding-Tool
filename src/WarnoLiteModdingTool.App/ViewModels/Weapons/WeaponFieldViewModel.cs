@@ -51,7 +51,8 @@ public sealed class WeaponFieldViewModel : ObservableObject
     public bool IsTextEditor => !IsChoiceEditor && !IsReferenceEditor;
     public bool HasDraft => Draft is not null;
     public bool BatchLocked { get; init; }
-    public bool IsEditable => !BatchLocked && !_locked && Advanced.EditorMode.CanEdit(Field.Definition.Key);
+    public bool StructureLocked { get; init; }
+    public bool IsEditable => !BatchLocked && !StructureLocked && !_locked && Advanced.EditorMode.CanEdit(Field.Definition.Key);
     public void RefreshMode() => OnPropertyChanged(nameof(IsEditable));
     public string TargetRaw => Draft?.TargetRaw ?? Field.RawValue;
 
@@ -60,7 +61,7 @@ public sealed class WeaponFieldViewModel : ObservableObject
         get => _editValue;
         set
         {
-            if (!SetProperty(ref _editValue, value ?? string.Empty) || _locked || BatchLocked)
+            if (!SetProperty(ref _editValue, value ?? string.Empty) || _locked || BatchLocked || StructureLocked)
             {
                 return;
             }
@@ -73,7 +74,7 @@ public sealed class WeaponFieldViewModel : ObservableObject
         }
     }
 
-    public string StatusText { get => BatchLocked ? "存在相关批量草稿，请在草稿中心应用或移除相关批次" : _status; private set => SetProperty(ref _status, value); }
+    public string StatusText { get => StructureLocked ? "存在武器槽草稿，请在武器槽编辑器中继续编辑" : BatchLocked ? "存在相关批量草稿，请在草稿中心应用或移除相关批次" : _status; private set => SetProperty(ref _status, value); }
 
     public async Task FlushAsync()
     {

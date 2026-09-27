@@ -28,6 +28,7 @@ public static class DraftResolver
         var result = new List<ResolvedDraftOperation>();
         foreach (var operation in operations)
         {
+            if (operation.TargetKind == DraftTargetKind.WeaponStructure) { result.Add(WeaponStructure.Resolve(workspace, weapons, operation, operations)); continue; }
             if (operation.TargetKind == DraftTargetKind.TerrainField) { result.Add(workspace.Rules?.Terrain.Resolve(operation) ?? new(operation, DraftResolutionStatus.Conflict, "地形规则未加载")); continue; }
             if (operation.TargetKind == DraftTargetKind.DivisionText) { result.Add(DivisionText.Resolve(divisions, operation)); continue; }
             if(operation.TargetKind==DraftTargetKind.WeaponBatch){result.Add(WeaponBatch.Resolve(weapons,operation));continue;}

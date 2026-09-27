@@ -32,6 +32,7 @@ public sealed class UnitCreationWindow:Window
     private readonly List<DivisionRow> _rows=[];
     private readonly StackPanel _basics=new();
     private readonly UnitCreationWeaponPanel _weaponSlots=new();
+    private IReadOnlyList<WeaponStructureState> _weaponStructures = [];
     private sealed record Choice(string Value,string Label);
     public sealed class DivisionRow:ObservableObject
     {
@@ -56,8 +57,21 @@ public sealed class UnitCreationWindow:Window
         var source=Page("1 选择母版");source.Children.Add(new TextBlock{Text=UiText.T("基于当前 Mod 的现有单位创建，沿用模型和动画。"),Margin=new Thickness(0,0,0,12)});
         var picker=new SearchPicker{ItemsSource=units.Units,DisplayMemberPath="DisplayName",SecondaryMemberPath="Name",EnableUnitFilters=true,IsEnabled=existing is null};source.Children.Add(picker);
         var basics=Page("2 基本设置");basics.Children.Add(_basics);
-        var weapon=Page("3 武器配置");UiText.Bind(_independent,ContentControl.ContentProperty,"为新单位建立独立武器配置");_independent.IsChecked=_state?.IndependentWeapons??false;weapon.Children.Add(_independent);weapon.Children.Add(new TextBlock{Text=UiText.T("槽位固定，可选择当前 Mod 的 Ammo。替换会自动复制对应武器；勾选上方选项则复制全部武器。模型、动画和挂架保持母版设置。"),TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,12,0,0)});
+        var weapon=Page("3 武器配置");UiText.Bind(_independent,ContentControl.ContentProperty,"为新单位建立独立武器配置");_independent.IsChecked=_state?.IndependentWeapons??false;weapon.Children.Add(_independent);weapon.Children.Add(new TextBlock{Text=UiText.T("可选择现有槽位的 Ammo，或打开武器槽编辑器增删兼容挂载。必要配置会自动隔离；新增槽位与单位创建一并保存和应用。"),TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,12,0,0)});
         weapon.Children.Add(_weaponSlots);
+        var structure = new Button { Content = UiText.T("武器槽编辑器"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 12, 0, 8) };
+        structure.SetResourceReference(StyleProperty, "SecondaryButton"); weapon.Children.Add(structure);
+        structure.Click += (_, _) =>
+        {
+            if (_mother is null) return;
+            try
+            {
+                var dialog = new WeaponStructureWindow(_weapons, _graph ??= new UnitProjectGraph(_units.Localisation.ProjectRoot), _drafts,
+                    _mother.Name, template: _mother, initial: _weaponStructures) { Owner = this };
+                if (dialog.ShowDialog() == true) _weaponStructures = dialog.Plans;
+            }
+            catch (Exception ex) { MessageBox.Show(this, UiText.T(ex.Message), UiText.T("武器槽编辑器")); }
+        };
         var divisionPage=Page("4 可用师");
         foreach(var d in divisions?.Divisions.Where(d=>d.CanEdit)??[])_rows.Add(new DivisionRow{Division=d});
         var divisionSearch=new TextBox{Margin=new Thickness(0,0,0,8),ToolTip=UiText.T("搜索名称或内部标识")};divisionPage.Children.Add(divisionSearch);
@@ -85,6 +99,7 @@ public sealed class UnitCreationWindow:Window
         try{_suggestedState=_state??UnitCreation.New(_mother,_units,_drafts);_identityError=null;}
         catch(Exception ex)when(ex is IOException or InvalidOperationException){_suggestedState=null;_identityError=ex.Message;}
         _capabilities=_state?.Capabilities;
+        _weaponStructures = _state?.WeaponStructures ?? [];
         var defaultName=_suggestedState?.Id??UnitIdentityEditing.Suggest(_mother.Name,_graph,_drafts);
         if(!handEdited || _state is not null)_variableName.Text=defaultName;
         _suggestedName=defaultName;
@@ -110,7 +125,8 @@ public sealed class UnitCreationWindow:Window
         var fields=new Dictionary<string,string>(_state?.Fields??[]);foreach(var (key,input) in _fields){var value=input is ComboBox combo?combo.SelectedValue?.ToString()??"":((TextBox)input).Text;if(value!=mother.Field(key)!.DisplayValue)fields[key]=value;else fields.Remove(key);}
         var divisionRules=new Dictionary<string,DivisionUnitRuleState>();var baselines=new Dictionary<string,string>();foreach(var row in _rows.Where(r=>r.Selected)){divisionRules[row.Division.Name]=new(state.Id,row.WithoutTransport,row.Transports,row.Cards,row.Count,row.Xp.Split(',',StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries).Select(v=>double.Parse(v,System.Globalization.CultureInfo.InvariantCulture)).ToArray());baselines[row.Division.Name]=_state?.DivisionBaselines.GetValueOrDefault(row.Division.Name)??DivisionDraftCodec.Serialize(row.Division.Baseline);}
         var weapons=new Dictionary<string,string>();foreach(var id in mother.Weapons){var w=_weapons.Weapon(id)??throw new InvalidDataException("母版武器不存在");weapons[id]=_state?.WeaponBaselines.GetValueOrDefault(id)??File.ReadAllText(w.Source.SourceFile).Substring(w.Source.CharacterOffset,w.Source.CharacterLength);}
-        state=state with {Name=_name.Text.Trim(),Fields=fields,IndependentWeapons=_independent.IsChecked==true,Divisions=divisionRules,DivisionBaselines=baselines,WeaponBaselines=weapons,MountChoices=_weaponSlots.Choices};
+        state=state with {Name=_name.Text.Trim(),Fields=fields,IndependentWeapons=_independent.IsChecked==true,Divisions=divisionRules,DivisionBaselines=baselines,WeaponBaselines=weapons,MountChoices=_weaponSlots.Choices,
+            WeaponStructures = _weaponStructures.Select(s => s with { Unit = state.Id, CreationId = state.Id, Shared = false }).ToArray()};
         UnitCreation.ValidateMountChoices(mother,state,_weapons);
         Result=UnitCreation.Operation(mother,state,_existing?.BaselineRaw);var resolved=UnitCreation.Resolve(_units,Result);if(resolved.Status!=DraftResolutionStatus.Active)throw new InvalidDataException(resolved.Reason);
         _=UnitCreation.Project(mother,state,Result.BaselineRaw);

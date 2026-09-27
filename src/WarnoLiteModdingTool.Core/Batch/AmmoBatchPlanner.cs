@@ -122,10 +122,7 @@ public static class AmmoBatchPlanner
             var final = ammo.Fields.ToDictionary(f => f.Key,f => f.DisplayValue);
             foreach (var op in operations.Where(o => IsShared(o) && o.ObjectName == ammo.Name)) final[op.FieldKey] = op.TargetValue;
             foreach (var c in operations.Where(o => o.TargetKind == DraftTargetKind.WeaponBatch).SelectMany(WeaponBatch.ReadCells).Where(c => c.Unit.Length == 0 && c.Ammo == ammo.Name && c.Key.StartsWith("ammo.",StringComparison.Ordinal))) final[c.Key] = c.Value;
-            foreach (var prefix in new[] { "ammo.range.ground","ammo.range.heli","ammo.range.air","ammo.range.projectile" })
-                if (decimal.TryParse(final.GetValueOrDefault(prefix+".min"),NumberStyles.Float,CultureInfo.InvariantCulture,out var min) &&
-                    decimal.TryParse(final.GetValueOrDefault(prefix+".max"),NumberStyles.Float,CultureInfo.InvariantCulture,out var max) && min > max)
-                    throw new TransactionValidationException("最小射程不能大于最大射程："+ammo.Name+" / "+prefix);
+            AmmoRangeValidator.Validate(ammo, final);
             if (final.TryGetValue("ammo.damage.family",out var familyName) && final.TryGetValue("ammo.damage.index",out var index) &&
                 units.DamageResistance.DamageFamilies.FirstOrDefault(f => f.Name == NdfSyntaxDocument.Leaf(familyName)) is {} family &&
                 (!int.TryParse(index,out var i) || i < family.MinimumIndex || i > family.MaximumIndex))

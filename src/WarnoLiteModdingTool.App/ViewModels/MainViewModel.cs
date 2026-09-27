@@ -95,10 +95,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (obj.ModuleKey == "ammo" && AmmoWorkspace is not null) AmmoWorkspace.SelectedAmmo = AmmoWorkspace.Ammunition.FirstOrDefault(a => a.Name == obj.Name);
         if (obj.ModuleKey == "strategic" && StrategicWorkspace is not null) StrategicWorkspace.Selected = StrategicWorkspace.Data.Records.FirstOrDefault(r => r.Id == obj.Name || r.Deck.Info.Name == obj.Name) ?? StrategicWorkspace.Selected;
     }
-    private void RefreshMode()
+    private void RefreshMode(bool refreshLanguage = true)
     {
         Advanced.EditorMode.IsAdvanced = AdvancedMode;
-        Localisation.UiText.Current.SetLanguage(Localisation.UiText.Current.Language);
+        if (refreshLanguage) Localisation.UiText.Current.SetLanguage(Localisation.UiText.Current.Language);
         UnitWorkspace?.RefreshMode();
         RulesWorkspace?.Refresh();
         WeaponWorkspace?.RefreshMode();
@@ -479,12 +479,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     public async Task OpenProjectAsync(string selectedRoot)
     {
-        await SaveBeforeLeavingAsync();
         var loadTimer = System.Diagnostics.Stopwatch.StartNew();
         var timings = new Dictionary<string, long>();
         LastLoadTimings = timings;
         long previousTime = 0;
         void Mark(string stage) { var now = loadTimer.ElapsedMilliseconds; timings[stage] = now - previousTime; previousTime = now; }
+        await SaveBeforeLeavingAsync();
+        Mark("save-before-open");
         LastOpenUsedCache = false;
         CancelScan();
         ResetProjectResults();
@@ -560,7 +561,20 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             }
             var loadCache = await Task.Run(() => OpenLoadCache?.Invoke(context.Layout.RootPath), scanCancellation.Token);
             Mark("detect-names-cache");
-            var snapshot = await ProjectWorkspaceSnapshot.LoadAsync(context, loadCache ?? ProjectLoadCache.CreateSession(context.Layout.RootPath), scanCancellation.Token, sourceReads: sourceReads);
+            var progress = new Progress<string>(stage =>
+            {
+                if (_scanCancellation != scanCancellation || scanCancellation.IsCancellationRequested) return;
+                StatusText = stage switch
+                {
+                    "index" => "正在读取对象索引…",
+                    "units-rules" => "正在读取单位与游戏规则…",
+                    "weapons" => "正在建立 Weapon/Ammo 关系与共享影响索引",
+                    "divisions" => "正在建立战术师、单位池、默认 Deck 与费用索引",
+                    "strategic" => "正在读取将军模式…",
+                    _ => "正在读取图片目录…"
+                };
+            });
+            var snapshot = await ProjectWorkspaceSnapshot.LoadAsync(context, loadCache ?? ProjectLoadCache.CreateSession(context.Layout.RootPath), scanCancellation.Token, sourceReads: sourceReads, progress: progress);
             var result = snapshot.Index;
             if (_scanCancellation != scanCancellation)
             {
@@ -579,7 +593,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 ammoCapability?.CanScan == true ||
                 divisionCapability?.CanScan == true || result.Modules.Any(m => m.Key is "strategic" or "sp" or "rules" && m.CanScan))
             {
-                StatusText = "正在建立项目字段、名称与引用索引";
+                StatusText = "正在恢复草稿与准备界面…";
                 var unitData = snapshot.Units;
                 Mark("units-rules");
                 foreach (var diagnostic in unitData.Diagnostics)
@@ -590,6 +604,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
                 _draftStore = new DraftStore(context.Layout.RootPath);
                 var draftLoad = await _draftStore.LoadAsync(scanCancellation.Token);
+                await Task.Run(() => snapshot.Units.Rules?.Experience.PrepareDrafts(_draftStore.Operations), scanCancellation.Token);
+                scanCancellation.Token.ThrowIfCancellationRequested();
                 if (draftLoad.Error is not null)
                 {
                     Diagnostics.Add(new DiagnosticItemViewModel("草稿", draftLoad.Error));
@@ -599,7 +615,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 WeaponWorkspaceData? weaponData = null;
                 if (weaponCapability?.CanScan == true || ammoCapability?.CanScan == true)
                 {
-                    StatusText = "正在建立 Weapon/Ammo 关系与共享影响索引";
                     weaponData = snapshot.Weapons!;
                     Mark("drafts-weapons");
                     foreach (var diagnostic in weaponData.Diagnostics)
@@ -612,7 +627,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 DivisionWorkspaceData? divisionData = null;
                 if (divisionCapability?.CanScan == true && divisionCapability.Availability != ModuleAvailability.ParseError)
                 {
-                    StatusText = "正在建立战术师、单位池、默认 Deck 与费用索引";
                     divisionData = snapshot.Divisions!;
                     Mark("divisions");
                     foreach (var diagnostic in divisionData.Diagnostics)
@@ -625,7 +639,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 InstallWorkspaces(snapshot, draftLoad);
             }
 
-            RefreshMode();
+            RefreshMode(refreshLanguage: false);
             Mark("presentation");
             if (loadCache is not null && !result.Diagnostics.Any(d => d.Severity == NdfDiagnosticSeverity.Error))
                 QueueCacheSave(snapshot);
@@ -956,9 +970,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
 
         var view = new ListCollectionView(result.Objects.ToList());
+        using (view.DeferRefresh())
+        {
         view.SortDescriptions.Add(new SortDescription(nameof(NdfObjectInfo.RelativeSourceFile), ListSortDirection.Ascending));
         view.SortDescriptions.Add(new SortDescription(nameof(NdfObjectInfo.LineNumber), ListSortDirection.Ascending));
         view.SortDescriptions.Add(new SortDescription(nameof(NdfObjectInfo.CharacterOffset), ListSortDirection.Ascending));
+        }
         ObjectsView = view;
         SelectedModule = Modules.FirstOrDefault(module => module.Key != "problems" && module.CanBrowse) ?? _problemModule;
         RefreshFilter();

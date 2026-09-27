@@ -190,6 +190,21 @@ public sealed class WeaponProjectLoader
         return new WeaponReferenceIndex(weaponUnits, ammoWeapons, ammoUnits);
     }
 
+    public static AmmoRecord ParseWeaponAmmo(NdfObjectInfo descriptor, string body, WeaponWorkspaceData data)
+    {
+        var document = new NdfSyntaxDocument(body); var root = document.FindConstructors(descriptor.TypeName).Single();
+        var fields = new List<WeaponFieldValue>();
+        foreach (var definition in WeaponFieldDefinitions.Ammo)
+        {
+            var spans = LocateAmmoField(document, root, definition);
+            if (spans.Count != 1) continue;
+            var raw = document.Raw(spans[0]);
+            if (!WeaponValueConverter.TryRead(definition, raw, out var value)) continue;
+            fields.Add(CreateValue(descriptor, body, document, definition, raw, value, spans[0], data.Ammo(descriptor.Name)?.Field(definition.Key)?.Choices ?? []));
+        }
+        return new(descriptor, fields);
+    }
+
     private static IReadOnlyList<NdfValueSpan> LocateAmmoField(
         NdfSyntaxDocument document,
         NdfConstructorSpan root,

@@ -17,6 +17,7 @@ public sealed record UnitCreationState(string Mother,string Id,string Guid,strin
     public string? NamingRoot {get;init;}
     public UnitCapabilityState? Capabilities {get;init;}
     public Images.UnitPictureState? Picture {get;init;}
+    public IReadOnlyList<WeaponStructureState> WeaponStructures { get; init; } = [];
 }
 public sealed record UnitCreationMountChoice(string WeaponName,int MountIndex,string AmmoName);
 public static class UnitCreation

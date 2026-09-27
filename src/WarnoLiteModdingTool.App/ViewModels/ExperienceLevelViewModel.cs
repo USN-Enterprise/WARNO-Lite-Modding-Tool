@@ -60,11 +60,16 @@ public sealed class ExperienceLevelViewModel : ObservableObject
                 if (!CanEdit) throw new InvalidOperationException("当前等级无法编辑，请先处理诊断或撤销冲突草稿");
                 var revision = _revision;
                 var values = Cells.Where(c => c.Cell.Error.Length == 0).ToDictionary(c => c.Cell.Key, c => c.Value.Trim());
-                var op = _workspace.Operation(Route, Level, values);
-                if (Cells.Where(c => c.Cell.Error.Length == 0).All(c => c.Cell.Raw == values[c.Cell.Key])) await _store.RemoveAsync(op.Id);
-                else await _store.UpsertAsync(op);
+                if (Cells.Where(c => c.Cell.Error.Length == 0).All(c => c.Cell.Raw == values[c.Cell.Key])) await _store.RemoveAsync(Id);
+                else
+                {
+                    var previousBaseline = _store.Operations.FirstOrDefault(o => o.Id == Id)?.BaselineRaw;
+                    var op = await Task.Run(() => _workspace.Operation(Route, Level, values, previousBaseline));
+                    if (revision != _revision) continue;
+                    await Task.Run(() => _store.UpsertAsync(op));
+                }
                 if (revision == _revision) _dirty = false;
-                Status = "草稿已保存"; _changed();
+                Status = _dirty ? "尚未保存" : "草稿已保存"; _changed();
             }
         }
         catch (Exception ex) { Status = ex.Message; }

@@ -1,4 +1,4 @@
-﻿using WarnoLiteModdingTool.Core.Projects;
+using WarnoLiteModdingTool.Core.Projects;
 using WarnoLiteModdingTool.Core.Drafts;
 using WarnoLiteModdingTool.Core.Transactions;
 using WarnoLiteModdingTool.App.ViewModels.Units;
@@ -43,12 +43,13 @@ public sealed partial class MainViewModel
             var next = await Task.Run(() => ProjectWorkspaceSnapshot.LoadRootAsync(preview.ProjectRoot, cache, previous: previous, committed: preview.Files));
             var context = next.Context;
             var drafts = await _draftStore.LoadAsync();
+            await Task.Run(() => next.Units.Rules?.Experience.PrepareDrafts(_draftStore.Operations));
             Diagnostics.Clear(); AddProjectDiagnostics(context);
             ApplyIndexResult(next.Index);
             foreach (var message in next.Units.Diagnostics.Concat(next.Weapons?.Diagnostics ?? []).Concat(next.Divisions?.Diagnostics ?? []).Concat(next.Strategic?.Diagnostics ?? []))
                 Diagnostics.Add(new DiagnosticItemViewModel("项目数据", message));
             InstallWorkspaces(next, drafts);
-            RefreshMode();
+            RefreshMode(refreshLanguage: false);
             var notice = navigation.Restore(this);
             _snapshot = next; _currentContext = context;
             var times = new Dictionary<string, long>(next.Timings) { ["total"] = timer.ElapsedMilliseconds };
@@ -121,6 +122,6 @@ public sealed partial class MainViewModel
 
         RulesWorkspace = new RulesWorkspaceViewModel(unitData.Rules!, store, UnitWorkspace.RefreshExternalDraftState);
         OnPropertyChanged(nameof(RulesWorkspace)); OnPropertyChanged(nameof(IsRulesModule)); OnPropertyChanged(nameof(IsObjectModule));
-        ProjectSummary = $"1.9.15 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
+        ProjectSummary = $"1.9.18 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
     }
 }

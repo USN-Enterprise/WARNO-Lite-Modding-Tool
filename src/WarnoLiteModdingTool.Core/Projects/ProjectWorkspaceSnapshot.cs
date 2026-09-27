@@ -27,9 +27,11 @@ public sealed record ProjectWorkspaceSnapshot(ModProjectContext Context, Project
         return await LoadAsync(context, cache, cancellation, previous, committed, reads);
     }
     public static async Task<ProjectWorkspaceSnapshot> LoadAsync(ModProjectContext context, ProjectLoadCache cache,
-        CancellationToken cancellation = default, ProjectWorkspaceSnapshot? previous = null, IReadOnlyList<PlannedFileChange>? committed = null, ProjectReadScope? sourceReads = null)
+        CancellationToken cancellation = default, ProjectWorkspaceSnapshot? previous = null, IReadOnlyList<PlannedFileChange>? committed = null, ProjectReadScope? sourceReads = null,
+        IProgress<string>? progress = null)
     {
         var timings = new Dictionary<string, long>(); var timer = Stopwatch.StartNew(); long last = 0;
+        using var cacheReads = cache.BeginReadSession();
         void Mark(string name) { var now = timer.ElapsedMilliseconds; timings[name] = now - last; last = now; }
         var reads = sourceReads ?? new ProjectReadScope(previous?.Reads);
         reads.DiskCache = cache;
@@ -49,11 +51,14 @@ public sealed record ProjectWorkspaceSnapshot(ModProjectContext Context, Project
             }
         }
         Mark("changed-file-verification");
+        progress?.Report("index");
         var index = await new ProjectIndexer().IndexAsync(context, cancellationToken: cancellation, cache: cache);
         Mark("index");
+        progress?.Report("units-rules");
         var units = await new UnitProjectLoader().LoadAsync(context, index, cancellation, cache);
         Mark("units-rules");
         WeaponWorkspaceData? weapons = null;
+        progress?.Report("weapons");
         if (index.Modules.Any(m => m.Key is "weapons" or "ammo" && m.CanScan))
             weapons = await new WeaponProjectLoader().LoadAsync(context, index, units, cancellation, cache);
         Mark("weapons");
@@ -62,6 +67,7 @@ public sealed record ProjectWorkspaceSnapshot(ModProjectContext Context, Project
             foreach (var file in context.LocalisationDictionaries.Concat(units.Localisation.UnitsCsvPaths)) ProjectReadScope.Track(file);
         }
         DivisionWorkspaceData? divisions = null;
+        progress?.Report("divisions");
         if (index.Modules.Any(m => m.Key == "divisions" && m.CanScan && m.Availability != ModuleAvailability.ParseError))
         {
             var loaded = await Task.Run(() => ProjectReadScope.Memo("divisions:" + VanillaNames.Revision, () =>
@@ -70,6 +76,7 @@ public sealed record ProjectWorkspaceSnapshot(ModProjectContext Context, Project
         }
         Mark("divisions");
         StrategicWorkspace? strategic = null;
+        progress?.Report("strategic");
         if (index.Modules.Any(m => m.Key is "strategic" or "sp" && m.CanScan))
         {
             var loaded = await Task.Run(() => ProjectReadScope.Memo("strategic:" + VanillaNames.Revision, () =>
@@ -78,6 +85,7 @@ public sealed record ProjectWorkspaceSnapshot(ModProjectContext Context, Project
         }
         Mark("strategic");
         Images.TextureChoice[] textures = []; string? pictureDiagnostic = null;
+        progress?.Report("textures");
         try
         {
             textures = await Task.Run(() => ProjectReadScope.Memo("unit-textures", () => Images.UnitPictures.Catalog(context.Layout.RootPath)

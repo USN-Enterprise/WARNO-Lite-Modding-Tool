@@ -31,7 +31,7 @@ public static class DivisionIdentity
     {
         try{var s=Read(op);var d=data?.Division(s.Mother)??throw new InvalidDataException("母版师已不存在");if(!d.CanEdit||Source(d)!=op.BaselineRaw||s.Baselines.GetValueOrDefault(s.Mother)!=op.BaselineRaw)throw new InvalidDataException("师母版已变化");if(s.Id!=op.ObjectName||s.Create&&data!.Divisions.Any(d=>d.Name==s.Id)||!s.Create&&s.Id!=s.Mother||!Regex.IsMatch(s.Id,@"^Descriptor_Deck_Division_[A-Za-z0-9_]+$")||!Regex.IsMatch(s.Token,@"^[A-Z0-9]{10}$")||s.SerializerId<0||string.IsNullOrWhiteSpace(s.Name))throw new InvalidDataException("师身份或名称无效");return new(op,DraftResolutionStatus.Active,"");}catch(Exception ex)when(ex is IOException or InvalidDataException or JsonException or ArgumentException or InvalidOperationException){return new(op,DraftResolutionStatus.Conflict,ex.Message);}
     }
-    public static void Plan(string root,DivisionWorkspaceData? data,ProjectIndexResult index,IReadOnlyList<DraftOperation> operations,List<PlannedFileChange> files)
+    public static void Plan(string root,DivisionWorkspaceData? data,ProjectIndexResult index,IReadOnlyList<DraftOperation> operations,List<PlannedFileChange> files,Dictionary<string,byte[]> imageDependencies)
     {
         var ops=operations.Where(o=>o.TargetKind==DraftTargetKind.DivisionIdentity).ToArray();if(ops.Length==0)return;if(data is null)throw new TransactionValidationException("师模块不可用");
         var touched=new Dictionary<string,(TextFileSnapshot Snap,string Text)>(StringComparer.OrdinalIgnoreCase);
@@ -42,6 +42,7 @@ public static class DivisionIdentity
         {
             var resolved=Resolve(data,op);if(resolved.Status!=DraftResolutionStatus.Active)throw new TransactionValidationException(resolved.Reason);var s=Read(op);var mother=data.Division(s.Mother)!;
             if(s.Asset is not null) EmblemAssets.Plan(root,s,files);
+            else if(EmblemAssets.IsCustom(s.Emblem)) EmblemAssets.Repair(root,s.Emblem,files,imageDependencies);
             var emblemChoices=ModTextures.Read(root,true);if(s.Asset is null && s.Emblem!=Field(mother,"EmblemTexture")&&!emblemChoices.Any(e=>e.Key==s.Emblem))throw new TransactionValidationException("师徽不在当前Mod候选中");
             var rename=s.Create||s.Name!=mother.DisplayName;if(rename){VanillaNames.RequireAvailable();if(!tokens.Add(s.Token)||VanillaNames.Lookup("UNITS",s.Token) is not null||data.Units.Localisation.TryResolve(s.Token,out _)||data.Units.Localisation.IsTokenAmbiguous(s.Token))throw new TransactionValidationException("师名称token已占用");}
             string Change(string original,string type,Dictionary<string,string> values,string? oldName=null,string? newName=null)
@@ -66,7 +67,7 @@ public static class DivisionIdentity
                 values["CfgName"]="'"+suffix+"'";values["DivisionRule"]=rule;values["CostMatrix"]=matrix;var divisionClone=Change(s.Baselines[mother.Name],"TDeckDivisionDescriptor",values,mother.Name,s.Id);var path=mother.Source.RelativeSourceFile;Put(path,Get(path)+touched[path.Replace('\\','/')].Snap.NewLine+divisionClone);
                 var serializer=Get(UnitCreation.SerializerPath);var doc=new NdfSyntaxDocument(serializer);var map=doc.FindDirectAssignments(doc.FindConstructors("TDeckSerializerEntries").Single(),"DivisionIds").Single();if(doc.ReadMapEntries(map).Any(e=>int.Parse(doc.Raw(e.Value))==s.SerializerId||NdfSyntaxDocument.Leaf(doc.Raw(e.Key))==s.Id))throw new TransactionValidationException("师注册编号已占用");var at=doc.StartOffset(map)+doc.Length(map)-1;var nl=touched[UnitCreation.SerializerPath].Snap.NewLine;Put(UnitCreation.SerializerPath,serializer.Insert(at,(doc.NeedsArraySeparator(map)?",":"")+nl+$"    ({s.Id}, {s.SerializerId}),"+nl));
             }
-            else
+            else if(values.Count > 0)
             {
                 var path=mother.Source.RelativeSourceFile;var current=Get(path);var scan=new NdfTopLevelScanner().Scan(current,Path.Combine(root,path),"divisions",root);var obj=scan.Objects.Single(o=>o.Name==mother.Name);var original=current.Substring(obj.CharacterOffset,obj.CharacterLength);var changed=Change(original,"TDeckDivisionDescriptor",values);Put(path,current.Remove(obj.CharacterOffset,obj.CharacterLength).Insert(obj.CharacterOffset,changed));
             }

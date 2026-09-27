@@ -1,6 +1,6 @@
 # WARNO Lite Modding Tool User Guide
 
-For version **1.9.15**, Windows x64. Available fields and features depend on the selected Mod's data and structure.
+For version **1.9.18**, Windows x64. Available fields and features depend on the selected Mod's data and structure.
 
 [Home](README.md#english) · [中文教程](使用教程.md) · [Release notes](RELEASE_NOTES.md#english)
 
@@ -58,7 +58,7 @@ For a first exercise, consider a dedicated test Mod. Transaction backups preserv
 3. Run `WarnoLiteModdingTool.exe`. Only one instance is allowed in the same Windows login session. If it reports that it is already running, return to the existing window.
 4. Before upgrading, close the old version normally. Extract the new version into a fresh directory. Drafts and transaction backups are stored inside the target Mod, not the editor installation.
 
-This guide describes 1.9.15. The download page may offer a later release; consult its release notes as well.
+This guide describes 1.9.18. The download page may offer a later release; consult its release notes as well.
 
 ### 2.2 Open an existing Mod
 
@@ -180,7 +180,7 @@ Choose **New Unit** and follow the five pages:
 
 1. **Template:** Select an existing unit from the current Mod as the source of fields, model, animations and slots.
 2. **Basic settings:** Enter a display name and adjust the offered fields and abilities. The suggested variable name increments from the template; professional mode allows editing it.
-3. **Weapon configuration:** Select existing Ammo for the fixed slots or reset to the template. Changed Weapons are isolated automatically. Choose the independent-weapon option if you need the whole weapon configuration copied.
+3. **Weapon configuration:** Select Ammo for existing slots or add/remove compatible mounts in the weapon slot editor. Structural plans are saved and applied with the new unit.
 4. **Available divisions:** Check the required divisions and configure the offered card and transport settings. Verify the selected row before adjusting transport.
 5. **Creation draft:** Read the summary and choose **Add to drafts**. Formal data has not been written yet.
 
@@ -226,7 +226,17 @@ Country, type or other filters on the ammunition list select Ammo objects. **The
 4. Adjust supported parameters of the mounted Ammo. Local changes clone the minimum necessary `Ammo → Weapon → Unit` reference chain.
 5. Inspect shared effects, common ammo-box or turret relationships in the draft preview before applying.
 
-The interface shows ammo-box indices, salvos, projectiles per salvo and calculated total ammunition where possible; these are different quantities. EffectTag, animation keys and other presentation references are for inspection. Arbitrary slot addition/deletion and a whole-Weapon replacement picker are not available.
+The interface shows ammo-box indices, salvos, projectiles per salvo and calculated total ammunition where possible; these are different quantities. EffectTag, animation keys and other presentation references are for inspection. Use the dedicated editor below for slot changes; there is no whole-Weapon replacement picker.
+
+The **Weapon slot editor** can add, duplicate and remove supported mounts. It affects the current unit by default; Professional mode can target every unit using the configuration. Explicitly choose the source unit/mount, target turret and existing firing attachment, then an Ammo from the current Mod and an independent or shared ammo box. New draft slots remain editable for Ammo, count, hiding, stock and supported ammunition performance. **Undo slot parameters** resets local parameters; **Undo removal** restores an original slot pending deletion.
+
+Cross-unit transfer supports uniquely identified anchored instant-fire/continuous-fire operators. It can copy compatible turret parameters while reusing a target attachment. Unknown turrets, weapon-index consumers, missile carriages and infantry handheld alternatives block structural writes. Models, bones and animations are not created. Empty turret groups are removed; removing the last slot removes the unit's weapon-module reference while preserving original definitions and visuals. Unarmed units can use a reference configuration subject to target visual compatibility.
+
+Batch operations require explicit per-unit Weapon and mount choices, followed by a complete review before one draft save. The unit-creation wizard opens the same editor and saves structural changes with the pending unit. Continue parameter editing in the slot editor while a structure draft exists. Existing parameter drafts are composed and checked in the final apply preview; conflicting edits must be applied or removed first.
+
+The first structure save uses outer draft schema 2 and backs up any schema-1 draft unchanged to `.warno-editor/draft-before-structure-*.json`. Version 1.9.16 refuses these new drafts. Use this version to handle them; do not edit the schema number manually. Formal writes use the common preview, backup and recoverable transaction workflow.
+
+**Preview limits:** Synthetic transaction tests and WPF construction/binding checks passed. Actual visual inspection of the new windows remains incomplete because desktop-tool approval was denied. Official generation and in-game display, firing, ammunition consumption and resupply have not been verified.
 
 ### 7.3 Ammunition: shared objects and batches
 
@@ -269,7 +279,9 @@ Creation automatically produces independent rule, cost and default-deck data. **
 3. For a numbered emblem, use **Generate from template**. Ten fixed templates cover Guards, East German, airborne, black shield, four Polish geometric designs and two Czech central symbols. Numbers use 0–3 digits; Czech designs offer four colors. The Polish parachute-and-anchor design is not included.
 4. Choose **Add to drafts** in division settings, then preview, apply and generate.
 
-Templates include reconstructed artwork and are not guaranteed pixel-identical to vanilla assets. Custom PNGs, texture declarations and target division references are committed together, preserving originals and other users. Unit portraits use their own entry point and do not use emblem templates.
+Templates include reconstructed artwork and are not guaranteed pixel-identical to vanilla assets. Custom PNGs, texture declarations, texture bank registrations and target division references are committed together, preserving originals and other users. Unit portraits use their own entry point and do not use emblem templates.
+
+**Repair older custom emblems (1.9.18 onward):** For `Texture_Division_Emblem_mod_… not found in TBUCKTool texture bank`, open **Name and emblem** for the affected division, keep its current emblem and click **Add to drafts**, then preview and apply. The tool checks the existing PNG and declaration and adds only the missing bank registration; reimporting the image is unnecessary. You can add several affected divisions to drafts together. Run the complete **Generate / compile Mod** workflow afterward and check in game. Missing PNGs, conflicting registrations or ambiguous banks block the operation; inspect the Mod files rather than expecting images to be borrowed from another Mod.
 
 ### 8.4 Gameplay descriptions and history
 
@@ -391,7 +403,8 @@ Unit images prioritize custom PNGs in the current Mod; other official images com
 - Appearance offers seven themes and a custom background. A fresh installation without a valid theme uses light blue. Background opacity and layout are adjustable.
 - Detachable panels are disabled by default under General. Enable them and choose large panels or small expandable groups, then double-click a supported heading to detach it. Closing the floating window returns the panel. The emblem editor is already a separate window.
 - Caching the last opened Mod is enabled by default. Disable or clear it under General; the setting affects the next open. Source changes, application updates or cache damage trigger reloading. The name cache is separate.
-- Upgrading to 1.9.15 rebuilds the old cache once. Caching speeds up browsing/loading; formal previews and commits still recheck files.
+- Upgrading to 1.9.16 rebuilds the old cache once, so the first open can take longer than later opens. Caching speeds up browsing/loading; formal previews and commits still recheck files.
+- New experience drafts created in 1.9.16 require this version or a later compatible version. Existing experience drafts can still be read and edited in their original format.
 
 ### 13.3 Troubleshooting
 
@@ -423,7 +436,7 @@ For reports to **QQ group 1013181135**, include the tool version, module, failin
 - The editor targets structurally compatible Mods; it cannot safely write every unknown NDF structure. Missing, ambiguous or conflicting structures preserve original text and restrict the affected feature.
 - Units and divisions can be created from templates. Blank unit creation, cross-Mod unit import, arbitrary existing-unit deletion and whole-division deletion are not supported.
 - There is no separate default-deck editing page. Automatic registration during template creation does not mean unrestricted default-deck editing.
-- Arbitrary weapon-slot changes and model, animation or camouflage authoring are not provided. Image editing covers unit portraits and division-emblem PNGs.
+- Weapon slot changes require supported structures; in-game effects remain unverified. Model, animation and camouflage authoring are not provided. Image editing covers unit portraits and division-emblem PNGs.
 - Army General edits existing battalion contents and pawn properties, not whole-battalion creation or campaign maps, events and stories.
 - Unit-specific experience-route creation, higher level limits, automatic translation of custom text and automatic tooltip updates are not provided. Terrain height is read-only; terrain definitions and combinations cannot be added or removed.
 - Cross-Mod batch presets are not saved. Drafts, backups and affected objects belong to their projects; another Mod is not a fallback source for missing data.

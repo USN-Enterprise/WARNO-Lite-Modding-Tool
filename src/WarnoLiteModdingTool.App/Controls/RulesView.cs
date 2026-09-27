@@ -9,11 +9,24 @@ public sealed class RulesView : UserControl
     private readonly Dictionary<string,bool> _expanded = new();
     private System.Collections.Specialized.INotifyCollectionChanged? _observed;
     private System.Collections.Specialized.NotifyCollectionChangedEventHandler? _render;
-    public static readonly DependencyProperty WorkspaceProperty=DependencyProperty.Register(nameof(Workspace),typeof(RulesWorkspaceViewModel),typeof(RulesView),new PropertyMetadata(null,(o,e)=>((RulesView)o).Build()));
+    private bool _needsBuild, _buildPending;
+    public static readonly DependencyProperty WorkspaceProperty=DependencyProperty.Register(nameof(Workspace),typeof(RulesWorkspaceViewModel),typeof(RulesView),new PropertyMetadata(null,(o,e)=>
+    { var view = (RulesView)o; view.Content = null; view.RequestBuild(); }));
     public RulesWorkspaceViewModel? Workspace {get=>(RulesWorkspaceViewModel?)GetValue(WorkspaceProperty);set=>SetValue(WorkspaceProperty,value);}
     public RulesView()
     {
-        System.ComponentModel.PropertyChangedEventManager.AddHandler(UiText.Current, (_,e)=> { if(e.PropertyName==nameof(UiText.Version)){Workspace?.Refresh();Build();} }, nameof(UiText.Version));
+        IsVisibleChanged += (_, _) => { if (IsVisible && _needsBuild) RequestBuild(); };
+        System.ComponentModel.PropertyChangedEventManager.AddHandler(UiText.Current, (_,e)=> { if(e.PropertyName==nameof(UiText.Version)){Workspace?.Refresh();RequestBuild();} }, nameof(UiText.Version));
+    }
+    private void RequestBuild()
+    {
+        _needsBuild = true;
+        if (_observed is not null && _render is not null) _observed.CollectionChanged -= _render;
+        _observed = null; _render = null;
+        if (!IsVisible || _buildPending) return;
+        _buildPending = true;
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
+        { _buildPending = false; if (IsVisible && _needsBuild) { _needsBuild = false; Build(); } }));
     }
     private void Build()
     {
@@ -50,7 +63,7 @@ public sealed class RulesView : UserControl
             if (vm.Category is "全部" or "地形规则" || vm.Search.Length > 0)
                 list.Children.Add(TerrainRulesView.Build(vm, _expanded));
         }
-        _observed=vm.View;_render=(_,_)=>Render();_observed.CollectionChanged+=_render;Render();
+        _observed=vm.View;_render=(_,_)=>{if(IsVisible)Render();else RequestBuild();};_observed.CollectionChanged+=_render;Render();
         panel.Children.Add(new ScrollViewer{Content=list,VerticalScrollBarVisibility=ScrollBarVisibility.Auto});Content=panel;
     }
     private static UIElement Editor(RuleGroupViewModel group)

@@ -51,6 +51,7 @@ internal static partial class Program
         var root=CreateTemporaryFixtureCopy("p5-division");try{
             var file=Path.Combine(root,"GameData/Generated/Gameplay/Decks/Divisions.ndf");File.WriteAllText(file,File.ReadAllText(file).Replace("    TypeToken","    EmblemTexture = \"Texture_Division_Emblem_Test\"\n    TypeToken"),new UTF8Encoding(false));
             var path="GameData/Generated/UserInterface/Textures/DivisionTextures.ndf";Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(root,path))!);File.WriteAllText(Path.Combine(root,path),"Texture_Division_Emblem_Test is TUIResourceTexture_Common(FileName = 'GameData:/Assets/base.png')",new UTF8Encoding(false));
+            File.AppendAllText(Path.Combine(root,path), "\nDivisionAdditionalTextureBank is TBUCKToolAdditionalTextureBank\n(\n    Textures = MAP [\n        (\"Texture_Division_Emblem_Test\", MAP [(~/ComponentState/Normal, ~/Texture_Division_Emblem_Test)]),\n    ]\n)\n");
             var (_,_,data)=await LoadP5Async(root);var mother=data.Divisions.First();var state=DivisionIdentity.New(data,mother,false,[]);var png="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==";var asset=new EmblemAsset("Texture_Division_Emblem_mod_test197",png,path);state=state with {Emblem=asset.Key,Asset=asset};var op=DivisionIdentity.Operation(mother,state);
             using var store=new DraftStore(root);await store.LoadAsync();await store.UpsertAsync(op);var service=new UnitTransactionService();var preview=await service.PrepareApplyAsync(root,store.Operations);Assert(preview.Files.Count(f=>f.Kind==FormalTextFileKind.Binary)==1,"PNG纳入同一事务");Assert(!preview.Files.Any(f=>f.Kind==FormalTextFileKind.Csv),"只换图不修改名称CSV");var binary=preview.Files.Single(f=>f.Kind==FormalTextFileKind.Binary);await service.CommitApplyAsync(preview,store);Assert(File.ReadAllBytes(binary.FullPath).SequenceEqual(Convert.FromBase64String(png)),"PNG字节保持");Assert(File.ReadAllText(file).Contains(asset.Key),"师引用写入");Assert(File.ReadAllText(Path.Combine(root,path)).Contains("GameData:/Assets/2D/"),"资源路径合法");
             var restore=service.PrepareRestore(root,preview.BackupId);await service.CommitRestoreAsync(restore);Assert(!File.Exists(binary.FullPath),"恢复移除新增PNG");Assert(!File.ReadAllText(file).Contains(asset.Key),"恢复师引用");
@@ -75,6 +76,7 @@ internal static partial class Program
     }
     private static void Verify197Panels(WarnoLiteModdingTool.App.MainWindow main)
     {
+        var wasVisible = main.IsVisible;
         var prefs=new WarnoLiteModdingTool.App.Settings.UiPreferences(FloatingPanels:true);
         FloatingPanels.Install(main,()=>prefs);main.Show();DrainDispatcher(main.Dispatcher);
         var title=FindVisualChildren<TextBlock>(main).First(t=>Equals(t.ToolTip, "双击标题独立弹出")&&t.IsVisible);
@@ -85,7 +87,7 @@ internal static partial class Program
         prefs=prefs with {FloatSmallPanels=true};
         var content=new TextBlock{Text="197 group"};var group=new Expander{Header="197 group",Content=content,DataContext=new object(),IsExpanded=true};slot.Children.Add(group);main.UpdateLayout();
         var smallClick=new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice,0,System.Windows.Input.MouseButton.Left){RoutedEvent=System.Windows.Input.Mouse.PreviewMouseDownEvent,Source=group};typeof(System.Windows.Input.MouseButtonEventArgs).GetProperty("ClickCount")!.SetValue(smallClick,2);group.RaiseEvent(smallClick);DrainDispatcher(main.Dispatcher);
-        Assert(main.OwnedWindows.Cast<Window>().Any(w=>ReferenceEquals(w.Content,content)),"小分组可弹出");group.DataContext=new object();DrainDispatcher(main.Dispatcher);Assert(ReferenceEquals(group.Content,content),"切换对象小分组归位");slot.Children.Remove(group);main.Hide();
+        Assert(main.OwnedWindows.Cast<Window>().Any(w=>ReferenceEquals(w.Content,content)),"小分组可弹出");group.DataContext=new object();DrainDispatcher(main.Dispatcher);Assert(ReferenceEquals(group.Content,content),"切换对象小分组归位");slot.Children.Remove(group);if (!wasVisible) main.Hide();
     }
 
 }

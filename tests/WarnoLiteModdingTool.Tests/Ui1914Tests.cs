@@ -10,6 +10,14 @@ namespace WarnoLiteModdingTool.Tests;
 
 internal static partial class Program
 {
+    private static void ExpandTerrainForUi(DependencyObject rules, System.Windows.Threading.Dispatcher dispatcher)
+    {
+        // Follow the actual interaction order: category, then newly materialized objects.
+        FindVisualChildren<Expander>(rules).Single(e => e.Tag?.ToString() == "terrain").IsExpanded = true;
+        DrainDispatcher(dispatcher);
+        foreach (var e in FindVisualChildren<Expander>(rules).Where(e => e.Tag?.ToString()?.StartsWith("terrain:") == true).ToArray()) e.IsExpanded = true;
+        DrainDispatcher(dispatcher);
+    }
     private static void Verify1914Style(MainViewModel main, Window window, string root)
     {
         RulesFixture184(root, "\n");
@@ -30,6 +38,7 @@ internal static partial class Program
                 var expanders = FindVisualChildren<Expander>(rules).ToArray();
                 foreach (var e in expanders) e.IsExpanded = e.Tag?.ToString()?.StartsWith("terrain") == true;
                 DrainDispatcher(window.Dispatcher);
+                ExpandTerrainForUi(rules, window.Dispatcher);
                 var headings = FindVisualChildren<TextBlock>(rules).Where(h => ReferenceEquals(h.Style, h.TryFindResource("RuleCategoryHeading"))).ToArray();
                 Assert(headings.Length >= 5, "规则、经验与地形大类同屏参与格式检查");
                 var first = headings[0]; var left = first.TransformToAncestor(rules).Transform(new Point()).X;
@@ -42,8 +51,7 @@ internal static partial class Program
                 Assert(((TextBlock)obj.Header).FontSize == 14 && ((TextBlock)obj.Header).FontWeight == FontWeights.SemiBold, "地形对象层级14号半粗体");
                 SaveUiSnapshot(window, $"1914-same-page-{language}-{advanced}.png");
                 main.RulesWorkspace.Category = "地形规则"; DrainDispatcher(window.Dispatcher);
-                foreach (var e in FindVisualChildren<Expander>(rules).Where(e => e.Tag?.ToString()?.StartsWith("terrain") == true)) e.IsExpanded = true;
-                DrainDispatcher(window.Dispatcher);
+                ExpandTerrainForUi(rules, window.Dispatcher);
                 foreach (var panel in FindVisualChildren<RuleFieldPanel>(rules))
                 {
                     var grids = panel.Children.Cast<Grid>().ToArray();

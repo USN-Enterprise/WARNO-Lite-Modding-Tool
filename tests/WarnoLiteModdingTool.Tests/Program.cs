@@ -31,6 +31,8 @@ internal static partial class Program
     private static async Task<int> Main(string[] args)
     {
         VanillaNames.Replace(SyntheticNames());
+        if (args is ["--weapon-slot-ui", var slotLanguage, var slotTheme]) { await WeaponStructureUi(slotLanguage, slotTheme); return 0; }
+        if (args is ["--weapon-slot-old-reader", var oldCore]) { await WeaponStructureOldReader(oldCore); return 0; }
         if (args is ["--performance-1915", var perfRoot, var perfCount]) { await Performance1915(perfRoot, int.Parse(perfCount)); return 0; }
         if(args is ["--scan-lifecycle",var scan199Root])
         {
@@ -105,7 +107,23 @@ internal static partial class Program
 
         var tests = new (string Name, Func<Task> Run)[]
         {
+            ("1.9.18 师徽注册与同批合并", Emblem1918Registration),
+            ("1.9.18 旧师徽修复与提交保护", Emblem1918LegacyRepair),
+            ("1.9.18 师徽纹理库异常边界", Emblem1918Guards),
+            ("武器槽 语法与稳定身份", WeaponStructureSyntaxTest),
+            ("武器槽 新建单位与初始化", WeaponStructureCreationTest),
+            ("武器槽 批量失败回滚与边界", WeaponStructureBoundaryTest),
+            ("武器槽 事务隔离与恢复", WeaponStructureTransactionTest),
+            ("武器槽 参数组合与版本保护", WeaponStructureCompositionTest),
+            ("武器槽 新槽局部弹药", WeaponStructureLocalAmmoTest),
+            ("武器槽 跨单位表现移植", WeaponStructurePresentationTest),
+            ("武器槽 共享与解除武装", WeaponStructureSharedDeleteTest),
+            ("弹药射程 零射程与批改兼容", AmmoRangeBatchCompatibility),
+            ("弹药射程 全入口应用与原文保持", AmmoRangeApplyPreservation),
+            ("弹药射程 最终组合与作用域", AmmoRangeFinalComposition),
             ("1.9.15 分区缓存与共享读取", Cache1915Partitions),
+            ("打开性能 经验旧基线兼容与按需生成", ExperienceBaselineCompatibility),
+            ("打开性能 缓存读取器生命周期与代际隔离", CacheReaderLifetime),
             ("1.9.15 局部刷新与完整重读等价", Refresh1915Composition),
             ("1.9.15 外部变化与刷新失败保护", Refresh1915Guards),
             ("1.9.13 地形字段事务与原文", Terrain1913Transactions),
@@ -1798,6 +1816,13 @@ internal static partial class Program
                     var viewModel = new MainViewModel(new RecentProjectStore(settings), problemLog: problemLog)
                     { OpenLoadCache = path => ProjectLoadCache.Open(path, cacheSettings193.Load().CacheLastMod, cacheFile193) };
                     var window = new MainWindow(viewModel);
+                    typeof(WarnoLiteModdingTool.App.Controls.LocalGameImages).GetProperty("CacheRoot", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+                        .SetValue(null, Path.Combine(root, ".test-settings", "images"));
+                    // Deferred page construction follows actual visibility; exercise a real window.
+                    SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
+                    window.Show();
+                    DrainDispatcher(window.Dispatcher);
+                    WeaponStructureWindowChecks(window);
                     var picker = new WarnoLiteModdingTool.App.Controls.SearchPicker
                     {
                         ItemsSource = Enumerable.Range(0, 200).Select(index => index == 175 ? "Weapon_KRUG_DDR" : $"Weapon_{index:000}").ToArray()
@@ -2074,7 +2099,8 @@ internal static partial class Program
             });
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
-            await completion.Task.WaitAsync(TimeSpan.FromSeconds(60));
+            // This suite now shows native windows and renders all language/mode/scale combinations.
+            await completion.Task.WaitAsync(TimeSpan.FromSeconds(120));
             TestAssert.True(thread.Join(TimeSpan.FromSeconds(5)), "WPF 回归线程应正常退出");
         }
         finally

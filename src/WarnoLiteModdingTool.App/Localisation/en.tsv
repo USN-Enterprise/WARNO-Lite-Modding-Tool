@@ -1159,6 +1159,7 @@ AI 难度|AI difficulty
 弹药缺少可编辑字段：{0}|Ammunition has no editable field: {0}
 弹药不存在或来源已变化：{0}|Ammunition is missing or its source changed: {0}
 最小射程不能大于最大射程：{0}|Minimum range cannot exceed maximum range: {0}
+射程范围缺失或数值无效：{0}|Range endpoints are missing or invalid: {0}
 存在历史武器批次，请在草稿中心移除冲突项：{0}|A historical weapon batch exists. Remove the conflict in the draft center: {0}
 伤害索引超出当前伤害族范围：{0}|Damage index is outside the current damage family range: {0}
 弹药字段有重复草稿：{0}|Duplicate ammunition field drafts: {0}
@@ -1283,5 +1284,109 @@ AI 难度|AI difficulty
 当前倍率超出普通范围，请在专业模式处理|The current multiplier is outside the basic range. Edit it in professional mode.
 
 正在更新本次修改及关联数据…|Updating changes and related data…
+正在读取对象索引…|Reading object index…
+正在读取单位与游戏规则…|Reading units and game rules…
+正在读取将军模式…|Reading Army General data…
+正在读取图片目录…|Reading image catalog…
+正在恢复草稿与准备界面…|Restoring drafts and preparing the workspace…
+不支持的经验草稿校验版本，请使用兼容版本打开|Unsupported experience draft validation version. Open it with a compatible version.
 应用完成，关联数据已更新|Applied; related data updated
 应用完成；原选中单位已移除，已选择相邻单位|Applied; the selected unit was removed, so a neighbouring unit is selected
+武器槽编辑器|Weapon slot editor
+武器槽与表现配套|Weapon slots and visual configuration
+添加武器槽|Add weapon slot
+复制为新槽|Duplicate as new slot
+删除槽位|Remove slot
+撤销删除|Undo removal
+批量添加|Batch add
+批量删除|Batch remove
+确认配置|Confirm configuration
+目标单位|Target unit
+来源单位|Source unit
+来源武器配置|Source weapon configuration
+参考挂载|Reference mount
+目标炮塔|Target turret
+目标表现挂载|Target visual mount
+独立弹药箱|Independent ammo box
+共用已有弹药箱|Share existing ammo box
+共用弹药箱|Shared ammo box
+库存方式|Inventory mode
+独立箱齐射次数|Salvos in the new ammo box
+复制来源炮塔参数，复用目标现有挂点|Copy source turret parameters using an existing target attachment
+新增挂载使用目标已有开火位置；可适配的表现操作器将独立复制。不会创建新的模型或骨骼。|The new mount uses an existing target firing point. Supported visual operators are copied independently. No new models or bones are created.
+请选择来源、目标炮塔、表现挂载和弹药|Select a source, target turret, visual mount and ammunition.
+修改共享配置的全部单位引用|Modify every unit using this weapon configuration
+目标单位没有可编辑的武器管理配置|The target has no editable weapon manager configuration.
+当前单位无武器。请选择参考配置，再添加兼容挂载；不会带入模板其他槽位。|This unit is unarmed. Select a reference configuration and add compatible mounts; other template slots are not included.
+仅修改当前单位；必要配置会自动隔离。|Only this unit is modified; shared configurations are isolated when necessary.
+配置已更新，确认窗口后加入创建草稿。|Configuration updated. Confirm this window to include it in the creation draft.
+草稿已保存；正式Mod未改变。|Draft saved; formal Mod files are unchanged.
+删除该槽位并加入草稿？|Remove this slot and save the change as a draft?
+共箱剩余槽位|Remaining mounts sharing this ammo box
+槽专属参数保留用于撤销；其他槽与共享弹药修改保持。|Slot-specific edits are retained for undo. Other slots and shared ammunition edits are kept.
+该槽位待删除，可撤销后继续编辑。|This slot is pending removal. Undo removal to continue editing it.
+槽位已删除，不能保存旧输入|The slot was removed; stale input cannot be saved.
+该槽已有局部弹药参数，请先撤销这些修改再换弹药|This slot has local ammunition edits. Undo those edits before replacing its ammunition.
+将以上全部结果加入草稿？|Save all listed changes as drafts?
+批量武器槽预览|Batch weapon slot preview
+选择批量目标|Choose batch target
+存在武器槽草稿，请在武器槽编辑器中继续编辑|A weapon structure draft exists. Continue editing in the weapon slot editor.
+添加、删除、移植与批量；新槽参数可在编辑器中继续调整。|Add, remove, transfer and batch-edit slots. Continue editing new slot parameters in the editor.
+显示可定位的参数；增减槽位及其后续编辑请使用武器槽编辑器。|Edit identified parameters here. Use the weapon slot editor for structural changes and subsequent edits.
+正在读取武器槽与表现关系…|Reading weapon slots and visual relationships…
+武器槽草稿格式无效|Invalid weapon structure draft format.
+武器结构基线已变化|The weapon structure baseline has changed.
+目标单位或武器引用已变化|The target unit or its weapon reference has changed.
+当前武器存在重叠结构计划，请分别处理共享与局部计划|Overlapping weapon structure plans exist. Resolve shared and local plans separately.
+同一武器存在重叠结构计划，请分别处理共享与局部计划|Overlapping weapon structure plans exist. Resolve shared and local plans separately.
+请先处理整套武器替换草稿|Resolve the legacy whole-weapon replacement draft first.
+其他草稿改变了相同武器结构，请合并或撤销冲突计划|Another draft changed this weapon structure. Merge or discard the conflicting plan.
+共享结构包含非单位使用者，暂不支持修改|This shared structure has non-unit consumers and cannot currently be edited.
+单位武器模块结构已变化|The unit's weapon module structure has changed.
+挂载带表现字段，但目标单位没有可适配的表现注册|The mount has visual fields, but the target has no supported visual registration.
+暂不支持此表现操作器；需要可唯一定位的直接挂点瞬发/连续开火配置|Unsupported visual operator. A uniquely identified anchored instant-fire or continuous-fire configuration is required.
+步兵手持替代关系暂不支持移植|Infantry handheld alternative relationships are not yet supported for transfer.
+无法映射现有开火挂点|Cannot map an existing firing attachment.
+开火动作映射无法唯一定位|The firing action mapping cannot be uniquely identified.
+暂不支持此表现动作表结构|This visual action table structure is not supported.
+表现副本名称已占用|The visual copy name is already in use.
+武器副本名称已占用|The weapon copy name is already in use.
+弹药副本名称已占用|The ammunition copy name is already in use.
+其他炮塔仍依赖被删除炮塔的挂点|Another turret still depends on the removed turret's attachment.
+复制炮塔需要相同类型的目标挂点|Copying a turret requires a target attachment of the same turret type.
+炮塔挂点字段不兼容|The turret attachment fields are incompatible.
+请选择目标单位已有的表现挂载|Select an existing visual mount on the target unit.
+表现挂载必须属于目标炮塔|The visual mount must belong to the target turret.
+字段无法唯一定位：{0}|Field cannot be uniquely identified: {0}
+结构无法唯一定位：{0}|Structure cannot be uniquely identified: {0}
+暂不支持该炮塔结构：{0}|Unsupported turret structure: {0}
+移植引用无法解析：{0}|Cannot resolve transferred reference: {0}
+未找到该单位的表现注册：{0}|No visual registration found for this unit: {0}
+表现注册不唯一：{0}|Visual registration is not unique: {0}
+待删除槽位有参数修改，请先丢弃关联修改或撤销删除：{0}|A slot pending removal has parameter edits. Discard those edits or undo removal: {0}
+结构与参数草稿目标冲突：{0}|Structure and parameter drafts conflict: {0}
+弹药箱草稿目标冲突：{0}|Ammo box draft targets conflict: {0}
+参考挂载基线已变化：{0}|Reference mount baseline changed: {0}
+撤销本槽参数|Undo slot parameters
+请选择共用弹药箱|Select the shared ammo box.
+目标表现包含武器下标依赖，暂不支持增删槽位|The target visuals depend on weapon indices; structural slot edits are not supported.
+表现来源基线已变化：{0}|The visual source baseline changed: {0}
+存在无法归属到已知挂载的弹药箱索引，不能重编号|An ammo box index belongs to an unknown consumer and cannot be renumbered.
+可选择现有槽位的 Ammo，或打开武器槽编辑器增删兼容挂载。必要配置会自动隔离；新增槽位与单位创建一并保存和应用。|Select Ammo for existing slots or open the weapon slot editor to add or remove compatible mounts. Necessary configurations are isolated, and new slots are saved and applied with unit creation.
+无武器单位只能选择一套初始化参考配置|An unarmed unit can use only one reference configuration for initialization.
+单位重复引用同一武器配置，不能唯一选择模块|The unit references the same weapon configuration more than once; its module cannot be selected uniquely.
+师徽图片路径无法唯一定位|The emblem image path cannot be located uniquely.
+自定义师徽PNG缺失，不能补登记：{0}|The custom emblem PNG is missing; registration cannot be repaired: {0}
+师徽纹理库不是可唯一定位的直接MAP：{0}|The emblem bank does not have one identifiable direct MAP: {0}
+师徽纹理状态不是直接MAP|The emblem texture states are not a direct MAP.
+师徽Normal状态缺失或重复|The emblem Normal state is missing or duplicated.
+师徽纹理声明重复：{0}|Duplicate emblem texture declarations: {0}
+师徽纹理库键重复或已占用：{0}|The emblem bank key is duplicated or already used: {0}
+师徽纹理库键指向其他资源：{0}|The emblem bank key points to another resource: {0}
+来源师徽纹理库键重复：{0}|The source emblem bank key is duplicated: {0}
+来源师徽纹理库关联无法确认|The source emblem bank reference cannot be verified.
+无法唯一确定师徽纹理库，请检查现有师徽注册|The emblem bank cannot be identified uniquely. Check the existing emblem registrations.
+新增师徽纹理引用作用域不匹配|The new emblem texture reference has a mismatched scope.
+补登记已有自定义师徽纹理|Repair existing custom emblem registration
+登记新增师徽纹理|Register new emblem texture
+最终师徽纹理库注册校验失败|Final emblem bank registration validation failed.

@@ -13,6 +13,8 @@ public static class LocalGameImages
     private static Dictionary<string,ArchiveImageEntry> _entries=new(StringComparer.OrdinalIgnoreCase);
     private static readonly Dictionary<string,IReadOnlyList<AtlasRegion>> Atlases=new(StringComparer.OrdinalIgnoreCase);
     private static (string Name,ImagePixels Pixels)? _last;
+    // Isolated desktop verification can redirect rebuildable image files without touching personal caches.
+    internal static string CacheRoot { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WarnoLiteModdingTool", "images", "v1");
     public static async Task<BitmapSource?> LoadAsync(string root,string source,CancellationToken token)
     {
         await Gate.WaitAsync(token);try{return await Task.Run(()=>Load(root,source,token),token);}finally{Gate.Release();}
@@ -23,7 +25,7 @@ public static class LocalGameImages
         var game=new UiSettings().Load().GameDirectory;if(string.IsNullOrWhiteSpace(game))game=ModFinder.FindRoots(null,token).Select(Path.GetDirectoryName).FirstOrDefault(p=>p is not null&&Directory.Exists(Path.Combine(p,"Data","PC")));if(game is null||!Directory.Exists(Path.Combine(game,"Data","PC")))return null;
         var packages=Directory.EnumerateFiles(Path.Combine(game,"Data","PC"),"ZZ_*.dat",SearchOption.AllDirectories).OrderBy(p=>string.Join("/",p.Split(Path.DirectorySeparatorChar).Where(s=>ulong.TryParse(s,out _)).Select(s=>ulong.Parse(s).ToString("D20"))),StringComparer.Ordinal).ThenBy(p=>p,StringComparer.Ordinal).ToArray();
         var stamp=string.Join("|",packages.Select(p=>{var f=new FileInfo(p);return p+":"+f.Length+":"+f.LastWriteTimeUtc.Ticks;}));
-        var cache=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"WarnoLiteModdingTool","images","v1",Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(stamp)))[..20]);var cached=Path.Combine(cache,Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source)))+".png");
+        var cache=Path.Combine(CacheRoot,Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(stamp)))[..20]);var cached=Path.Combine(cache,Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source)))+".png");
         if(File.Exists(cached)){try{return ReadBitmap(cached);}catch(Exception e)when(e is IOException or NotSupportedException or FileFormatException){File.Delete(cached);}}
         if(_stamp!=stamp){_entries=new(StringComparer.OrdinalIgnoreCase);Atlases.Clear();_last=null;foreach(var package in packages){token.ThrowIfCancellationRequested();foreach(var entry in ImageArchive.ReadDirectory(package,n=>n.Contains("/Assets/2D/",StringComparison.OrdinalIgnoreCase)||n.StartsWith("PC/Atlas/",StringComparison.OrdinalIgnoreCase)&&!n.Contains("/Assets/3D/",StringComparison.OrdinalIgnoreCase)))_entries[entry.Name]=entry;}_stamp=stamp;}
         var direct=source.Replace("GameData:/","PC/Texture/",StringComparison.OrdinalIgnoreCase);direct=Path.ChangeExtension(direct,".tgv").Replace('\\','/');ImagePixels? pixels=null;

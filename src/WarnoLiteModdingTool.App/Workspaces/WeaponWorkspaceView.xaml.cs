@@ -7,6 +7,14 @@ namespace WarnoLiteModdingTool.App.Workspaces;
 public partial class WeaponWorkspaceView : UserControl
 {
     public WeaponWorkspaceView() => InitializeComponent();
+    private async void WeaponStructure_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is ViewModels.MainViewModel vm && vm.WeaponWorkspace is { } workspace)
+        {
+            try { await workspace.OpenStructureAsync(Window.GetWindow(this)); }
+            catch (Exception ex) { MessageBox.Show(Window.GetWindow(this), ex.Message, Localisation.UiText.T("武器槽编辑器")); }
+        }
+    }
     private async void WeaponBatch_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is ViewModels.MainViewModel vm && vm.WeaponWorkspace is {} workspace)

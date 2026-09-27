@@ -25,8 +25,7 @@ internal static partial class Program
                 main.SelectedModule = main.Modules.Single(m => m.Key == "rules"); main.RulesWorkspace!.Category = "地形规则";
                 DrainDispatcher(window.Dispatcher);
                 var rules = FindVisualChildren<WarnoLiteModdingTool.App.Controls.RulesView>(window).Single();
-                foreach (var e in FindVisualChildren<System.Windows.Controls.Expander>(rules)) e.IsExpanded = true;
-                DrainDispatcher(window.Dispatcher);
+                ExpandTerrainForUi(rules, window.Dispatcher);
                 var field = main.RulesWorkspace.Terrains[0].Fields.First(f => f.Cell.Basic);
                 if (!advanced)
                 {

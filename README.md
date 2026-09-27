@@ -6,7 +6,7 @@
 
 面向新手和 Mod 作者的 **Windows WARNO 图形化编辑器**。通过界面调整单位、武器、弹药、战术师、将军模式和游戏规则，无需手写代码；支持单位卡片图片和师徽编辑。
 
-当前版本：**1.9.15** · Windows x64 · 便携运行
+当前版本：**1.9.18** · Windows x64 · 便携运行
 
 **[下载发布包](https://github.com/USN-Enterprise/WARNO-Lite-Modding-Tool/releases/latest)** · **[中文使用教程](使用教程.md)** · [版本更新](RELEASE_NOTES.md#chinese)
 
@@ -38,7 +38,7 @@
 - 原版名称、图片与师简介从本机 WARNO 提取，不随工具分发；找不到游戏时可在设置中指定目录。
 - **武器页**可限定当前或所选单位；**弹药页**修改共享本体，会影响全部使用者。
 - **保存草稿、应用文件和生成 Mod 是三个步骤**。应用时创建备份，游戏内效果仍需生成后检查。
-- 单位与战术师支持模板创建；单位删除仅支持来源可核对的本工具创建单位。不提供模型/动画制作、任意武器槽增删或战役地图/剧情编辑。详见[当前边界](使用教程.md#limits)。
+- 单位与战术师支持模板创建；单位删除仅支持来源可核对的本工具创建单位。武器槽支持受控增删、兼容移植和批量，仍处于预览阶段，实际视觉验收及游戏生成/实机效果待验。不提供模型/动画制作或战役地图/剧情编辑。详见[当前边界](使用教程.md#limits)。
 
 ## 文档与交流
 
@@ -56,7 +56,7 @@
 
 **A Windows graphical editor for WARNO Mods**, for beginners and Mod authors. Edit units, weapons, ammunition, divisions, Army General and game rules without writing code. Unit portraits and division emblems can also be edited.
 
-Current version: **1.9.15** · Windows x64 · Portable
+Current version: **1.9.18** · Windows x64 · Portable
 
 **[Download a release](https://github.com/USN-Enterprise/WARNO-Lite-Modding-Tool/releases/latest)** · **[English user guide](USER_GUIDE.md)** · [Release notes](RELEASE_NOTES.md#english)
 
@@ -88,7 +88,7 @@ Start with the [first-edit walkthrough](USER_GUIDE.md#first-edit). Module instru
 - Original names, images and division text are extracted from your local WARNO installation and are not bundled. Set the game folder in Settings if discovery fails.
 - **Weapons** can limit changes to the current or selected units. **Ammunition** edits shared objects and affects every user.
 - **Saving drafts, applying files and generating the Mod are separate steps.** Applying creates backups; game effects still need checking after generation.
-- Units and divisions support template creation. Unit deletion is limited to verifiable units created by this tool. Model/animation authoring, arbitrary weapon-slot changes and campaign map/story editing are not provided. See [current limits](USER_GUIDE.md#limits).
+- Units and divisions support template creation. Unit deletion is limited to verifiable units created by this tool. Controlled weapon slot changes, compatible transfers and batches remain in preview; actual visual inspection and generation/in-game checks are incomplete. Model/animation authoring and campaign map/story editing are not provided. See [current limits](USER_GUIDE.md#limits).
 
 ## Documentation and community
 

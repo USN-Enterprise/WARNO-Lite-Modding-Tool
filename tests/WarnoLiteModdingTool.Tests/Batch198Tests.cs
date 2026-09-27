@@ -63,6 +63,7 @@ internal static partial class Program
     private static async Task Experience198Transaction()
     {
         foreach (var nl in new[] { "\n", "\r\n" })
+        foreach (var legacy in new[] { false, true })
         {
             var root = Path.Combine(Path.GetTempPath(), "warno-xp198-" + Guid.NewGuid().ToString("N"));
             try
@@ -75,6 +76,11 @@ internal static partial class Program
                 Assert(data.Routes[1].Levels[0].Cells.Count == 2, "SF缺省0级不补效果");
                 Assert(data.Routes[4].Levels[0].Notes.Any(n => n.Contains("空效果包")), "空包可见");
                 var op = Edit198(data); var op2 = Edit198(data, 0, 2);
+                if (legacy)
+                {
+                    op = op with { BaselineRaw = data.GetBaseline(data.Routes[0], data.Routes[0].Levels[1]) };
+                    op2 = op2 with { BaselineRaw = data.GetBaseline(data.Routes[0], data.Routes[0].Levels[2]) };
+                }
                 using var store = new DraftStore(root); await store.LoadAsync(); await store.UpsertAsync(op); await store.UpsertAsync(op2);
                 using (var reopened = new DraftStore(root)) { await reopened.LoadAsync(); Assert(reopened.Operations.Count == 2 && reopened.Operations.All(o => data.Resolve(o).Status == DraftResolutionStatus.Active), "多等级草稿重开"); }
                 var service = new UnitTransactionService(); var preview = await service.PrepareApplyAsync(root, store.Operations);
@@ -190,6 +196,13 @@ internal static partial class Program
                     var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
                     Directory.CreateDirectory("publish/qa-1.9.8"); using (var output = File.Create("publish/qa-1.9.8/experience-" + language + ".png")) encoder.Save(output);
                     RunWithDispatcher(level.UndoAsync(), window.Dispatcher); Assert(store.Operations.Count == 0, "撤销等级草稿");
+                    level.Cells.First().Value = "2";
+                    var saving = level.SaveAsync();
+                    level.Cells.First().Value = "3";
+                    RunWithDispatcher(Task.WhenAll(saving, vm.FlushAsync()), window.Dispatcher);
+                    Assert(ExperienceWorkspace.Values(store.Operations.Single())[level.Cells.First().Cell.Key] == "3" && !level.HasPendingError,
+                        "异步基线准备期间的新输入被Flush保存，旧任务不覆盖新值");
+                    RunWithDispatcher(level.UndoAsync(), window.Dispatcher);
                 }
             }
             finally { window.Close(); UiText.Current.SetLanguage("zh-CN"); }

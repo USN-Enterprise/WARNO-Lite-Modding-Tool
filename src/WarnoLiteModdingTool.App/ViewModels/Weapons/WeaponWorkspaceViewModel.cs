@@ -266,6 +266,16 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
             () => { _transactions.RefreshExternalDraftState(); RebuildFields(); }) { Owner = owner };
         window.ShowDialog();
     }
+    public async Task OpenStructureAsync(System.Windows.Window owner)
+    {
+        await FlushAsync();
+        if (_transactions.IsTransactionBusy) throw new InvalidOperationException("事务处理中，暂时不能修改草稿。");
+        _setStatus("正在读取武器槽与表现关系…");
+        var graph = await Task.Run(() => new WarnoLiteModdingTool.Core.Units.UnitProjectGraph(_draftStore.ProjectRoot));
+        var window = new Controls.WeaponStructureWindow(_data, graph, _draftStore.Operations, SelectedUnit?.InternalName, _draftStore,
+            () => { _transactions.RefreshExternalDraftState(); RebuildFields(); }) { Owner = owner };
+        window.ShowDialog(); RefreshFromDrafts();
+    }
     public void RefreshFromDrafts() { RebuildFields(); OnPropertyChanged(nameof(TotalAmmoText)); }
 
     public async Task FlushAsync()
@@ -435,7 +445,9 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
                 Units.Where(unit => unit.IsWeaponScopeSelected).Select(unit => unit.InternalName).ToArray();
             var viewModel = new WeaponFieldViewModel(field, resolved.GetValueOrDefault(id),
                 vm => PersistFieldAsync(vm, weaponName, mountIndex, scope, scopeLabel, selectedUnits))
-            { BatchLocked = WeaponBatch.Blocks(_draftStore.Operations, c => c.Weapon == weaponName || c.Ammo == field.OwnerObjectName), EditContext = weaponName + ":" + mountIndex + ":" + scope + ":" + string.Join(",", selectedUnits) };
+            { BatchLocked = WeaponBatch.Blocks(_draftStore.Operations, c => c.Weapon == weaponName || c.Ammo == field.OwnerObjectName),
+                StructureLocked = WarnoLiteModdingTool.Core.Transactions.WeaponStructurePlanner.States(_draftStore.Operations).Any(s => s.Weapon.Name == weaponName && (s.Shared || s.Unit == SelectedUnit?.InternalName)),
+                EditContext = weaponName + ":" + mountIndex + ":" + scope + ":" + string.Join(",", selectedUnits) };
             if(field.Definition.FieldName=="Ammunition")viewModel.SetAmmoChoices(Localisation.UiText.Current.English?_ammoChoicesEnglish:_ammoChoicesChinese);
             viewModel.SetLocked(_transactions.IsTransactionBusy);
             Fields.Add(viewModel);
@@ -445,7 +457,7 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
         {
             var current = Fields[i];
             Fields[i] = _fieldEdits.Restore(current, old => old.Field.OwnerObjectName == current.Field.OwnerObjectName &&
-                old.Field.Key == current.Field.Key && old.EditContext == current.EditContext);
+                old.Field.Key == current.Field.Key && old.EditContext == current.EditContext && old.StructureLocked == current.StructureLocked);
         }
         foreach (var section in FieldSectionBuilder.Build(Fields, field => field.Section, field => field.Group))
         {

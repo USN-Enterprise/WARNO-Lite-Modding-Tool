@@ -22,6 +22,9 @@ public sealed class ProjectLoadCache
     private readonly Dictionary<string, Stamp> _current;
     private Dictionary<string, Stamp> _previous = new(StringComparer.OrdinalIgnoreCase);
     private byte[]? _archive;
+    private readonly object _readerGate = new();
+    private ZipArchive? _reader;
+    private int _readSessions;
     private Header? _header;
     private ProjectIndexResult? _oldIndex;
     private ProjectIndexResult? _index;
@@ -87,33 +90,50 @@ public sealed class ProjectLoadCache
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return null; }
     }
-    private T? Read<T>(string name) where T : class
+    // A bounded load may cross await/thread boundaries; serialize complete entry reads.
+    // Outside this scope (e.g. Save's fallback index read), use a short-lived reader.
+    public IDisposable BeginReadSession()
     {
-        if (_archive is null) return null;
-        try
-        {
-            using var zip = new ZipArchive(new MemoryStream(_archive), ZipArchiveMode.Read);
-            var entry = zip.GetEntry(name); if (entry is null) return null;
-            using var stream = entry.Open(); return JsonSerializer.Deserialize<T>(stream);
-        }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or ArgumentException)
-        { IsHit = false; MissReason = "corrupt-partition"; return null; }
+        lock (_readerGate) _readSessions++;
+        return new ReadSession(this);
     }
+    private sealed class ReadSession(ProjectLoadCache owner) : IDisposable
+    {
+        private ProjectLoadCache? _owner = owner;
+        public void Dispose()
+        {
+            var cache = Interlocked.Exchange(ref _owner, null);
+            if (cache is null) return;
+            lock (cache._readerGate)
+                if (--cache._readSessions == 0) { cache._reader?.Dispose(); cache._reader = null; }
+        }
+    }
+    private T? ReadEntry<T>(string name, Func<Stream, T?> decode) where T : class
+    {
+        lock (_readerGate)
+        {
+            if (_archive is null) return null;
+            ZipArchive? temporary = null;
+            try
+            {
+                var zip = _readSessions > 0
+                    ? _reader ??= new ZipArchive(new MemoryStream(_archive, writable: false), ZipArchiveMode.Read)
+                    : temporary = new ZipArchive(new MemoryStream(_archive, writable: false), ZipArchiveMode.Read);
+                using var stream = zip.GetEntry(name)?.Open();
+                return stream is null ? null : decode(stream);
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or ArgumentException or FormatException)
+            { IsHit = false; MissReason = "corrupt-partition"; return null; }
+            finally { temporary?.Dispose(); }
+        }
+    }
+    private T? Read<T>(string name) where T : class => ReadEntry(name, stream => JsonSerializer.Deserialize<T>(stream));
     private ProjectIndexResult? OldIndex => _oldIndex ??= Read<ProjectIndexResult>("index.json");
-    private SavedUnit[]? ReadUnits(string name)
+    private SavedUnit[]? ReadUnits(string name) => ReadEntry(name, stream =>
     {
-        if (_archive is null) return null;
-        try
-        {
-            using var zip = new ZipArchive(new MemoryStream(_archive), ZipArchiveMode.Read);
-            using var stream = zip.GetEntry(name)?.Open();
-            if (stream is null) return null;
-            using var payload = new MemoryStream(); stream.CopyTo(payload); payload.Position = 0;
-            return UnitCacheCodec.Read(payload);
-        }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or ArgumentException or FormatException)
-        { IsHit = false; MissReason = "corrupt-unit-partition"; return null; }
-    }
+        using var payload = new MemoryStream(); stream.CopyTo(payload); payload.Position = 0;
+        return UnitCacheCodec.Read(payload);
+    });
     public ProjectIndexResult? Index => IsHit ? OldIndex : null;
     public void SetIndex(ProjectIndexResult index) => _index = index;
     public void InvalidateFiles(IEnumerable<string> files)

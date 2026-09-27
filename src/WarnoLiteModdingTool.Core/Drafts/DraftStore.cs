@@ -50,12 +50,12 @@ public sealed class DraftStore : IDisposable
                 var json = await File.ReadAllTextAsync(DraftPath, cancellationToken);
                 var document = JsonSerializer.Deserialize<DraftDocument>(json, JsonOptions)
                     ?? throw new JsonException("草稿内容为空。");
-                if (document.SchemaVersion != 1)
+                if (document.SchemaVersion is not (1 or 2))
                 {
                     _blocked = true;
                     return new DraftLoadResult(
                         DraftDocument.Empty,
-                        $"不支持的草稿版本：{document.SchemaVersion}。请先清空或使用兼容版本打开。",
+                        $"不支持的草稿版本：{document.SchemaVersion}。原文件已保留，请使用兼容版本打开。",
                         true);
                 }
 
@@ -96,7 +96,7 @@ public sealed class DraftStore : IDisposable
                 .Append(operation)
                 .OrderBy(item => item.UpdatedUtc)
                 .ToArray();
-            var candidate = new DraftDocument(1, DateTimeOffset.UtcNow, operations);
+            var candidate = Candidate(operations);
             await SaveCandidateAsync(candidate, cancellationToken);
             _document = candidate;
         }
@@ -133,7 +133,7 @@ public sealed class DraftStore : IDisposable
                 return;
             }
 
-            var candidate = new DraftDocument(1, DateTimeOffset.UtcNow, operations);
+            var candidate = Candidate(operations);
             await SaveCandidateAsync(candidate, cancellationToken);
             _document = candidate;
         }
@@ -159,7 +159,7 @@ public sealed class DraftStore : IDisposable
                 return;
             }
 
-            var candidate = new DraftDocument(1, DateTimeOffset.UtcNow, operations);
+            var candidate = Candidate(operations);
             await SaveCandidateAsync(candidate, cancellationToken);
             _document = candidate;
         }
@@ -186,6 +186,12 @@ public sealed class DraftStore : IDisposable
 
     public void Dispose() => _gate.Dispose();
 
+    private DraftDocument Candidate(IReadOnlyList<DraftOperation> operations)
+    {
+        var advanced = operations.Any(o => o.TargetKind == DraftTargetKind.WeaponStructure || o.TargetKind == DraftTargetKind.UnitCreate && Units.UnitCreation.Read(o).WeaponStructures.Count > 0);
+        return new(Math.Max(_document.SchemaVersion, advanced ? 2 : 1), DateTimeOffset.UtcNow, operations);
+    }
+
     private async Task SaveCandidateAsync(DraftDocument candidate, CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(EditorDirectory);
@@ -194,6 +200,8 @@ public sealed class DraftStore : IDisposable
         {
             var json = JsonSerializer.Serialize(candidate, JsonOptions);
             await File.WriteAllTextAsync(temporary, json, new UTF8Encoding(false), cancellationToken);
+            if (candidate.SchemaVersion > _document.SchemaVersion && File.Exists(DraftPath))
+                File.Copy(DraftPath, Path.Combine(EditorDirectory, $"draft-before-structure-{Guid.NewGuid():N}.json"), false);
             File.Move(temporary, DraftPath, true);
         }
         finally

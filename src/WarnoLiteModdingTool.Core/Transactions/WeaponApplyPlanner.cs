@@ -125,6 +125,18 @@ public sealed class WeaponApplyPlanner
             }
         }
 
+        // The legacy single-field path also validates complete ranges, separately for each
+        // shared object and each actual local clone. Do not validate intermediate edits.
+        foreach (var group in p4.Where(o => o.TargetKind == DraftTargetKind.AmmoField)
+                     .GroupBy(o => (o.ObjectName, Scope: o.EditScope == DraftEditScope.AllReferences
+                         ? "shared" : IsolationKey("local", o.SelectedUnitNames?.Distinct().ToArray() ?? []))))
+        {
+            var ammo = workspace.Ammo(group.Key.ObjectName)!;
+            var final = ammo.Fields.ToDictionary(f => f.Key, f => f.DisplayValue);
+            foreach (var operation in group) final[operation.FieldKey] = operation.TargetValue;
+            AmmoRangeValidator.Validate(ammo, final);
+        }
+
         var newObjects = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         var clonesByFile = ammoClones.Values.Concat(weaponClones.Values)
             .GroupBy(item => Normalize(item.Source.RelativeSourceFile), StringComparer.OrdinalIgnoreCase);

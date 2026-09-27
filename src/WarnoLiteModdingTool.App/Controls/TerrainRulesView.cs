@@ -22,6 +22,8 @@ public static class TerrainRulesView
             bool Match(string text) => text.Contains(vm.Search, StringComparison.OrdinalIgnoreCase) || UiText.T(text).Contains(vm.Search, StringComparison.OrdinalIgnoreCase);
             if (vm.Search.Length > 0 && !Match("地形规则") && !Match(terrain.Terrain.Name) && !Match(TerrainWorkspace.Label(terrain.Terrain.Name)) && !fields.Any(f => Match(f.Cell.Key) || Match(f.Cell.Label))) continue;
             visible++;
+            UIElement CreateContent()
+            {
             var content = new StackPanel { Margin = new Thickness(12, 8, 0, 0) };
             content.Children.Add(new ParameterNote { Text = terrain.Terrain.Name });
             content.Children.Add(new Expander { Header = UiText.T("来源与作用范围"), Content = Text(terrain.Terrain.File + "\n" + terrain.Terrain.Type + "\n" + terrain.Terrain.Error), Margin = new Thickness(0, 3, 0, 8) });
@@ -63,19 +65,22 @@ public static class TerrainRulesView
                     wrap.Children.Add(item);
                 }
             }
+            return content;
+            }
             var key = "terrain:" + terrain.Terrain.File + ":" + terrain.Terrain.Name;
-            panel.Children.Add(Expand(TerrainWorkspace.Label(terrain.Terrain.Name), key, content));
+            panel.Children.Add(Expand(TerrainWorkspace.Label(terrain.Terrain.Name), key, CreateContent));
         }
         if (visible == 0) panel.Children.Add(Text("当前模式没有匹配的可编辑地形条目"));
         foreach (var error in vm.TerrainDiagnostics) panel.Children.Add(Text(error));
-        return Expand("地形规则", "terrain", panel);
+        return Expand("地形规则", "terrain", () => panel);
 
-        Expander Expand(string label, string key, UIElement content)
+        Expander Expand(string label, string key, Func<UIElement> createContent)
         {
-            var result = new Expander { Header = RulePresentation.Heading(UiText.T(label), key == "terrain" ? "RuleCategoryHeading" : "RuleObjectHeading"), Tag = key, Content = content, Padding = new Thickness(8), Margin = new Thickness(0, 0, 0, 8), IsExpanded = vm.Search.Length > 0 || expanded.GetValueOrDefault(key) };
+            var result = new Expander { Header = RulePresentation.Heading(UiText.T(label), key == "terrain" ? "RuleCategoryHeading" : "RuleObjectHeading"), Tag = key, Padding = new Thickness(8), Margin = new Thickness(0, 0, 0, 8) };
             result.SetResourceReference(Control.BackgroundProperty, "SurfaceBrush");
-            result.Expanded += (_, e) => { if (ReferenceEquals(e.OriginalSource, result)) expanded[key] = true; };
+            result.Expanded += (_, e) => { if (ReferenceEquals(e.OriginalSource, result)) { result.Content ??= createContent(); expanded[key] = true; } };
             result.Collapsed += (_, e) => { if (ReferenceEquals(e.OriginalSource, result)) expanded[key] = false; };
+            result.IsExpanded = vm.Search.Length > 0 || expanded.GetValueOrDefault(key);
             return result;
         }
     }
