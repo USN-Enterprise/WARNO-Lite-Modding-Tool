@@ -194,6 +194,8 @@ public sealed class ProjectLoadCache
         if (OldIndex is not { } index || FileSetChanged || !index.Modules.Where(m => m.Key is "weapons" or "ammo").SelectMany(m => m.SourceFiles).All(p => Unchanged(Relative(p))) ||
             ChangedPaths.Any(p => p.EndsWith("/DamageResistance.ndf", StringComparison.OrdinalIgnoreCase))) return null;
         var saved = _oldWeapons ??= Read<SavedWeapons>("weapons.json"); if (saved is null) return null;
+        if (ChangedPaths.Any(p => saved.CatalogFiles.Contains(p, StringComparer.OrdinalIgnoreCase) ||
+            p.EndsWith(".ndf", StringComparison.OrdinalIgnoreCase) && File.Exists(Path.Combine(_root, p)) && AmmoReferenceCatalog.HasDefinitions(ProjectReadScope.ReadAllText(Path.Combine(_root, p))))) return null;
         try
         {
             var ammo = saved.Ammo.Select(a => new AmmoRecord(a.Source, a.Fields) { NameToken = a.Token, NameRaw = a.Raw, NameLocation = a.Location, CanEditName = a.CanEditName }).ToArray();
@@ -210,13 +212,13 @@ public sealed class ProjectLoadCache
             var weapons = saved.Records.Select(w => new WeaponRecord(w.Source, w.Fields, w.Mounts.Select(m => m with
             { Fields = m.Fields.Select(f => IsAmmoChoice(f) ? f with { Choices = choices } : f).ToArray() }).ToArray())).ToArray();
             RestoredWeapons = weapons.Length;
-            return new(weapons, ammo, units.Units, WeaponProjectLoader.BuildReferences(weapons, ammo, units.Units), saved.Diagnostics);
+            return new WeaponWorkspaceData(weapons, ammo, units.Units, WeaponProjectLoader.BuildReferences(weapons, ammo, units.Units), saved.Diagnostics) { CatalogFiles = saved.CatalogFiles };
         }
         catch (Exception ex) when (ex is ArgumentException or NullReferenceException) { IsHit = false; return null; }
     }
     internal void SetWeapons(WeaponWorkspaceData data) => _weapons = new(data.Weapons.Select(w => new WeaponRecord(w.Source, w.Fields,
         w.Mounts.Select(m => m with { Fields = m.Fields.Select(f => IsAmmoChoice(f) ? f with { Choices = [] } : f).ToArray() }).ToArray())).ToArray(),
-        data.Ammunition.Select(a => new SavedAmmo(a.Source, a.Fields, a.NameToken, a.NameRaw, a.NameLocation, a.CanEditName)).ToArray(), data.Diagnostics);
+        data.Ammunition.Select(a => new SavedAmmo(a.Source, a.Fields, a.NameToken, a.NameRaw, a.NameLocation, a.CanEditName)).ToArray(), data.Diagnostics) { CatalogFiles = data.CatalogFiles };
     private static bool IsAmmoChoice(WeaponFieldValue f) => f.Definition.Owner == WeaponFieldOwner.MountedWeapon && f.Definition.FieldName == "Ammunition";
     public bool Save(CancellationToken cancellationToken = default)
     {
@@ -268,5 +270,6 @@ public sealed class ProjectLoadCache
     public sealed record SavedField(string Key, UnitFieldAvailability Availability, string DisplayValue, string RawValue, string Reason, UnitSourceLocation? Location);
     public sealed record SavedUnit(NdfObjectInfo Source, SavedField[] Fields, bool HasTransporter, IReadOnlyList<string> Weapons, IReadOnlyList<string> Ammunition, IReadOnlyList<string> Divisions, IReadOnlyList<string> PresentationReferences, string? NameToken, bool UniqueName);
     public sealed record SavedAmmo(NdfObjectInfo Source, IReadOnlyList<WeaponFieldValue> Fields, string Token, string Raw, WeaponFieldLocation? Location, bool CanEditName);
-    public sealed record SavedWeapons(IReadOnlyList<WeaponRecord> Records, SavedAmmo[] Ammo, IReadOnlyList<string> Diagnostics);
+    public sealed record SavedWeapons(IReadOnlyList<WeaponRecord> Records, SavedAmmo[] Ammo, IReadOnlyList<string> Diagnostics)
+    { public IReadOnlyList<string> CatalogFiles { get; init; } = []; }
 }

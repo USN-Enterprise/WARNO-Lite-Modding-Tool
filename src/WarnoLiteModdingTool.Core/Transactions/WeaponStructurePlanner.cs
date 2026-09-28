@@ -85,7 +85,7 @@ public static class WeaponStructurePlanner
                     var rebased = WeaponStructurePresentation.RebindReferences(graph, addition.Source.File, actualWeapon.RelativeSourceFile, originalAmmoBody);
                     return addition with { Body = WeaponStructureSyntax.Set(rebased, "TMountedWeaponDescriptor", chosenAmmo) };
                 }).ToList() };
-                var ammoOverrides = PlanAmmo(root, graph, local, weapons, files);
+                var ammoOverrides = PlanAmmo(root, graph, local, weapons, files, units.Localisation);
                 var rendered = WeaponStructureRenderer.Render(local, currentBody, ammoOverrides);
                 var final = new WeaponStructureSyntax(rendered); var updatedUnit = ub;
                 if (!final.Mounts.Any())
@@ -142,7 +142,7 @@ public static class WeaponStructurePlanner
         return messages;
     }
 
-    private static Dictionary<string, string> PlanAmmo(string root, UnitProjectGraph graph, WeaponStructureState state, WeaponWorkspaceData data, List<PlannedFileChange> files)
+    private static Dictionary<string, string> PlanAmmo(string root, UnitProjectGraph graph, WeaponStructureState state, WeaponWorkspaceData data, List<PlannedFileChange> files, Localisation.UnitLocalisationCatalog localisation)
     {
         var result = new Dictionary<string, string>();
         foreach (var edit in state.AmmoFields.Where(p => p.Value.Count > 0))
@@ -155,6 +155,7 @@ public static class WeaponStructurePlanner
             // Locate supported field spans again in the final candidate rather than reusing shifted offsets.
             var candidate = WeaponProjectLoader.ParseWeaponAmmo(obj with { CharacterOffset = 0, CharacterLength = body.Length }, body, data);
             var replacements = new List<TextReplacement>(); var finalValues = candidate.Fields.ToDictionary(f => f.Key, f => f.DisplayValue);
+            var rawChanges = new Dictionary<string, string>();
             foreach (var change in edit.Value)
             {
                 var field = candidate.Field(change.Key) ?? throw new TransactionValidationException("弹药字段已不存在");
@@ -162,12 +163,15 @@ public static class WeaponStructurePlanner
                 if (!WeaponValueConverter.TryFormat(field, change.Value, out var value, out var raw, out var error)) throw new TransactionValidationException(error);
                 if (field.RawValue != old.RawValue && field.RawValue != raw) throw new TransactionValidationException("共享与局部弹药目标冲突");
                 finalValues[field.Key] = value;
-                replacements.Add(new(field.Location.CharacterOffset, field.Location.CharacterLength, field.RawValue, raw, field.Definition.Label));
+                rawChanges[field.Key] = raw;
+                replacements.Add(AmmoProfessional.Replacement(field, raw));
             }
             AmmoRangeValidator.Validate(candidate, finalValues);
             var name = ammo.Name + "_WLMT_slots_" + state.Id[..10] + "_" + string.Concat(row.Id.Where(char.IsLetterOrDigit)) + "_" + state.Unit;
             if (graph.FindObjects(name).Count > 0) throw new TransactionValidationException("弹药副本名称已占用");
-            body = WeaponStructureSyntax.Rename(UnitProjectGraph.Patch(body, replacements), name);
+            body = UnitProjectGraph.Patch(body, AmmoProfessional.MergeInsertions(replacements));
+            AmmoProfessionalValidation.Candidate(candidate, body, rawChanges, () => graph, localisation);
+            body = WeaponStructureSyntax.Rename(body, name);
             body = WeaponStructureSyntax.Set(body, obj.TypeName, new Dictionary<string, string> { ["DescriptorId"] = "GUID:{" + Guid.NewGuid() + "}" });
             var changes = new CandidateTextFiles(root, files); var text = changes.Get(obj.RelativeSourceFile); var nl = changes.NewLine(obj.RelativeSourceFile);
             changes.Set(obj.RelativeSourceFile, text + nl + body + nl); changes.Complete("新槽局部弹药参数");

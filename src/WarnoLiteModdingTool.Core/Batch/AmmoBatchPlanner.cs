@@ -26,13 +26,15 @@ public static class AmmoBatchPlanner
     public static IReadOnlyList<WeaponFieldDefinition> CommonFields(IEnumerable<AmmoRecord> targets)
     {
         var records = targets.ToArray();
-        return records.Length == 0 ? [] : WeaponFieldDefinitions.Ammo.Where(d => records.All(a => a.Fields.Count(f => f.Key == d.Key) == 1)).ToArray();
+        return records.Length == 0 ? [] : WeaponFieldDefinitions.Ammo.Where(d => records.All(a => a.Fields.Count(f => f.Key == d.Key && f.CanEdit) == 1)).ToArray();
     }
     public static IReadOnlyList<string> Choices(IEnumerable<AmmoRecord> targets,string key)
     {
         var fields = targets.Select(a => a.Field(key)).ToArray();
         if (fields.Length == 0 || fields.Any(f => f is null)) return [];
         if (fields[0]!.Definition.ValueKind == WeaponValueKind.Boolean) return ["是","否"];
+        if (fields[0]!.Definition.ValueKind == WeaponValueKind.CatalogChoice)
+            return fields.Select(f => f!.Choices.Select(NdfSyntaxDocument.Unquote).ToHashSet(StringComparer.Ordinal)).Aggregate((a,b) => { a.IntersectWith(b); return a; }).Order(StringComparer.Ordinal).ToArray();
         return fields.Select(f => f!.Choices.Select(NdfSyntaxDocument.Leaf).ToHashSet(StringComparer.Ordinal)).Aggregate((a,b) => { a.IntersectWith(b); return a; }).Order(StringComparer.Ordinal).ToArray();
     }
     public static string Current(UnitWorkspaceData units,WeaponWorkspaceData data,IReadOnlyList<DraftOperation> drafts,AmmoRecord ammo,string key)
@@ -74,7 +76,7 @@ public static class AmmoBatchPlanner
                 if (!WeaponValueConverter.TryFormat(field,input,out desired,out var raw,out var error)) throw new TransactionValidationException(error);
                 var id = DraftOperation.CreateId(DraftTargetKind.AmmoField,field.Location.RelativeSourceFile,ammo.Name,field.Key);
                 var existing = drafts.SingleOrDefault(o => o.Id == id);
-                var status = desired == current ? "不变" : existing is null ? "将修改" : "更新已有共享草稿";
+                var status = desired == current ? "不变" : existing is not null ? "更新已有共享草稿" : field.IsMissing ? "将新增字段" : "将修改";
                 if (desired != current)
                 {
                     if (desired == field.DisplayValue)
@@ -86,9 +88,9 @@ public static class AmmoBatchPlanner
                     else upserts.Add(new(id,batchId,DraftTargetKind.AmmoField,"ammo",field.Location.RelativeSourceFile,ammo.Name,ammo.Source.TypeName,
                         field.Key,field.Location.FieldPath,field.Definition.ValueKind.ToString(),field.DisplayValue,field.RawValue,desired,raw,
                         $"{ammo.DisplayName} · {field.Definition.Label}：{current} → {desired}（全部引用）",null,false,DateTimeOffset.UtcNow,
-                        EditScope:DraftEditScope.AllReferences,SelectedUnitNames:[]));
+                        EditScope:DraftEditScope.AllReferences,SelectedUnitNames:[],InsertAmmoField:field.IsMissing));
                 }
-                rows.Add(new(ammo.Name,ammo.DisplayName,current,desired,status));
+                rows.Add(new(ammo.Name,ammo.DisplayName,current.Length == 0 && field.IsMissing ? "未显式设置" : current,desired,status));
             }
             catch (Exception ex) when (ex is TransactionValidationException or FormatException or OverflowException)
             { errors.Add(target.Name+"："+ex.Message); rows.Add(new(target.Name,ammo?.DisplayName ?? target.Name,current,desired,ex.Message)); }
@@ -132,7 +134,8 @@ public static class AmmoBatchPlanner
     private static string Calculate(string current,WeaponValueKind kind,AmmoBatchRequest r)
     {
         if (r.Operation == UnitBatchOperation.Set) return r.Operand;
-        if (kind is not (WeaponValueKind.Integer or WeaponValueKind.Decimal)) throw new TransactionValidationException("该字段只能设为固定值");
+        if (string.IsNullOrEmpty(current)) throw new TransactionValidationException("未声明字段请先设为固定值，不能按0计算");
+        if (kind is not (WeaponValueKind.Integer or WeaponValueKind.Decimal or WeaponValueKind.Degrees)) throw new TransactionValidationException("该字段只能设为固定值");
         decimal Read(string text) => decimal.Parse(text,NumberStyles.Float,CultureInfo.InvariantCulture);
         var a = Read(current); var b = Read(r.Operand);
         var result = r.Operation switch { UnitBatchOperation.Multiply => a*b, UnitBatchOperation.Add => a+b, UnitBatchOperation.Subtract => a-b,

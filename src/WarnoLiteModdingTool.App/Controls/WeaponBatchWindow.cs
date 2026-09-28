@@ -107,7 +107,7 @@ public sealed class WeaponBatchWindow : Window
         if (deleted.Count > 0) top.Children.Add(new TextBlock { Text = UiText.T("待删除单位不能加入批量草稿")+" · "+string.Join(", ",deleted), TextWrapping = TextWrapping.Wrap });
         var tools = new WrapPanel(); top.Children.Add(tools);
         Label(tools,"参数",_parameter); Label(tools,"运算",_operation); Label(tools,"数值",_operand); tools.Children.Add(_choice);
-        _parameter.ItemsSource = WeaponBatch.Parameters(data).Select(p => new Choice(p.Key,UiText.T(p.Definition.Group)+" · "+UiText.T(p.Definition.Label))).ToArray();
+        _parameter.ItemsSource = WeaponBatch.Parameters(data).Where(p => Advanced.EditorMode.CanEdit(p.Key) && p.Definition.ValueKind != WeaponValueKind.Tags).Select(p => new Choice(p.Key,UiText.T(p.Definition.Group)+" · "+UiText.T(p.Definition.Label))).ToArray();
         Watch(_parameter, ParameterChanged);
         var options = new WrapPanel(); top.Children.Add(options);
         Label(options,"取整",_rounding); _rounding.ItemsSource = new[] { new Choice("None",UiText.T("不取整")),new Choice("Nearest",UiText.T("四舍五入")),new Choice("Floor",UiText.T("向下取整")),new Choice("Ceiling",UiText.T("向上取整")) }; _rounding.SelectedIndex = 0;
@@ -158,7 +158,7 @@ public sealed class WeaponBatchWindow : Window
         _minimum.IsEnabled = _maximum.IsEnabled = numeric;
         var choices = definition.ValueKind == WeaponValueKind.Boolean ? new[] { new Choice("True",UiText.T("是")),new Choice("False",UiText.T("否")) }
             : definition.ValueKind == WeaponValueKind.Reference ? _initial.Ammunition.Select(a => new Choice(a.Name,(UiText.Current.English ? a.DisplayName : a.ChineseName) is { Length: > 0 } label ? label : a.Name)).ToArray()
-            : _initial.Ammunition.SelectMany(a => a.Fields).Where(f => f.Key == p.Key).SelectMany(f => f.Choices).Distinct().Select(c => new Choice(WarnoLiteModdingTool.Core.Ndf.NdfSyntaxDocument.Leaf(c),c)).ToArray();
+            : _initial.Ammunition.SelectMany(a => a.Fields).Where(f => f.Key == p.Key).SelectMany(f => f.Choices).Distinct().Select(c => new Choice(definition.ValueKind == WeaponValueKind.CatalogChoice ? WarnoLiteModdingTool.Core.Ndf.NdfSyntaxDocument.Unquote(c) : WarnoLiteModdingTool.Core.Ndf.NdfSyntaxDocument.Leaf(c),c)).ToArray();
         _choice.ItemsSource = choices; _choice.SelectedItem = choices.FirstOrDefault(); _hint.Text = UiText.T(definition.Hint)+(definition.Suffix is {} suffix ? " · "+suffix : ""); Changed();
     }
     private async Task Compute(bool save)
@@ -179,6 +179,12 @@ public sealed class WeaponBatchWindow : Window
                 var units = await new UnitProjectLoader().LoadAsync(context,index,token); var data = await new WeaponProjectLoader().LoadAsync(context,index,units,token);
                 foreach (var name in request.Targets.Select(t => t.Weapon).Distinct())
                     if (data.Weapon(name) is not {} w || WeaponBatch.Shape(w) != WeaponBatch.Shape(_initial.Weapon(name)!)) throw new InvalidOperationException("挂载结构已变化，请重新加载项目");
+                if (!Advanced.EditorMode.IsAdvanced && request.Parameter.StartsWith("ammo.", StringComparison.Ordinal))
+                {
+                    var cells = WeaponBatch.Cells(data, drafts);
+                    if (request.Targets.Any(t => data.Ammo(WeaponBatch.AmmoAt(data, cells, t.Unit, t.Weapon, t.Mount))?.Field(request.Parameter)?.IsMissing == true))
+                        throw new InvalidOperationException("补建弹药字段需要专业模式");
+                }
                 var preview = WeaponBatch.Preview(data,drafts,request);
                 if (preview.CanSave)
                 {

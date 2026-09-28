@@ -39,12 +39,13 @@ public static class WeaponBatchApplyPlanner
         var blocks = new Dictionary<string,List<string>>(StringComparer.OrdinalIgnoreCase);
         var names = data.Weapons.Select(w => w.Name).Concat(data.Ammunition.Select(a => a.Name)).ToHashSet();
         var ammoCount = 0; var weaponCount = 0;
+        UnitProjectGraph? referenceGraph = null;
         Dictionary<string,WeaponBatchCell> Globals(string name, bool ammo) => cells.Where(c => c.Unit.Length == 0 && Ammo(c) == ammo && (ammo ? c.Ammo : c.Weapon) == name).DistinctBy(c => c.Key).ToDictionary(c => c.Key);
         string Signature(IEnumerable<KeyValuePair<string,string>> values) => string.Join("\n", values.OrderBy(p => p.Key,StringComparer.Ordinal).Select(p => p.Key+"="+p.Value));
         void Add(WeaponFieldValue field, string raw)
         {
             if (field.RawValue == raw) return;
-            direct.Add(new(field.Location.RelativeSourceFile,new(field.Location.CharacterOffset,field.Location.CharacterLength,field.RawValue,raw,field.Definition.Label),field.Definition.Label));
+            direct.Add(new(field.Location.RelativeSourceFile,AmmoProfessional.Replacement(field, raw),field.Definition.Label));
         }
         string Clone(NdfObjectInfo source, IEnumerable<WeaponFieldValue> fields, Dictionary<string,string> values, bool ammo)
         {
@@ -54,7 +55,7 @@ public static class WeaponBatchApplyPlanner
             if (!declaration.Success) throw new TransactionValidationException("无法定位武器声明："+source.Name);
             var edits = new List<TextReplacement> { new(declaration.Groups[1].Length,source.Name.Length,source.Name,name,"隔离对象") };
             foreach (var f in fields.Where(f => values.TryGetValue(f.Key,out var v) && v != f.RawValue))
-                edits.Add(new(f.Location.CharacterOffset-source.CharacterOffset,f.Location.CharacterLength,f.RawValue,values[f.Key],f.Definition.Label));
+                edits.Add(AmmoProfessional.Replacement(f, values[f.Key], source.CharacterOffset));
             if (ammo)
             {
                 var doc = new NdfSyntaxDocument(body);
@@ -70,11 +71,19 @@ public static class WeaponBatchApplyPlanner
             else weaponCount++;
             var path = source.RelativeSourceFile.Replace('\\','/');
             if (!blocks.ContainsKey(path)) { blocks[path] = []; newNames[path] = []; }
-            blocks[path].Add(SemicolonCsvDocument.ApplyReplacements(body,edits).TrimEnd('\r','\n')); newNames[path].Add(name);
+            blocks[path].Add(SemicolonCsvDocument.ApplyReplacements(body,AmmoProfessional.MergeInsertions(edits)).TrimEnd('\r','\n')); newNames[path].Add(name);
             return name;
         }
         void ValidateAmmo(AmmoRecord record, Dictionary<string,string> values)
         {
+            if (values.Keys.Any(AmmoProfessional.RequiresV3))
+            {
+                var source = snapshot(record.Source.RelativeSourceFile);
+                var body = source.Text.Substring(record.Source.CharacterOffset, record.Source.CharacterLength);
+                var edits = values.Select(p => AmmoProfessional.Replacement(record.Field(p.Key)!, p.Value, record.Source.CharacterOffset));
+                var candidate = SemicolonCsvDocument.ApplyReplacements(body, AmmoProfessional.MergeInsertions(edits));
+                AmmoProfessionalValidation.Candidate(record, candidate, values, () => referenceGraph ??= new UnitProjectGraph(source.ProjectRoot), units.Localisation);
+            }
             var familyRaw = values.GetValueOrDefault("ammo.damage.family") ?? record.Field("ammo.damage.family")?.RawValue;
             var indexRaw = values.GetValueOrDefault("ammo.damage.index") ?? record.Field("ammo.damage.index")?.RawValue;
             if (units.DamageResistance.DamageFamilies.FirstOrDefault(f => f.Name == NdfSyntaxDocument.Leaf(familyRaw ?? "")) is {} family &&
@@ -121,7 +130,8 @@ public static class WeaponBatchApplyPlanner
             var s = snapshot(b.Key); var nl = s.NewLine;
             direct.Add(new(b.Key,new(s.Text.Length,0,"",nl+string.Join(nl+nl,b.Value)+nl,"批量隔离对象"),"追加批量隔离对象"));
         }
-        return new(direct,newNames.ToDictionary(p => p.Key,p => (IReadOnlyList<string>)p.Value),
+        var merged = direct.GroupBy(p => p.RelativePath, StringComparer.OrdinalIgnoreCase).SelectMany(g => AmmoProfessional.MergeInsertions(g.Select(p => p.Replacement)).Select(r => new WeaponPlannedReplacement(g.Key, r, r.Description))).ToArray();
+        return new(merged,newNames.ToDictionary(p => p.Key,p => (IReadOnlyList<string>)p.Value),
             [$"批量武器：{weaponCount} 个 Weapon 副本、{ammoCount} 个 Ammo 副本", "按最终单位、挂载与字段组合隔离；同结果复用副本"]);
     }
     private static string ReplaceLeaf(string raw,string leaf) => raw[..(raw.LastIndexOf('/')+1)]+leaf;

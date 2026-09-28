@@ -60,6 +60,13 @@ public sealed partial class AmmoWorkspaceViewModel : ObservableObject
     public ObservableCollection<AmmoListItemViewModel> Ammunition { get; }
     public ICollectionView AmmunitionView { get; }
     public ObservableCollection<WeaponFieldViewModel> Fields { get; }
+    private string _fieldSearch = "";
+    public string FieldSearch { get => _fieldSearch; set { if (SetProperty(ref _fieldSearch, value ?? "")) RebuildSections(); } }
+    private void RebuildSections()
+    {
+        FieldSections.Clear();
+        foreach (var section in FieldSectionBuilder.Build(Fields.Where(f => (Localisation.UiText.T(f.Label) + " " + f.OriginalParameter + " " + f.Label).Contains(FieldSearch, StringComparison.OrdinalIgnoreCase)), f => f.Section, f => f.Group)) FieldSections.Add(section);
+    }
 
     public ObservableCollection<FieldSectionViewModel<WeaponFieldViewModel>> FieldSections { get; }
     public ObservableCollection<AmmoReferenceItemViewModel> References { get; }
@@ -196,12 +203,12 @@ public sealed partial class AmmoWorkspaceViewModel : ObservableObject
             field.RawValue,
             normalized,
             raw,
-            $"{field.OwnerObjectName} · {field.Definition.Label}：{field.DisplayValue} → {normalized}（全部引用）",
+            $"{field.OwnerObjectName} · {field.Definition.Label}：{(field.IsMissing ? "未显式设置" : field.DisplayValue)} → {normalized}（全部引用）",
             null,
             false,
             DateTimeOffset.UtcNow,
             EditScope: DraftEditScope.AllReferences,
-            SelectedUnitNames: []);
+            SelectedUnitNames: [], InsertAmmoField: field.IsMissing);
 
         if (normalized == field.DisplayValue)
         {
@@ -215,7 +222,7 @@ public sealed partial class AmmoWorkspaceViewModel : ObservableObject
         else
         {
             await _draftStore.UpsertAsync(operation);
-            viewModel.MarkPersisted(operation, normalized, "草稿已保存");
+            viewModel.MarkPersisted(operation, normalized, field.IsMissing ? "已保存新增字段草稿" : "草稿已保存");
         }
 
         RefreshFilter();
@@ -238,10 +245,10 @@ public sealed partial class AmmoWorkspaceViewModel : ObservableObject
         var nameAmmo=SelectedAmmo.Ammo;
         if(nameAmmo.CanEditName&&nameAmmo.NameLocation is {} nameLocation){var definition=new WeaponFieldDefinition("ammo.name","名称","游戏内名称","修改当前弹药名称，影响全部引用者。",WeaponFieldOwner.Ammo,"Name",WeaponValueKind.Text,Section:"基本信息");
             var nameField=new WeaponFieldValue(definition,nameAmmo.Name,nameAmmo.Source.TypeName,Localisation.UiText.Current.English?nameAmmo.DisplayName:nameAmmo.ChineseName,nameAmmo.NameRaw,nameLocation,[]);var draft=resolved.Values.FirstOrDefault(o=>o.TargetKind==DraftTargetKind.AmmoName&&o.ObjectName==nameAmmo.Name);var nameVm=new WeaponFieldViewModel(nameField,draft,PersistFieldAsync);nameVm.SetLocked(_transactions.IsTransactionBusy);Fields.Add(nameVm);}
-        foreach (var field in SelectedAmmo.Ammo.Fields)
+        foreach (var field in SelectedAmmo.Ammo.Fields.Where(f => AmmoProfessional.Visible(f, Advanced.EditorMode.IsAdvanced)))
         {
             var id = DraftOperation.CreateId(DraftTargetKind.AmmoField, field.Location.RelativeSourceFile, field.OwnerObjectName, field.Key);
-            var viewModel = new WeaponFieldViewModel(field, resolved.GetValueOrDefault(id), PersistFieldAsync) { BatchLocked = WeaponBatch.Blocks(_draftStore.Operations, c => c.Ammo == field.OwnerObjectName && c.Key == field.Key) };
+            var viewModel = new WeaponFieldViewModel(field, resolved.GetValueOrDefault(id), PersistFieldAsync) { ProjectRoot = _draftStore.ProjectRoot, LocalisationCatalog = _transactions.Data.Localisation, BatchLocked = WeaponBatch.Blocks(_draftStore.Operations, c => c.Ammo == field.OwnerObjectName && c.Key == field.Key) };
             viewModel.SetLocked(_transactions.IsTransactionBusy);
             Fields.Add(viewModel);
         }
@@ -252,10 +259,8 @@ public sealed partial class AmmoWorkspaceViewModel : ObservableObject
             Fields[i] = _fieldEdits.Restore(current, old => old.Field.OwnerObjectName == current.Field.OwnerObjectName &&
                 old.Field.Key == current.Field.Key && old.EditContext == current.EditContext);
         }
-        foreach (var section in FieldSectionBuilder.Build(Fields, field => field.Section, field => field.Group))
-        {
-            FieldSections.Add(section);
-        }
+        foreach (var f in Fields) f.LinkedTags = Fields.FirstOrDefault(t => t.Field.OwnerObjectName == f.Field.OwnerObjectName && t.Field.Definition.ValueKind == WeaponValueKind.Tags);
+        RebuildSections();
     }
 
     private bool MatchesSearch(object item) =>

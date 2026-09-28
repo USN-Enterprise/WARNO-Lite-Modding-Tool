@@ -50,7 +50,7 @@ public sealed class DraftStore : IDisposable
                 var json = await File.ReadAllTextAsync(DraftPath, cancellationToken);
                 var document = JsonSerializer.Deserialize<DraftDocument>(json, JsonOptions)
                     ?? throw new JsonException("草稿内容为空。");
-                if (document.SchemaVersion is not (1 or 2))
+                if (document.SchemaVersion is not (1 or 2 or 3))
                 {
                     _blocked = true;
                     return new DraftLoadResult(
@@ -189,7 +189,11 @@ public sealed class DraftStore : IDisposable
     private DraftDocument Candidate(IReadOnlyList<DraftOperation> operations)
     {
         var advanced = operations.Any(o => o.TargetKind == DraftTargetKind.WeaponStructure || o.TargetKind == DraftTargetKind.UnitCreate && Units.UnitCreation.Read(o).WeaponStructures.Count > 0);
-        return new(Math.Max(_document.SchemaVersion, advanced ? 2 : 1), DateTimeOffset.UtcNow, operations);
+        var ammo = operations.Any(o => o.InsertAmmoField || Weapons.AmmoProfessional.RequiresV3(o.FieldKey)
+            || o.TargetKind == DraftTargetKind.WeaponStructure && Weapons.WeaponStructure.Read(o).AmmoFields.Values.Any(f => f.Keys.Any(Weapons.AmmoProfessional.RequiresV3))
+            || o.TargetKind == DraftTargetKind.UnitCreate && Units.UnitCreation.Read(o).WeaponStructures.Any(s => s.AmmoFields.Values.Any(f => f.Keys.Any(Weapons.AmmoProfessional.RequiresV3)))
+            || o.TargetKind == DraftTargetKind.WeaponBatch && Weapons.WeaponBatch.ReadCells(o).Any(c => c.InsertAmmoField || Weapons.AmmoProfessional.RequiresV3(c.Key)));
+        return new(Math.Max(_document.SchemaVersion, ammo ? 3 : advanced ? 2 : 1), DateTimeOffset.UtcNow, operations);
     }
 
     private async Task SaveCandidateAsync(DraftDocument candidate, CancellationToken cancellationToken)

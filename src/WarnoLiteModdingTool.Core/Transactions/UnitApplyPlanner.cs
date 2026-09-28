@@ -51,7 +51,7 @@ public sealed class UnitApplyPlanner(
         operations = allOperations.Where(o=>!deleteNames.Contains(o.ObjectName)||o.TargetKind==DraftTargetKind.UnitDelete).ToArray();
         var lifecycle = allOperations.Any(o=>UnitDraftLinks.Lifecycle(o)||o.TargetKind is DraftTargetKind.UnitCreate or DraftTargetKind.UnitPicture or DraftTargetKind.WeaponBatch or DraftTargetKind.WeaponStructure);
         var sharedAmmo = allOperations.Any(Batch.AmmoBatchPlanner.IsShared);
-        var reviewInputs = lifecycle || sharedAmmo || allOperations.Any(o => o.TargetKind is DraftTargetKind.DivisionText or DraftTargetKind.DivisionIdentity or DraftTargetKind.TerrainField);
+        var reviewInputs = lifecycle || sharedAmmo || allOperations.Any(o => o.InsertAmmoField || AmmoProfessional.RequiresV3(o.FieldKey) || o.TargetKind is DraftTargetKind.DivisionText or DraftTargetKind.DivisionIdentity or DraftTargetKind.TerrainField);
         var unitReview = reviewInputs ? new UnitProjectGraph(root).Dependencies : null;
         var historyPath = Path.Combine(root,UnitCreationHistory.LedgerPath);
         if(unitReview is not null) unitReview[UnitCreationHistory.LedgerPath] = File.Exists(historyPath)?File.ReadAllBytes(historyPath):[];

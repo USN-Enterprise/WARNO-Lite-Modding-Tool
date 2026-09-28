@@ -56,7 +56,7 @@ public sealed class WeaponProjectLoader
         }
 
         var ammo = new List<AmmoRecord>();
-        foreach (var descriptor in index.Objects.Where(item => item.ModuleKey == "ammo"))
+        foreach (var descriptor in index.Objects.Where(item => item.ModuleKey == "ammo" && item.TypeName == "TAmmunitionDescriptor"))
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (!sources.TryGetValue(descriptor.SourceFile, out var source))
@@ -78,12 +78,15 @@ public sealed class WeaponProjectLoader
                 var values = LocateAmmoField(document, roots[0], definition);
                 if (values.Count != 1)
                 {
+                    if (definition.Professional || definition.CanInsert) fields.Add(values.Count == 0 ? AmmoProfessional.Missing(descriptor, source, document, roots[0], definition)
+                        : AmmoProfessional.Unavailable(descriptor, definition, "", "字段重复，无法唯一定位"));
                     continue;
                 }
 
                 var raw = document.Raw(values[0]);
                 if (!WeaponValueConverter.TryRead(definition, raw, out var display))
                 {
+                    if (definition.Professional || definition.CanInsert) fields.Add(AmmoProfessional.Unavailable(descriptor, definition, raw, "原值格式暂不支持"));
                     continue;
                 }
 
@@ -102,6 +105,32 @@ public sealed class WeaponProjectLoader
             ammo.Add(record);
         }
 
+        var catalogs = ammo.SelectMany(a => a.Fields).Where(f => f.State == WeaponFieldState.Declared && f.Definition.ValueKind == WeaponValueKind.CatalogChoice)
+            .GroupBy(f => f.Key).ToDictionary(g => g.Key, g => (IReadOnlyList<string>)g.Select(f => f.RawValue).Distinct().Order(StringComparer.Ordinal).ToArray());
+        var tags = ammo.SelectMany(a => a.Fields).Where(f => f.State == WeaponFieldState.Declared && f.Definition.ValueKind == WeaponValueKind.Tags)
+            .SelectMany(f => AmmoProfessional.Tags(f.RawValue)).Distinct().Order(StringComparer.Ordinal).ToArray();
+        IReadOnlyList<string> catalogFiles = [];
+        IReadOnlyList<AmmoReferenceCatalog.Missile> missileCatalog = [];
+        if (ammo.Count > 0)
+            foreach (var catalog in AmmoReferenceCatalog.Load(context.Layout.RootPath, cancellationToken, out catalogFiles, out missileCatalog)) catalogs[catalog.Key] = catalog.Value;
+        for (var i = 0; i < ammo.Count; i++)
+        {
+            var a = ammo[i];
+            WeaponFieldValue WithChoices(WeaponFieldValue f)
+            {
+                if (f.Definition.ValueKind == WeaponValueKind.Tags) return f with { Choices = tags };
+                if (f.Definition.ValueKind != WeaponValueKind.CatalogChoice) return f;
+                var candidates = catalogs.GetValueOrDefault(f.Key) ?? [];
+                if (f.Definition.FieldName == "MissileDescriptor") candidates = candidates.Concat(missileCatalog.Where(m =>
+                    m.File.Equals(a.Source.RelativeSourceFile.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase) || m.Exported &&
+                    string.Equals(Path.GetDirectoryName(m.File.Replace('\\', '/')), Path.GetDirectoryName(a.Source.RelativeSourceFile.Replace('\\', '/')), StringComparison.OrdinalIgnoreCase)).Select(m => "~/" + m.Name)).ToArray();
+                var choices = candidates.Concat(f.State == WeaponFieldState.Declared ? new[] { f.RawValue } : []).Distinct().ToArray();
+                return f with { Choices = choices, State = f.IsMissing && choices.Length == 0 ? WeaponFieldState.Unavailable : f.State,
+                    Reason = f.IsMissing && choices.Length == 0 ? "当前Mod没有可用候选，保留未声明" : f.Reason };
+            }
+            ammo[i] = new AmmoRecord(a.Source, a.Fields.Select(WithChoices).ToArray())
+                { NameToken = a.NameToken, NameRaw = a.NameRaw, NameLocation = a.NameLocation, CanEditName = a.CanEditName, DisplayName = a.DisplayName, ChineseName = a.ChineseName };
+        }
         var ammoChoices = ammo.Select(item => item.Name).Order(StringComparer.Ordinal).ToArray();
         units.Localisation.AddKnownTokens(ammo.Select(a=>a.NameToken));
         var weapons = new List<WeaponRecord>();
@@ -161,7 +190,7 @@ public sealed class WeaponProjectLoader
             weapons.Add(new WeaponRecord(descriptor, fields, mounts));
         }
 
-        return new WeaponWorkspaceData(weapons, ammo, units.Units, BuildReferences(weapons, ammo, units.Units), diagnostics);
+        return new WeaponWorkspaceData(weapons, ammo, units.Units, BuildReferences(weapons, ammo, units.Units), diagnostics) { CatalogFiles = catalogFiles };
     }
 
     internal static WeaponReferenceIndex BuildReferences(IReadOnlyList<WeaponRecord> weapons, IReadOnlyList<AmmoRecord> ammo, IReadOnlyList<UnitRecord> units)
@@ -197,12 +226,13 @@ public sealed class WeaponProjectLoader
         foreach (var definition in WeaponFieldDefinitions.Ammo)
         {
             var spans = LocateAmmoField(document, root, definition);
-            if (spans.Count != 1) continue;
+            if (spans.Count != 1) { if (definition.Professional || definition.CanInsert) fields.Add(spans.Count == 0 ? AmmoProfessional.Missing(descriptor, body, document, root, definition)
+                : AmmoProfessional.Unavailable(descriptor, definition, "", "字段重复，无法唯一定位")); continue; }
             var raw = document.Raw(spans[0]);
-            if (!WeaponValueConverter.TryRead(definition, raw, out var value)) continue;
+            if (!WeaponValueConverter.TryRead(definition, raw, out var value)) { if (definition.Professional || definition.CanInsert) fields.Add(AmmoProfessional.Unavailable(descriptor, definition, raw, "原值格式暂不支持")); continue; }
             fields.Add(CreateValue(descriptor, body, document, definition, raw, value, spans[0], data.Ammo(descriptor.Name)?.Field(definition.Key)?.Choices ?? []));
         }
-        return new(descriptor, fields);
+        return new(descriptor, fields.Select(f => f with { Choices = data.Ammo(descriptor.Name)?.Field(f.Key)?.Choices ?? f.Choices }).ToArray());
     }
 
     private static IReadOnlyList<NdfValueSpan> LocateAmmoField(
@@ -210,6 +240,11 @@ public sealed class WeaponProjectLoader
         NdfConstructorSpan root,
         WeaponFieldDefinition definition)
     {
+        if (definition.Constructor is not null)
+        {
+            var owner = AmmoProfessional.Owner(document, root, definition);
+            return owner is null ? [] : document.FindDirectAssignments(owner, definition.FieldName);
+        }
         if (definition.MapKey is not null)
         {
             var hitRoll = document.FindDirectAssignments(root, "HitRollRuleDescriptor");
@@ -375,7 +410,7 @@ public sealed class WeaponProjectLoader
             descriptor.TypeName,
             display,
             raw,
-            new WeaponFieldLocation(descriptor.RelativeSourceFile, $"{descriptor.TypeName}.{definition.FieldName}", offset, document.Length(span), line),
+            new WeaponFieldLocation(descriptor.RelativeSourceFile, definition.Constructor is null ? $"{descriptor.TypeName}.{definition.FieldName}" : AmmoProfessional.Path(definition), offset, document.Length(span), line),
             choices);
     }
 }

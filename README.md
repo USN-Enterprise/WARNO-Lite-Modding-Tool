@@ -6,7 +6,7 @@
 
 面向新手和 Mod 作者的 **Windows WARNO 图形化编辑器**。通过界面调整单位、武器、弹药、战术师、将军模式和游戏规则，无需手写代码；支持单位卡片图片和师徽编辑。
 
-当前版本：**1.9.18** · Windows x64 · 便携运行
+当前版本：**1.9.20** · Windows x64 · 便携运行
 
 **[下载发布包](https://github.com/USN-Enterprise/WARNO-Lite-Modding-Tool/releases/latest)** · **[中文使用教程](使用教程.md)** · [版本更新](RELEASE_NOTES.md#chinese)
 
@@ -56,7 +56,7 @@
 
 **A Windows graphical editor for WARNO Mods**, for beginners and Mod authors. Edit units, weapons, ammunition, divisions, Army General and game rules without writing code. Unit portraits and division emblems can also be edited.
 
-Current version: **1.9.18** · Windows x64 · Portable
+Current version: **1.9.20** · Windows x64 · Portable
 
 **[Download a release](https://github.com/USN-Enterprise/WARNO-Lite-Modding-Tool/releases/latest)** · **[English user guide](USER_GUIDE.md)** · [Release notes](RELEASE_NOTES.md#english)
 

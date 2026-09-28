@@ -57,7 +57,7 @@ public static class UnitDraftLinks
                 foreach (var op in related) if (result.TryAdd(op.Id, op)) changed = true;
             }
             // Expand connected weapon/ammo plans; independent weapons remain separately applicable.
-            if (combined.Any(o => o.TargetKind == DraftTargetKind.WeaponBatch || Batch.AmmoBatchPlanner.IsBatch(o)))
+            if (combined.Any(o => o.TargetKind == DraftTargetKind.WeaponBatch || Batch.AmmoBatchPlanner.IsBatch(o) || o.InsertAmmoField || Weapons.AmmoProfessional.RequiresV3(o.FieldKey)))
             {
                 var names = result.Values.Where(Weapons.WeaponBatch.IsWeaponEdit).SelectMany(Weapons.WeaponBatch.Dependencies).ToHashSet();
                 foreach (var op in combined.Where(Weapons.WeaponBatch.IsWeaponEdit))

@@ -6,6 +6,19 @@
 
 仅列出功能更新和影响使用的问题修复。
 
+## 1.9.20 — 2026-09-28
+
+- 单位页新增“机动与续航 → 补给 → 补给总量”，基础/专业模式和中英文均可用，支持固定值、百分比及专业公式批量修改。
+- 接入现有草稿、预览、备份与失败恢复；只修改选定单位的既有直接数值，缺失、多义或表达式字段不猜测写入。不改变补给速度或弹药消耗。
+- 本版未运行官方生成器或游戏验收。
+
+## 1.9.19 — 2026-09-28
+
+- 专业模式补齐弹药盘点的 35 项：5 项既有字段支持受控补建，新增 30 项布尔、数值及引用入口；原生未声明和显式 False 分开显示。
+- 支持缺失射后不理、同节点多个字段及命中规则子字段新增，接入单条、共享批量、武器局部副本和新槽弹药草稿。缺失数值不能按 0 做公式。
+- 增加当前 Mod 图片/命中表现/类别/导弹/说明候选、标签核对和字段搜索；中英文控件统一，技术详情按需展开。
+- 专业草稿版本 3 防止旧版本误写；正式应用复核结构和资源依赖，保留备份及失败恢复。保留既有武器槽预览边界；未运行官方生成器或游戏验收。
+
 ## 1.9.18 — 2026-09-26
 
 - 修复自定义师徽只写图片与纹理声明、漏写纹理库登记的问题。新师徽的 PNG、声明、Normal 状态登记与师引用进入同一可恢复事务。
@@ -274,6 +287,19 @@
 [中文](#chinese) | [English](#english)
 
 Feature updates and fixes that affect everyday use.
+
+## 1.9.20 — 2026-09-28
+
+- Added **Mobility and endurance → Supply → Supply capacity** to Units in both modes and languages, including fixed-value, percentage and professional formula batch edits.
+- Uses existing drafts, previews, backups and failure recovery. Edits only existing direct numeric values on selected units; missing, ambiguous or expression-based fields remain unavailable. Supply rates and ammunition costs are unchanged.
+- Official generation and in-game verification were not run.
+
+## 1.9.19 — 2026-09-28
+
+- Professional mode covers 35 audited Ammo parameters: controlled insertion for 5 existing fields and 30 new boolean, numeric and reference editors. Omitted values and explicit False remain distinct.
+- Missing fire-and-forget, multiple members and nested hit-rule fields work with shared Ammo batches, local weapon copies and slot Ammo drafts. Omitted numbers are not treated as zero in formulas.
+- Adds current-Mod resource choices, image preview, explicit description-tag review and field search. Bilingual controls share the existing layout, with technical details on demand.
+- Draft schema 3 protects new operations from older releases. Applying rechecks structures and resources and retains backup/recovery. Existing weapon-slot preview limits remain; official generation and in-game effects have not been verified.
 
 ## 1.9.18 — 2026-09-26
 

@@ -199,7 +199,7 @@ public sealed class WeaponStructureWindow : Window
         fields.Add(new(WeaponFieldDefinitions.Salves(0), captured.Weapon.Name, "TWeaponManagerModuleDescriptor", boxValue, boxValue, new(captured.Weapon.File, "Salves", 0, 0, 1), []));
         var ammo = _data.Ammo(row.Ammo); if (ammo is not null) fields.AddRange(ammo.Fields);
         string? group = null;
-        foreach (var f in fields)
+        foreach (var f in fields.Where(f => AmmoProfessional.Visible(f, Advanced.EditorMode.IsAdvanced)))
         {
             if (group != f.Definition.Group) { group = f.Definition.Group; _fields.Children.Add(new TextBlock { Text = UiText.T(group), FontSize = 14, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 8) }); }
             var effective = f;
@@ -231,9 +231,10 @@ public sealed class WeaponStructureWindow : Window
                         _ = Dispatcher.BeginInvoke(new Action(async () => await Guard(async () => { await FlushAsync(); RefreshRows(row.Id); })));
                 }
                 finally { _saving.Release(); }
-            });
+            }) { ProjectRoot = _graph.Root };
             _editors.Add(vm); FrameworkElement input;
-            if (vm.IsReferenceEditor)
+            if (vm.IsAdvancedEditor) input = new AmmoAdvancedInput { DataContext = vm };
+            else if (vm.IsReferenceEditor)
             {
                 var picker = new SearchPicker { ItemsSource = _data.Ammunition, DisplayMemberPath = "DisplayName", SecondaryMemberPath = "Name", SelectedItem = _data.Ammo(vm.EditValue) };
                 picker.SelectedItemChanged += (_, _) => { if (picker.SelectedItem is AmmoRecord a) vm.EditValue = a.Name; }; input = picker;
@@ -251,7 +252,9 @@ public sealed class WeaponStructureWindow : Window
             var cell = new StackPanel(); cell.Children.Add(input); var status = new TextBlock { Text = UiText.T(vm.StatusText), TextWrapping = TextWrapping.Wrap };
             status.SetResourceReference(StyleProperty, "SecondaryGridText"); vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(vm.StatusText)) status.Text = UiText.T(vm.StatusText); }; cell.Children.Add(status);
             _fields.Children.Add(new FieldRow { Header = UiText.T(vm.Label), Parameter = vm.OriginalParameter, Content = cell, Margin = new Thickness(0, 0, 0, 8) });
+            if (vm.IsGuidanceReview) _fields.Children.Add(new AmmoTagReview { DataContext = vm });
         }
+        foreach (var vm in _editors) vm.LinkedTags = _editors.FirstOrDefault(t => t.Field.OwnerObjectName == vm.Field.OwnerObjectName && t.Field.Definition.ValueKind == WeaponValueKind.Tags);
     }
     private async Task BatchAsync(bool delete)
     {

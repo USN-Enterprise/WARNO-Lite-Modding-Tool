@@ -31,7 +31,8 @@ public sealed record DraftOperation(
     DraftEditScope? EditScope = null,
     IReadOnlyList<string>? SelectedUnitNames = null,
     string? ContextWeaponName = null,
-    int? ContextIndex = null)
+    int? ContextIndex = null,
+    bool InsertAmmoField = false)
 {
     public static string CreateId(
         DraftTargetKind kind,

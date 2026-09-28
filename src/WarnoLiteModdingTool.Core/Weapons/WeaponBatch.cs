@@ -10,7 +10,7 @@ namespace WarnoLiteModdingTool.Core.Weapons;
 public sealed record WeaponBatchTarget(string Unit, string Weapon, int Mount);
 // Empty Unit means an explicit edit to the shared source object.
 public sealed record WeaponBatchCell(string Unit, string Weapon, int Mount, string Shape,
-    string Ammo, string Key, string BaselineRaw, string Value, string Raw)
+    string Ammo, string Key, string BaselineRaw, string Value, string Raw, bool InsertAmmoField = false)
 {
     public string Identity => string.Join("|", Unit, Key.StartsWith("ammo.", StringComparison.Ordinal) && Unit.Length == 0 ? Ammo : Weapon,
         Key.StartsWith("ammo.", StringComparison.Ordinal) && Unit.Length > 0 ? Mount : -1, Key);
@@ -67,6 +67,7 @@ public static class WeaponBatch
             (w is null || c.Shape != Shape(w) || !w.Mounts.Any(m => m.Index == c.Mount))) throw new TransactionValidationException("挂载结构已变化，请重新建立批量草稿：" + c.Weapon);
         if (c.Unit.Length > 0 && !data.Units.Any(u => u.Name == c.Unit && u.Weapons.Contains(c.Weapon))) throw new TransactionValidationException("单位引用已变化：" + c.Unit);
         var f = Field(data, c) ?? throw new TransactionValidationException("批量字段已不存在：" + c.Key);
+        if (!f.CanEdit || f.IsMissing != c.InsertAmmoField) throw new TransactionValidationException("字段声明状态已变化或不可编辑：" + c.Key);
         if (f.RawValue != c.BaselineRaw) throw new TransactionValidationException("批量字段基线已变化：" + c.Key);
         if (!WeaponValueConverter.TryFormat(f, c.Value, out _, out var raw, out var error) || raw != c.Raw)
             throw new TransactionValidationException("批量字段值无效：" + c.Key + " " + error);
@@ -111,7 +112,7 @@ public static class WeaponBatch
             var global = o.EditScope == DraftEditScope.AllReferences;
             if (global && o.TargetKind == DraftTargetKind.AmmoField)
             {
-                var c = new WeaponBatchCell("", "", -1, "", o.ObjectName, o.FieldKey, o.BaselineRaw, o.TargetValue, o.TargetRaw);
+                var c = new WeaponBatchCell("", "", -1, "", o.ObjectName, o.FieldKey, o.BaselineRaw, o.TargetValue, o.TargetRaw, o.InsertAmmoField);
                 Validate(data, c); result.Add(c); continue;
             }
             var before = result.Count;
@@ -122,7 +123,7 @@ public static class WeaponBatch
                 foreach (var m in w.Mounts.Where(m => o.TargetKind == DraftTargetKind.AmmoField ? m.AmmoName == o.ObjectName
                     : o.FieldKey.StartsWith("mount.", StringComparison.Ordinal) ? m.Fields.Any(f => f.Key == o.FieldKey) : true).Take(o.TargetKind == DraftTargetKind.AmmoField ? int.MaxValue : 1))
                 {
-                    var c = new WeaponBatchCell(name, w.Name, m.Index, Shape(w), m.AmmoName, o.FieldKey, o.BaselineRaw, o.TargetValue, o.TargetRaw);
+                    var c = new WeaponBatchCell(name, w.Name, m.Index, Shape(w), m.AmmoName, o.FieldKey, o.BaselineRaw, o.TargetValue, o.TargetRaw, o.InsertAmmoField);
                     Validate(data, c); result.Add(c);
                 }
             }
@@ -172,7 +173,7 @@ public static class WeaponBatch
                 var c = new WeaponBatchCell(request.AllReferences ? "" : t.Unit, w.Name, m.Index, Shape(w), ammo, Key(w, m, request.Parameter), "", "", "");
                 var f = Field(data, c);
                 if (f is null) { rows.Add(new(t.Unit, w.Name, m.Index, request.Parameter, "", "", "跳过：字段不存在")); continue; }
-                c = c with { BaselineRaw = f.RawValue };
+                c = c with { BaselineRaw = f.RawValue, InsertAmmoField = f.IsMissing };
                 var effective = existing.Where(e => e.Key == c.Key && (e.Unit == c.Unit || e.Unit.Length == 0) &&
                     (c.Key.StartsWith("ammo.", StringComparison.Ordinal) ? e.Ammo == c.Ammo && (e.Unit.Length == 0 || e.Weapon == c.Weapon && e.Mount == c.Mount) : e.Weapon == c.Weapon)).ToArray();
                 if (effective.Select(e => e.Raw).Distinct().Count() > 1) throw new TransactionValidationException("局部与全部引用草稿冲突：" + c.Key);
@@ -181,7 +182,7 @@ public static class WeaponBatch
                 if (!WeaponValueConverter.TryFormat(f, input, out var value, out var raw, out var error)) throw new TransactionValidationException(error);
                 c = c with { Value = value, Raw = raw };
                 var changed = value != current;
-                rows.Add(new(t.Unit, w.Name, m.Index, f.Definition.Label, current, value, changed ? "将修改" : "不变"));
+                rows.Add(new(t.Unit, w.Name, m.Index, f.Definition.Label, f.IsMissing && current.Length == 0 ? "未显式设置" : current, value, changed ? f.IsMissing ? "将新增字段" : "将修改" : "不变"));
                 seen.Add(c.Identity);
                 if (changed) changes.TryAdd(c.Identity, c);
                 IEnumerable<MountedWeaponRecord> siblings = f.Definition.Owner switch
@@ -224,6 +225,7 @@ public static class WeaponBatch
     private static string Calculate(string current, WeaponValueKind kind, WeaponBatchRequest r)
     {
         if (r.Operation == UnitBatchOperation.Set) return r.Operand;
+        if (string.IsNullOrEmpty(current)) throw new TransactionValidationException("未声明字段请先设为固定值，不能按0计算");
         if (kind is not (WeaponValueKind.Integer or WeaponValueKind.Decimal or WeaponValueKind.Degrees)) throw new TransactionValidationException("该字段只能设为固定值");
         decimal Read(string s) => decimal.Parse(s, NumberStyles.Float, CultureInfo.InvariantCulture);
         var a = Read(current); var b = Read(r.Operand);

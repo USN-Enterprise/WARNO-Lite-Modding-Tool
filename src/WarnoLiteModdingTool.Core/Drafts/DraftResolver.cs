@@ -264,6 +264,9 @@ public static class DraftResolver
             return Conflict(operation, "字段已不存在或不再可唯一定位");
         }
 
+        if (!field.CanEdit || field.IsMissing != operation.InsertAmmoField)
+            return Conflict(operation, field.CanEdit ? "字段声明状态已变化" : field.Reason);
+
         if (!string.Equals(Normalize(field.Location.RelativeSourceFile), Normalize(operation.RelativeSourceFile), StringComparison.OrdinalIgnoreCase) ||
             !string.Equals(field.RawValue, operation.BaselineRaw, StringComparison.Ordinal))
         {

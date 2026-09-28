@@ -31,6 +31,10 @@ internal static partial class Program
     private static async Task<int> Main(string[] args)
     {
         VanillaNames.Replace(SyntheticNames());
+        if (args is ["--supply-ui"]) { await SupplyCapacityUi(); return 0; }
+        if (args is ["--ammo-pro-ui"]) { await AmmoProfessionalUi(); return 0; }
+        if (args is ["--ammo-pro-stock", var stockRoot]) { await AmmoProfessionalStock(stockRoot); return 0; }
+        if (args is ["--ammo-pro-old-reader", var oldAmmoCore]) { await AmmoProfessionalOldReader(oldAmmoCore); return 0; }
         if (args is ["--weapon-slot-ui", var slotLanguage, var slotTheme]) { await WeaponStructureUi(slotLanguage, slotTheme); return 0; }
         if (args is ["--weapon-slot-old-reader", var oldCore]) { await WeaponStructureOldReader(oldCore); return 0; }
         if (args is ["--performance-1915", var perfRoot, var perfCount]) { await Performance1915(perfRoot, int.Parse(perfCount)); return 0; }
@@ -107,7 +111,12 @@ internal static partial class Program
 
         var tests = new (string Name, Func<Task> Run)[]
         {
+            ("1.9.20 补给量字段、批量与边界", SupplyCapacityContracts),
+            ("1.9.20 补给量组合应用与失败恢复", SupplyCapacityTransactions),
             ("1.9.18 师徽注册与同批合并", Emblem1918Registration),
+            ("专业弹药 字段状态与契约", AmmoProfessionalContracts),
+            ("专业弹药 插入隔离与恢复", AmmoProfessionalTransactions),
+            ("专业弹药 组合引用与保护", AmmoProfessionalGuards),
             ("1.9.18 旧师徽修复与提交保护", Emblem1918LegacyRepair),
             ("1.9.18 师徽纹理库异常边界", Emblem1918Guards),
             ("武器槽 语法与稳定身份", WeaponStructureSyntaxTest),
@@ -1877,7 +1886,7 @@ internal static partial class Program
                     TestAssert.Equal(300d, ((ColumnDefinition)FindWorkspaceName(window, "WeaponScopeColumn")).MinWidth, "Weapon 作用域栏应保留可用最小宽度");
                     TestAssert.Equal(360d, ((ColumnDefinition)FindWorkspaceName(window, "WeaponFieldsColumn")).MinWidth, "Weapon 字段栏应保留可用最小宽度");
                     TestAssert.Equal(300d, ((ColumnDefinition)FindWorkspaceName(window, "AmmoListColumn")).MinWidth, "Ammo 列表应保留可用最小宽度");
-                    TestAssert.Equal(500d, ((ColumnDefinition)FindWorkspaceName(window, "AmmoFieldsColumn")).MinWidth, "Ammo 字段栏应保留可用最小宽度");
+                    TestAssert.Equal(380d, ((ColumnDefinition)FindWorkspaceName(window, "AmmoFieldsColumn")).MinWidth, "Ammo 字段栏支持窄窗口，技术详情按需展开");
                     TestAssert.Equal(240d, ((ColumnDefinition)FindWorkspaceName(window, "DivisionListColumn")).MinWidth, "战术师列表应保留可用最小宽度");
                     TestAssert.Equal(480d, ((ColumnDefinition)FindWorkspaceName(window, "DivisionEditorColumn")).MinWidth, "战术师编辑器应保留可用最小宽度");
                     TestAssert.Equal(480d, ((ColumnDefinition)FindWorkspaceName(window, "DraftListColumn")).MinWidth, "草稿列表应保留可用最小宽度");

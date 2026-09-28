@@ -54,6 +54,13 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
     public ObservableCollection<WeaponRecord> Weapons { get; }
     public ObservableCollection<WeaponMountItemViewModel> Mounts { get; }
     public ObservableCollection<WeaponFieldViewModel> Fields { get; }
+    private string _fieldSearch = "";
+    public string FieldSearch { get => _fieldSearch; set { if (SetProperty(ref _fieldSearch, value ?? "")) RebuildSections(); } }
+    private void RebuildSections()
+    {
+        FieldSections.Clear();
+        foreach (var section in FieldSectionBuilder.Build(Fields.Where(f => (Localisation.UiText.T(f.Label) + " " + f.OriginalParameter + " " + f.Label).Contains(FieldSearch, StringComparison.OrdinalIgnoreCase)), f => f.Section, f => f.Group)) FieldSections.Add(section);
+    }
 
     public ObservableCollection<FieldSectionViewModel<WeaponFieldViewModel>> FieldSections { get; }
     public IReadOnlyList<string> ScopeOptions { get; }
@@ -63,6 +70,7 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
         if (!Advanced.EditorMode.IsAdvanced && SelectedScope == "全部引用") SelectedScope = ScopeOptions[0];
         OnPropertyChanged(nameof(VisibleScopeOptions));
         foreach (var field in Fields) field.RefreshMode();
+        RebuildFields();
     }
 
     public string UnitSearchText
@@ -344,14 +352,14 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
             viewModel.Field.RawValue,
             normalized,
             raw,
-            $"{viewModel.Field.OwnerObjectName} · {viewModel.Field.Definition.Label}：{viewModel.Field.DisplayValue} → {normalized}（{scopeLabel}）",
+            $"{viewModel.Field.OwnerObjectName} · {viewModel.Field.Definition.Label}：{(viewModel.Field.IsMissing ? "未显式设置" : viewModel.Field.DisplayValue)} → {normalized}（{scopeLabel}）",
             null,
             false,
             DateTimeOffset.UtcNow,
             EditScope: scope,
             SelectedUnitNames: scopeUnits,
             ContextWeaponName: weaponName,
-            ContextIndex: mountIndex);
+            ContextIndex: mountIndex, InsertAmmoField: viewModel.Field.IsMissing);
 
         if (normalized == viewModel.Field.DisplayValue)
         {
@@ -364,7 +372,7 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
         else
         {
             await _draftStore.UpsertAsync(operation);
-            viewModel.MarkPersisted(operation, normalized, "草稿已保存");
+            viewModel.MarkPersisted(operation, normalized, viewModel.Field.IsMissing ? "已保存新增字段草稿" : "草稿已保存");
         }
 
         _transactions.RefreshExternalDraftState();
@@ -427,7 +435,7 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
         var resolved = DraftResolver.Resolve(_transactions.Data, _data, _draftStore.Operations)
             .Where(item => item.Status == DraftResolutionStatus.Active)
             .ToDictionary(item => item.Operation.Id, item => item.Operation, StringComparer.Ordinal);
-        foreach (var field in fields.DistinctBy(item => item.Key))
+        foreach (var field in fields.DistinctBy(item => item.Key).Where(f => AmmoProfessional.Visible(f, Advanced.EditorMode.IsAdvanced)))
         {
             var kind = field.Definition.Owner switch
             {
@@ -445,7 +453,7 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
                 Units.Where(unit => unit.IsWeaponScopeSelected).Select(unit => unit.InternalName).ToArray();
             var viewModel = new WeaponFieldViewModel(field, resolved.GetValueOrDefault(id),
                 vm => PersistFieldAsync(vm, weaponName, mountIndex, scope, scopeLabel, selectedUnits))
-            { BatchLocked = WeaponBatch.Blocks(_draftStore.Operations, c => c.Weapon == weaponName || c.Ammo == field.OwnerObjectName),
+            { ProjectRoot = _draftStore.ProjectRoot, LocalisationCatalog = _transactions.Data.Localisation, BatchLocked = WeaponBatch.Blocks(_draftStore.Operations, c => c.Weapon == weaponName || c.Ammo == field.OwnerObjectName),
                 StructureLocked = WarnoLiteModdingTool.Core.Transactions.WeaponStructurePlanner.States(_draftStore.Operations).Any(s => s.Weapon.Name == weaponName && (s.Shared || s.Unit == SelectedUnit?.InternalName)),
                 EditContext = weaponName + ":" + mountIndex + ":" + scope + ":" + string.Join(",", selectedUnits) };
             if(field.Definition.FieldName=="Ammunition")viewModel.SetAmmoChoices(Localisation.UiText.Current.English?_ammoChoicesEnglish:_ammoChoicesChinese);
@@ -459,10 +467,8 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
             Fields[i] = _fieldEdits.Restore(current, old => old.Field.OwnerObjectName == current.Field.OwnerObjectName &&
                 old.Field.Key == current.Field.Key && old.EditContext == current.EditContext && old.StructureLocked == current.StructureLocked);
         }
-        foreach (var section in FieldSectionBuilder.Build(Fields, field => field.Section, field => field.Group))
-        {
-            FieldSections.Add(section);
-        }
+        foreach (var f in Fields) f.LinkedTags = Fields.FirstOrDefault(t => t.Field.OwnerObjectName == f.Field.OwnerObjectName && t.Field.Definition.ValueKind == WeaponValueKind.Tags);
+        RebuildSections();
     }
 
     private bool MatchesUnitSearch(object item) =>

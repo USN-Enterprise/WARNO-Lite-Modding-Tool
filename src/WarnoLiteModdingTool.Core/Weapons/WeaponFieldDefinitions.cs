@@ -2,7 +2,7 @@ namespace WarnoLiteModdingTool.Core.Weapons;
 
 public static class WeaponFieldDefinitions
 {
-    public static IReadOnlyList<WeaponFieldDefinition> Ammo { get; } =
+    private static IReadOnlyList<WeaponFieldDefinition> StandardAmmo { get; } =
     [
         I("ammo.shotsPerSalvo", "库存", "每次齐射射弹数", "与 Weapon 的 Salves 相乘得到推导总弹量。", "ShotsCountPerSalvo", true),
         I("ammo.displayPerSalvo", "库存", "界面每轮数量", "仅写 Ammo 的界面显示基数。", "AffichageMunitionParSalve", true),
@@ -37,6 +37,10 @@ public static class WeaponFieldDefinitions
         B("ammo.behavior.reflex", "行为", "反应射击", "TirReflexe。", "TirReflexe"),
         B("ammo.behavior.fireAndForget", "行为", "射后不理", "IsFireAndForget；字段不存在时不猜测。", "IsFireAndForget")
     ];
+
+    public static IReadOnlyList<WeaponFieldDefinition> Ammo { get; } = StandardAmmo
+        .Select(f => f with { CanInsert = f.FieldName is "IsFireAndForget" or "MaxAccelerationGRU" or "AimingTime" or "DispersionAtMinRangeGRU" or "DispersionAtMaxRangeGRU" })
+        .Concat(AmmoProfessional.Definitions).ToArray();
 
     public static WeaponFieldDefinition Salves(int ammoBox) =>
         new($"weapon.salves.{ammoBox}", "库存", $"AmmoBox {ammoBox} 齐射次数", "Weapon.Salves 中与 AmmoBoxIndex 对应的项。", WeaponFieldOwner.Weapon, "Salves", WeaponValueKind.Integer, true, Section: "挂载与库存");

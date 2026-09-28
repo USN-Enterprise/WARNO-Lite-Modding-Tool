@@ -272,6 +272,8 @@ WARNO Mods 文件夹|WARNO Mods folder
 燃油|Fuel
 燃油容量|Fuel capacity
 显示燃油量|Displayed fuel amount
+补给总量|Supply capacity
+单位携带的补给点总量；不改变补给速度或弹药消耗|Total supply points carried; does not change supply rate or ammunition cost
 可持续移动时间|Movement endurance
 实际可运行时间|Actual operating time
 侦察与感知|Reconnaissance and detection
@@ -1390,3 +1392,70 @@ AI 难度|AI difficulty
 补登记已有自定义师徽纹理|Repair existing custom emblem registration
 登记新增师徽纹理|Register new emblem texture
 最终师徽纹理库注册校验失败|Final emblem bank registration validation failed.
+
+高级伤害与命中|Advanced damage and hits
+高级射击与弹道|Advanced firing and trajectory
+表现与关联|Presentation and references
+未命中时允许压制|Allow suppression on a miss
+按命中位置计算装甲|Use impact position for armor
+显示齐射精度|Show salvo accuracy
+成功命中时使用顶部装甲|Use top armor on successful hit
+使用部署时间|Use deployment time
+不伤害友军|Harmless to allies
+穿甲武器标记|Piercing weapon flag
+优先目标存在时禁用反应射击|Disable reflex fire for priority targets
+齐射顺序标记|Sorted salvo flag
+显示伤害|Show damage in UI
+串联战斗部标记|Tandem charge flag
+区域内仅针对单个单位|Target one unit in a district
+校射散布倍率|Corrected shot dispersion multiplier
+起火概率|Fire probability
+强制使用顶部装甲|Force top armor
+制导类别|Guidance category
+命中规则距离修正|Distance modifier in hit rule
+忽略易燃条件|Ignore flammability conditions
+命中表现|Impact effect
+武器面板图片|Weapon panel image
+子弹药标记|Submunition flag
+连续命中次数|Successive hit count
+射程显示类别|Range display category
+导弹实体|Missile entity
+导弹修正间隔（原值）|Missile correction interval (raw)
+点地射击齐射次数|Salvos when firing at a position
+开火隐蔽惩罚（原值）|Firing concealment penalty (raw)
+抛物弹道俯仰角|Parabolic trajectory pitch
+武器说明条目|Weapon description entry
+弹药说明标签|Ammunition description tags
+仅修改所选原参数；未声明不等于关闭。|Edits this source parameter only. An omitted field is not an explicit False.
+未显式设置；选择值后新增|Not declared; choosing a value adds the field.
+未显式设置|Not declared
+将新增字段|Will add field
+已保存新增字段草稿|New field saved to draft
+缺少唯一命中规则，不能补建子字段|A unique hit rule is required to add this member.
+此字段尚不支持补建|Adding this field is not supported.
+当前弹道类型不支持补建此参数|This projectile type does not support adding this parameter.
+仅适用于已有导弹结构|Requires an existing guided missile structure.
+当前弹道类型不支持此抛物或校射参数|This projectile type does not support this parabolic or corrected shot parameter.
+需要已有起火描述符引用|Requires an existing fire descriptor reference.
+仅支持炸弹或炮兵弹药的原标记；不创建子弹药系统|Supported for bomb or artillery Ammo flags; does not create a submunition system.
+字段重复，无法唯一定位|Duplicate field; no unique location.
+原值格式暂不支持|Unsupported source value format.
+搜索字段名称或原参数|Search field labels or source parameter names
+搜索当前 Mod 候选|Search current Mod choices
+选择标签（保留原顺序）|Choose tags (preserving order)
+开启或关闭后请核对专业模式的弹药说明标签；不自动猜测manual、semiAuto或F&F。|Review description tags after changing this flag. manual, semiAuto and F&F are not inferred.
+射后不理修改后请核对F&F、manual、semiAuto标签；保留其他标签，不推断关闭后的制导方式。|Review F&F, manual and semiAuto tags. Other tags are preserved; disabling does not infer a guidance mode.
+标签默认保留；能力开关不会自动改写说明。|Tags are kept by default; changing the capability does not rewrite its description.
+核对说明标签|Review description tags
+当前弹药没有可编辑的标签列表|This Ammo has no editable tag list.
+关闭射后不理不会猜测manual或semiAuto；其他标签保持原顺序。|Disabling fire and forget does not infer manual or semiAuto. Other tags keep their order.
+采用标签建议|Use suggested tags
+保留当前标签并关闭|Keep current tags and close
+概率应介于0和1之间|Probability must be between 0 and 1.
+未声明字段请先设为固定值，不能按0计算|Initialize omitted fields with a fixed value; they cannot be treated as zero.
+当前Mod没有可用候选，保留未声明|No choices in this Mod; the field stays omitted.
+图片预览|Image preview
+技术详情|Technical details
+补建弹药字段需要专业模式|Adding omitted Ammo fields requires Professional mode.
+请选择当前 Mod 的有效候选|Select a valid choice from this Mod.
+请选择当前 Mod 的已有标签|Select tags already used in this Mod.

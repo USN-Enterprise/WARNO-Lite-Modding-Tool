@@ -1,6 +1,6 @@
 # WARNO Lite Modding Tool User Guide
 
-For version **1.9.18**, Windows x64. Available fields and features depend on the selected Mod's data and structure.
+For version **1.9.20**, Windows x64. Available fields and features depend on the selected Mod's data and structure.
 
 [Home](README.md#english) · [中文教程](使用教程.md) · [Release notes](RELEASE_NOTES.md#english)
 
@@ -58,7 +58,7 @@ For a first exercise, consider a dedicated test Mod. Transaction backups preserv
 3. Run `WarnoLiteModdingTool.exe`. Only one instance is allowed in the same Windows login session. If it reports that it is already running, return to the existing window.
 4. Before upgrading, close the old version normally. Extract the new version into a fresh directory. Drafts and transaction backups are stored inside the target Mod, not the editor installation.
 
-This guide describes 1.9.18. The download page may offer a later release; consult its release notes as well.
+This guide describes 1.9.20. The download page may offer a later release; consult its release notes as well.
 
 ### 2.2 Open an existing Mod
 
@@ -152,6 +152,7 @@ Creation backups are also used to verify the origin of newly created units. Keep
 Select a unit and edit supported fields in the relevant groups: costs, deployment, survivability, vision, movement and other recognized parameters. Text inputs, dropdowns and tag selectors have different purposes. Unknown existing values are preserved.
 
 - A display name is different from an internal variable name. Units sharing a name token can be renamed independently. Creating or renaming requires the local name dictionaries to be loaded for collision checks.
+- **Supply capacity**: under **Mobility and endurance → Supply**, edit the supply points carried by a unit in either mode, including unit batch editing. Nonnegative values, including decimals, are accepted. Only a unique direct numeric `TSupplyModuleDescriptor.SupplyCapacity` is editable; missing or ambiguous structures are not created. This does not change supply rates or ammunition supply costs.
 - ECM is displayed as a positive percentage; do not copy the sign from raw NDF values. Basic vision inputs scale related vision values using their original ratios. Check the combined preview.
 - Forward deployment accepts a nonnegative distance or an existing preset from the current Mod. A reference preset does not automatically add every related ability to a unit.
 - The experience-type selector chooses an available route from this Mod. Expand the level-effect details to inspect it. Changing a unit's route is different from editing a shared route's numbers; the latter is under [Game rules](#rules).
@@ -251,6 +252,21 @@ For batch editing:
 5. Preview and apply in Draft overview. Resolve any conflict with local edits to the same field or related Ammo replacement drafts.
 
 Unused Ammo and projects containing only ammunition files are supported. The old standalone weapon-batch window has been removed. Existing historical batches can still be applied or removed in the draft center; do not follow old instructions that ask you to open that window.
+
+### 7.4 Professional mode: omitted and advanced ammunition fields
+
+Professional mode adds 30 Ammo parameters and controlled insertion for fire and forget, maximum acceleration, aiming time and near/far dispersion: 35 audited parameters in total. Existing basic fields remain available. Search by label or source parameter name.
+
+- **Not declared** is different from No or zero. Choosing a valid value creates an insertion draft. Untouched fields stay omitted; undoing an unapplied draft restores that state.
+- **Explicit False** appears as No and can be changed to Yes. Unsupported, ambiguous, duplicate or inapplicable fields show a reason.
+- Adding fire and forget requires an existing GuidedMissile structure; applying checks its missile entity and guided/movement modules. Review description tags explicitly: use the suggested changes or keep the current tags. Disabling does not infer manual/semiAuto, and other tags keep their order.
+- Advanced damage/hits, firing/trajectory and presentation/reference groups provide typed controls. Guidance, range category, impact effects, missile entities, weapon images and description tokens use current-Mod choices. Expand image preview when needed. Description choices do not rewrite CSV text; load stock names or check the Mod's UNITS dictionary if a token cannot be resolved.
+- Distance modifiers need a unique existing hit rule; fire parameters need a fire descriptor. Submunition edits change a flag without constructing a cluster system. Positive position-fire salvo counts require the final Allow fire at position value to be Yes; both can be drafted together.
+- Batches can combine existing and addable fields. Initialize omitted numbers with a fixed value before applying formulas. Any invalid target prevents the whole batch from being saved. Description tags use the single-record linked editor.
+
+Ammunition still edits every reference; Weapons and the slot editor retain their selected-unit/shared scopes. New professional drafts use outer schema 3. Older drafts remain readable, and the prior draft is backed up as `.warno-editor/draft-before-structure-*.json` on upgrade. Older releases reject the new format; use 1.9.19 or a compatible later version. Transaction restore can return newly added fields to their original omitted state; there is no arbitrary delete-existing-field action.
+
+Availability follows the selected Mod's structures and resources. Unknown projectile shapes, ambiguous references and missing assets are not guessed. Successful editing and synthetic transaction tests do not establish in-game effects.
 
 <a id="divisions"></a>
 

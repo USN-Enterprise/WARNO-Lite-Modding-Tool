@@ -92,6 +92,7 @@ public sealed partial class AmmoWorkspaceViewModel
     public void RefreshMode()
     {
         foreach(var field in Fields) field.RefreshMode();
+        RebuildFields();
         BuildBatchOperations();
         if(!Advanced.EditorMode.IsAdvanced) { BatchMinimum = ""; BatchMaximum = ""; }
         RebuildBatch();
@@ -114,7 +115,7 @@ public sealed partial class AmmoWorkspaceViewModel
     {
         if(_selectingBatch) return;
         InvalidateBatch(); var key = BatchField?.Definition.Key; var targets = BatchTargets; CommonBatchFields.Clear();
-        foreach(var definition in AmmoBatchPlanner.CommonFields(targets).Where(f => Advanced.EditorMode.CanEdit(f.Key)))
+        foreach(var definition in AmmoBatchPlanner.CommonFields(targets).Where(f => f.ValueKind != WeaponValueKind.Tags && Advanced.EditorMode.CanEdit(f.Key) && (Advanced.EditorMode.IsAdvanced || targets.All(a => !a.Field(f.Key)!.IsMissing))))
         {
             string[] values; var error = "";
             try { values = targets.Select(a => AmmoBatchPlanner.Current(_transactions.Data,_data,_draftStore.Operations,a,definition.Key)).Distinct().ToArray(); }
@@ -195,7 +196,7 @@ public sealed class AmmoBatchFieldViewModel(WeaponFieldDefinition definition,str
     public string Parameter => definition.FieldName+(definition.ArgumentName is {} arg ? "."+arg : "")+(definition.MapKey is {} map ? "["+map+"]" : "");
     public string Hint => definition.Hint;
     public bool IsMixed => mixed;
-    public bool IsNumeric => definition.ValueKind is WeaponValueKind.Integer or WeaponValueKind.Decimal;
+    public bool IsNumeric => definition.ValueKind is WeaponValueKind.Integer or WeaponValueKind.Decimal or WeaponValueKind.Degrees;
     public bool IsChoice => !IsNumeric;
     public IReadOnlyList<string> Choices => choices;
     public string Error => error;

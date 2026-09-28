@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using WarnoLiteModdingTool.Core.Ndf;
 
 namespace WarnoLiteModdingTool.Core.Weapons;
@@ -10,6 +12,12 @@ public static class WeaponValueConverter
         display = string.Empty;
         switch (definition.ValueKind)
         {
+            case WeaponValueKind.CatalogChoice:
+                display = NdfSyntaxDocument.Unquote(raw);
+                return Regex.IsMatch(raw, @"^(?:'[^'\r\n]*'|""[^""\r\n]*""|[$~/A-Za-z_][$~/A-Za-z0-9_.-]*)$");
+            case WeaponValueKind.Tags:
+                try { display = JsonSerializer.Serialize(AmmoProfessional.Tags(raw)); return true; }
+                catch (Exception e) when (e is FormatException or InvalidOperationException) { return false; }
             case WeaponValueKind.Boolean:
                 if (string.Equals(raw, "True", StringComparison.OrdinalIgnoreCase)) { display = "是"; return true; }
                 if (string.Equals(raw, "False", StringComparison.OrdinalIgnoreCase)) { display = "否"; return true; }
@@ -39,8 +47,21 @@ public static class WeaponValueConverter
         normalized = input.Trim();
         raw = string.Empty;
         error = string.Empty;
+        if (!field.CanEdit) { error = field.Reason; return false; }
         switch (field.Definition.ValueKind)
         {
+            case WeaponValueKind.CatalogChoice:
+                var selected = field.Choices.FirstOrDefault(c => NdfSyntaxDocument.Unquote(c) == input.Trim());
+                if (selected is null) { error = "请选择当前 Mod 的有效候选"; return false; }
+                normalized = NdfSyntaxDocument.Unquote(selected); raw = selected; return true;
+            case WeaponValueKind.Tags:
+                try
+                {
+                    var tags = JsonSerializer.Deserialize<string[]>(input);
+                    if (tags is null || tags.Distinct().Count() != tags.Length || tags.Any(t => !field.Choices.Contains(t))) throw new FormatException();
+                    normalized = JsonSerializer.Serialize(tags); raw = AmmoProfessional.FormatTags(tags); return true;
+                }
+                catch (Exception e) when (e is JsonException or FormatException) { error = "请选择当前 Mod 的已有标签"; return false; }
             case WeaponValueKind.Boolean:
                 if (normalized is "是" or "True" or "true") { normalized = "是"; raw = "True"; return true; }
                 if (normalized is "否" or "False" or "false") { normalized = "否"; raw = "False"; return true; }
@@ -68,6 +89,7 @@ public static class WeaponValueConverter
             case WeaponValueKind.Degrees:
                 if (!double.TryParse(normalized, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) || !double.IsFinite(number)) { error = "请输入有效数字"; return false; }
                 if (field.Definition.NonNegative && number < 0) { error = "数值不能为负数"; return false; }
+                if (field.Definition.FieldName == "FireTriggeringProbability" && number > 1) { error = "概率应介于0和1之间"; return false; }
                 normalized = number.ToString("G15", CultureInfo.InvariantCulture);
                 raw = field.Definition.ValueKind == WeaponValueKind.Degrees
                     ? (number * Math.PI / 180d).ToString("G17", CultureInfo.InvariantCulture)

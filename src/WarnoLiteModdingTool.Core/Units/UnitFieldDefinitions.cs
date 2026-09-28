@@ -43,6 +43,7 @@ public static class UnitFieldDefinitions
 
         ScalarDecimal("fuel.capacity", "机动与续航", "燃油", "燃油容量", "显示燃油量", "TFuelModuleDescriptor", "FuelCapacity", null),
         ScalarDecimal("fuel.duration", "机动与续航", "燃油", "可持续移动时间", "实际可运行时间", "TFuelModuleDescriptor", "FuelMoveDuration", "秒"),
+        ScalarDecimal("supply.capacity", "机动与续航", "补给", "补给总量", "单位携带的补给点总量；不改变补给速度或弹药消耗", "TSupplyModuleDescriptor", "SupplyCapacity", null),
 
         ScalarDecimal("recon.concealment", "侦察与感知", "隐蔽", "隐蔽修正", "单位可见性修正", "TVisibilityModuleDescriptor", "UnitConcealmentBonus", null, false),
         MapDecimal("recon.vision.standard", "侦察与感知", "视野上限", "标准视野上限", "视野扫描距离上限（GRU）；基础模式按原始比例联动低空和高空", "TScannerConfigurationDescriptor", "VisionRangesGRU", "EVisionRange/Standard", "GRU"),

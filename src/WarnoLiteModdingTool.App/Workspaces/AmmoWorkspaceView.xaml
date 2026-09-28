@@ -5,9 +5,9 @@
     xmlns:controls="clr-namespace:WarnoLiteModdingTool.App.Controls">
 <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition x:Name="AmmoListColumn" Width="390" MinWidth="300" MaxWidth="560" />
+                            <ColumnDefinition x:Name="AmmoListColumn" Width="320" MinWidth="300" MaxWidth="560" />
                             <ColumnDefinition Width="6" />
-                            <ColumnDefinition x:Name="AmmoFieldsColumn" Width="*" MinWidth="500" />
+                            <ColumnDefinition x:Name="AmmoFieldsColumn" Width="*" MinWidth="380" />
                         </Grid.ColumnDefinitions>
 
                         <Grid Grid.Column="0">
@@ -104,12 +104,13 @@
                             </StackPanel>
 
                             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <StackPanel><TextBlock Text="{l:Loc Key=搜索字段名称或原参数}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,4" /><TextBox Text="{Binding AmmoWorkspace.FieldSearch, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Loc Key=搜索字段名称或原参数}" Margin="0,0,0,8" />
                                 <ItemsControl x:Name="AmmoFieldSections" ItemsSource="{Binding AmmoWorkspace.FieldSections}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Expander IsExpanded="{Binding IsExpanded, Mode=TwoWay}" Margin="0,0,0,8">
                                                 <Expander.Header>
-                                                    <DockPanel MinWidth="430">
+                                                    <DockPanel MinWidth="300">
                                                         <TextBlock DockPanel.Dock="Right" Foreground="{DynamicResource MutedTextBrush}" FontSize="10"><Run Text="{Binding FieldCount, Mode=OneWay}" /><Run Text="{l:Loc Key=' 项'}" /></TextBlock>
                                                         <TextBlock Text="{l:LocalizedBinding Path=Title}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBrush}" />
                                                     </DockPanel>
@@ -124,15 +125,15 @@
                                                                     <ItemsControl.ItemTemplate>
                                                                         <DataTemplate>
                                                                             <Border HorizontalAlignment="Stretch" Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,0,0,8" ToolTip="{l:LocalizedBinding Path=Hint}">
-                                                                                <StackPanel><controls:FieldRow Header="{l:LocalizedBinding Path=Label}" Parameter="{Binding OriginalParameter}"><StackPanel><Grid><TextBox Text="{Binding EditValue, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsEditable}" Visibility="{Binding IsTextEditor, Converter={StaticResource BooleanToVisibilityConverter}}" /><ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding EditValue, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsEditable}" Visibility="{Binding IsChoiceEditor, Converter={StaticResource BooleanToVisibilityConverter}}" /></Grid></StackPanel></controls:FieldRow><TextBlock Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" Text="{l:LocalizedBinding Path=Hint}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,2,0,6" MaxHeight="30" /><DockPanel Margin="0,5,0,0">
+                                                                                <StackPanel><controls:FieldRow Header="{l:LocalizedBinding Path=Label}" Parameter="{Binding OriginalParameter}"><StackPanel><Grid><TextBox Text="{Binding EditValue, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsEditable}" Visibility="{Binding IsTextEditor, Converter={StaticResource BooleanToVisibilityConverter}}" /><ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding EditValue, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsEditable}" Visibility="{Binding IsChoiceEditor, Converter={StaticResource BooleanToVisibilityConverter}}"><ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{l:LocalizedBinding}" /></DataTemplate></ComboBox.ItemTemplate></ComboBox><controls:AmmoAdvancedInput Visibility="{Binding IsAdvancedEditor, Converter={StaticResource BooleanToVisibilityConverter}}" /></Grid></StackPanel></controls:FieldRow><controls:AmmoTagReview Visibility="{Binding IsGuidanceReview, Converter={StaticResource BooleanToVisibilityConverter}}" /><TextBlock Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" Text="{l:LocalizedBinding Path=Hint}" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,2,0,6" MaxHeight="30" /><DockPanel Margin="0,5,0,0">
                                                                                         <Button Content="{l:Loc Key='撤销此项'}" DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Padding="7,3" Visibility="{Binding HasDraft, Converter={StaticResource BooleanToVisibilityConverter}}" Click="UndoAmmoField_Click" />
-                                                                                        <TextBlock Text="{l:LocalizedBinding Path=StatusText}" FontSize="10" Foreground="{DynamicResource PrimaryBrush}" />
-                                                                                    </DockPanel><StackPanel Margin="0,6,0,0" Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                                        <TextBlock Text="{l:LocalizedBinding Path=StatusText}" TextWrapping="Wrap" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" />
+                                                                                    </DockPanel><Expander Header="{l:Loc Key=技术详情}" Margin="0,6,0,0" Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}"><StackPanel>
                                                                                         <TextBlock Text="{Binding FieldPath, StringFormat=字段：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
                                                                                         <TextBlock Text="{Binding SourceLocation, StringFormat=位置：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
                                                                                         <TextBlock Text="{Binding RawValue, StringFormat=NDF 原值：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
                                                                                         <TextBlock Text="{Binding TargetRaw, StringFormat=草稿目标：{0}}" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" />
-                                                                                    </StackPanel></StackPanel>
+                                                                                    </StackPanel></Expander></StackPanel>
                                                                             </Border>
                                                                         </DataTemplate>
                                                                     </ItemsControl.ItemTemplate>
@@ -145,6 +146,7 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+                                </StackPanel>
                             </ScrollViewer>
 
                             <Border Grid.Row="2" Background="{DynamicResource InfoBackgroundBrush}" BorderBrush="{DynamicResource InfoBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,8,0,0">

@@ -19,7 +19,9 @@ public enum WeaponValueKind
     Reference,
     Degrees,
     Choice,
-    Text
+    Text,
+    CatalogChoice,
+    Tags
 }
 
 public sealed record WeaponFieldDefinition(
@@ -34,7 +36,12 @@ public sealed record WeaponFieldDefinition(
     string? Suffix = null,
     string? ArgumentName = null,
     string? MapKey = null,
-    string Section = "其他");
+    string Section = "其他",
+    bool Professional = false,
+    bool CanInsert = false,
+    string? Constructor = null);
+
+public enum WeaponFieldState { Declared, Missing, Unavailable }
 
 public sealed record WeaponFieldLocation(
     string RelativeSourceFile,
@@ -50,9 +57,15 @@ public sealed record WeaponFieldValue(
     string DisplayValue,
     string RawValue,
     WeaponFieldLocation Location,
-    IReadOnlyList<string> Choices)
+    IReadOnlyList<string> Choices,
+    WeaponFieldState State = WeaponFieldState.Declared,
+    string Reason = "",
+    string InsertPrefix = "",
+    string InsertSuffix = "")
 {
     public string Key => Definition.Key;
+    public bool CanEdit => State != WeaponFieldState.Unavailable;
+    public bool IsMissing => State == WeaponFieldState.Missing;
 }
 
 public sealed class AmmoRecord
@@ -130,6 +143,7 @@ public sealed record WeaponWorkspaceData(
     WeaponReferenceIndex References,
     IReadOnlyList<string> Diagnostics)
 {
+    public IReadOnlyList<string> CatalogFiles { get; init; } = [];
     public WeaponRecord? Weapon(string name) => Weapons.FirstOrDefault(item => item.Name == name);
     public AmmoRecord? Ammo(string name) => Ammunition.FirstOrDefault(item => item.Name == name);
 }
