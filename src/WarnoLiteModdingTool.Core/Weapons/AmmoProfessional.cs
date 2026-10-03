@@ -50,7 +50,7 @@ public static class AmmoProfessional
     ];
 
     public static bool RequiresV3(string key) => WeaponFieldDefinitions.Ammo.Any(f => f.Key == key && (f.Professional || f.CanInsert));
-    public static bool Visible(WeaponFieldValue field, bool professional) => professional || !field.Definition.Professional && field.State == WeaponFieldState.Declared;
+    public static bool Visible(WeaponFieldValue field, bool professional) => field.Key != DamageDistance.ReferenceKey && (professional || !field.Definition.Professional && field.State == WeaponFieldState.Declared);
 
     public static NdfConstructorSpan? Owner(NdfSyntaxDocument doc, NdfConstructorSpan root, WeaponFieldDefinition def)
     {

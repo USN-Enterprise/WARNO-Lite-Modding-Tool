@@ -148,7 +148,7 @@ internal static partial class Program
         try
         {
             var (_, units, data) = await LoadP4Async(root); var a = data.Ammo(A1911)!;
-            Assert(WeaponFieldDefinitions.Ammo.Count(f => f.CanInsert || f.Professional) == 36, "35项加TraitsToken关联");
+            Assert(WeaponFieldDefinitions.Ammo.Count(f => (f.CanInsert || f.Professional) && f.Key != DamageDistance.ReferenceKey) == 36, "35项加TraitsToken关联（不含专用距离编辑器内部引用）");
             foreach (var def in WeaponFieldDefinitions.Ammo.Where(f => f.CanInsert))
             {
                 var projectile = def.FieldName == "IsSubAmmunition" ? "Bombe" : def.FieldName is "PitchForParabolic" or "CorrectedShotDispersionMultiplier" ? "Artillerie" : "GuidedMissile";

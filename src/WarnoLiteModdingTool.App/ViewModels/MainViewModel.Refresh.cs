@@ -43,7 +43,7 @@ public sealed partial class MainViewModel
             var next = await Task.Run(() => ProjectWorkspaceSnapshot.LoadRootAsync(preview.ProjectRoot, cache, previous: previous, committed: preview.Files));
             var context = next.Context;
             var drafts = await _draftStore.LoadAsync();
-            await Task.Run(() => next.Units.Rules?.Experience.PrepareDrafts(_draftStore.Operations));
+            await Task.Run(() => { next.Units.Rules?.Experience.PrepareDrafts(_draftStore.Operations); if(_draftStore.Operations.Any(o=>o.TargetKind is DraftTargetKind.DamageRule or DraftTargetKind.DamageDistance))_ = next.Units.Rules?.Damage; });
             Diagnostics.Clear(); AddProjectDiagnostics(context);
             ApplyIndexResult(next.Index);
             foreach (var message in next.Units.Diagnostics.Concat(next.Weapons?.Diagnostics ?? []).Concat(next.Divisions?.Diagnostics ?? []).Concat(next.Strategic?.Diagnostics ?? []))
@@ -122,6 +122,6 @@ public sealed partial class MainViewModel
 
         RulesWorkspace = new RulesWorkspaceViewModel(unitData.Rules!, store, UnitWorkspace.RefreshExternalDraftState);
         OnPropertyChanged(nameof(RulesWorkspace)); OnPropertyChanged(nameof(IsRulesModule)); OnPropertyChanged(nameof(IsObjectModule));
-        ProjectSummary = $"1.9.20 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
+        ProjectSummary = $"2.10.1 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
     }
 }

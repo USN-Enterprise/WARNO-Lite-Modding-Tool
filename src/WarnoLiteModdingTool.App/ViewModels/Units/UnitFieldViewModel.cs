@@ -49,7 +49,7 @@ public sealed class UnitFieldViewModel : ObservableObject
         Section = section;
         Group = group;
         Label = label;
-        Hint = key=="structure.upgradeFrom"?"只影响大厅显示，基本不必修改。":hint;
+        Hint = key == AviationMovement.Speed ? AviationMovement.SpeedHint(unit) : key=="structure.upgradeFrom"?"只影响大厅显示，基本不必修改。":hint;
         BaseValue = baseValue;
         RawValue = rawValue;
         ReadOnlyReason = conflictReason ?? reason;
@@ -100,7 +100,7 @@ public sealed class UnitFieldViewModel : ObservableObject
 
     public string Label { get; }
     public string DisplayLabel => Key=="armor.front.family"?"护甲类型":Label;
-    public bool IsVisible => Key.StartsWith("armor.") && Key.EndsWith(".family")
+    public bool IsVisible => AviationMovement.InternalSpeed(Key) || !AviationMovement.Relevant(Unit, Key) ? false : AviationMovement.Professional(Key) ? Advanced.EditorMode.IsAdvanced : Key.StartsWith("armor.") && Key.EndsWith(".family")
         ? Advanced.EditorMode.IsAdvanced && Key == "armor.front.family"
         : Advanced.EditorMode.IsAdvanced || Key is not ("structure.upgradeFrom" or "survival.suppression" or "survival.stun" or "recon.vision.low" or "recon.vision.high" or "recon.optics.low" or "recon.optics.high");
     public bool IsReconPresetEditor => Key == "recon.optics.standard";
@@ -156,7 +156,9 @@ public sealed class UnitFieldViewModel : ObservableObject
 
     public string UnitSuffix => Field?.Definition.UnitSuffix ?? string.Empty;
 
-    public string OriginalParameter => Field is null ? "NameToken → UNITS.csv.REFTEXT" : Controls.ParameterNote.ForUnit(Field.Definition, true);
+    public string OriginalParameter => Key == AviationMovement.Speed && AviationMovement.SpeedFields(Unit).Count > 1
+        ? string.Join("; ", AviationMovement.SpeedFields(Unit).Select(f => f.Definition.Selector.FieldName + " = " + f.RawValue))
+        : Field is null ? "NameToken → UNITS.csv.REFTEXT" : Controls.ParameterNote.ForUnit(Field.Definition, true);
     public string FieldPath => Field?.Location?.FieldPath ?? "UNITS.csv.REFTEXT";
 
     public string SourceLocation => Field?.Location is null

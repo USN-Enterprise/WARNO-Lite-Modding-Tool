@@ -7,7 +7,7 @@ public sealed class NdfFieldLocator
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(selector);
 
-        var values = document.FindConstructors(selector.ModuleType)
+        var values = selector.ModuleTypes.SelectMany(document.FindConstructors)
             .SelectMany(module => document.FindDirectAssignments(module, selector.FieldName))
             .ToList();
 
@@ -54,8 +54,10 @@ public sealed record NdfFieldSelector(
     string? MapKey = null,
     string? NestedType = null,
     string? NestedField = null,
-    string? ArgumentName = null)
+    string? ArgumentName = null,
+    string? AlternateModuleType = null)
 {
+    public IEnumerable<string> ModuleTypes => AlternateModuleType is null ? [ModuleType] : [ModuleType, AlternateModuleType];
     public string DisplayPath
     {
         get

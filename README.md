@@ -6,7 +6,9 @@
 
 面向新手和 Mod 作者的 **Windows WARNO 图形化编辑器**。通过界面调整单位、武器、弹药、战术师、将军模式和游戏规则，无需手写代码；支持单位卡片图片和师徽编辑。
 
-当前版本：**1.9.20** · Windows x64 · 便携运行
+当前版本：**2.10.1** · Windows x64 · 便携运行
+
+发布包、更新说明和历史版本见下方 GitHub Releases。
 
 **[下载发布包](https://github.com/USN-Enterprise/WARNO-Lite-Modding-Tool/releases/latest)** · **[中文使用教程](使用教程.md)** · [版本更新](RELEASE_NOTES.md#chinese)
 
@@ -15,10 +17,11 @@
 | 模块 | 可以做什么 |
 | --- | --- |
 | 单位 | 编辑数值、名称、经验类型与能力，批量修改，从模板创建单位，修改卡片图片 |
-| 武器与弹药 | 编辑挂载、炮塔和弹药参数，按单位隔离修改，或编辑共享弹药并查看全部使用者 |
+| 武器与弹药 | 编辑挂载、炮塔和弹药参数，按单位隔离修改，或编辑共享弹药并查看全部使用者；调整距离阶梯与查询伤害系数 |
 | 战术师 | 调整单位池、运输和费用，从模板创建战术师，修改名称、师徽与简介 |
 | 将军模式与战略 Pack | 编辑现有营编制、棋子属性，以及共享 Pack 的单位、运输和老练度 |
-| 游戏规则 | 调整对局、经济、AI、战斗、后勤、将军模式、空军、经验路线及地形规则 |
+| 游戏规则 | 调整对局、经济、AI、战斗、后勤、将军模式、空军、经验路线、地形、伤害矩阵与共享距离规则 |
+| 修改记录与还原 | 对比既有 Mod 与对应基础，完整保存差异为单文件；在新基础上预览还原、对应改名对象，按支持的依赖组暂缓与继续，还原已知字段及MAP增删、处理词典及已知NDF字段冲突及保存核对进度 |
 
 提供搜索筛选、基础/专业模式、中英文界面、主题与面板调整；修改通过草稿、预览和备份流程应用。
 
@@ -56,7 +59,9 @@
 
 **A Windows graphical editor for WARNO Mods**, for beginners and Mod authors. Edit units, weapons, ammunition, divisions, Army General and game rules without writing code. Unit portraits and division emblems can also be edited.
 
-Current version: **1.9.20** · Windows x64 · Portable
+Current version: **2.10.1** · Windows x64 · Portable
+
+Portable packages, release notes and previous versions are available on GitHub Releases below.
 
 **[Download a release](https://github.com/USN-Enterprise/WARNO-Lite-Modding-Tool/releases/latest)** · **[English user guide](USER_GUIDE.md)** · [Release notes](RELEASE_NOTES.md#english)
 
@@ -65,10 +70,11 @@ Current version: **1.9.20** · Windows x64 · Portable
 | Module | What you can do |
 | --- | --- |
 | Units | Edit stats, names, experience types and abilities; batch edit; create units from templates; change portraits |
-| Weapons and ammunition | Edit mounts, turrets and ammunition; isolate changes to selected units or edit shared ammunition and inspect all users |
+| Weapons and ammunition | Edit mounts, turrets and ammunition; isolate changes to selected units or edit shared ammunition and inspect all users; edit distance steps and look up damage coefficients |
 | Divisions | Adjust unit pools, transport and costs; create divisions from templates; edit names, emblems and descriptive text |
 | Army General and Strategic Packs | Edit existing battalion formations, pawn properties and the units, transport and veterancy of shared Packs |
-| Game rules | Adjust match, economy, AI, combat, logistics, Army General, air, experience-route and terrain settings |
+| Game rules | Adjust match, economy, AI, combat, logistics, Army General, air, experience routes, terrain, damage matrices and shared distance rules |
+| Change records and restore | Save complete differences from existing files in one record, preview on a new baseline, map renamed objects, defer or resume supported dependency groups, restore known field/MAP additions and removals, resolve dictionary and supported NDF field conflicts and save review progress |
 
 Includes search and filters, basic/professional modes, Chinese/English UI, themes and adjustable panels. Changes use a draft, preview and backup workflow.
 

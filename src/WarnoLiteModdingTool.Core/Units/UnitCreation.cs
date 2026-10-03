@@ -78,7 +78,19 @@ public static class UnitCreation
         Assign(doc,source,edits,"TUnitUIModuleDescriptor","NameToken","'"+state.Token+"'");
         foreach(var tagSet in doc.FindConstructors("TTagsModuleDescriptor").SelectMany(c=>doc.FindDirectAssignments(c,"TagSet")))
             foreach(var span in doc.ReadArrayElements(tagSet))if(NdfSyntaxDocument.Unquote(doc.Raw(span)).StartsWith("UNITE_",StringComparison.Ordinal))edits.Add(new(doc.StartOffset(span),doc.Length(span),doc.Raw(span),'"'+"UNITE_"+state.Id["Descriptor_Unit_".Length..]+'"',"身份标签"));
-        foreach(var (key,value) in state.Fields){var f=mother.Field(key)??throw new InvalidDataException("未知字段");if(key=="structure.tags"||key=="structure.upgradeFrom")throw new InvalidDataException("创建向导不修改身份标签或升级链");if(key=="structure.specialties"&&f.Availability==UnitFieldAvailability.Missing)
+        var finalFields = new Dictionary<string,string>(state.Fields);
+        if (finalFields.TryGetValue(AviationMovement.Speed, out var aviationSpeed) && AviationMovement.SpeedFields(mother).Count > 1)
+        {
+            var linked = AviationMovement.SpeedDrafts(mother, aviationSpeed);
+            foreach (var f in AviationMovement.SpeedFields(mother)) finalFields[f.Definition.Key] = f.DisplayValue;
+            foreach (var op in linked.Upserts) finalFields[op.FieldKey] = op.TargetValue;
+            if (aviationSpeed == mother.Field(AviationMovement.Speed)!.DisplayValue)
+                foreach (var f in AviationMovement.SpeedFields(mother)) finalFields.Remove(f.Definition.Key);
+        }
+        var aviationOps = finalFields.Where(p => AviationMovement.IsField(p.Key) || p.Key == AviationMovement.Speed).Select(p =>
+            new DraftOperation(p.Key, null, DraftTargetKind.NdfField, "units", mother.Source.RelativeSourceFile, mother.Name, mother.Source.TypeName, p.Key, "", "", "", "", p.Value, p.Value, "", null, false, DateTimeOffset.UtcNow)).ToArray();
+        AviationMovement.ValidateUnit(mother, aviationOps);
+        foreach(var (key,value) in finalFields){var f=mother.Field(key)??throw new InvalidDataException("未知字段");if(key=="structure.tags"||key=="structure.upgradeFrom")throw new InvalidDataException("创建向导不修改身份标签或升级链");if(key=="structure.specialties"&&f.Availability==UnitFieldAvailability.Missing)
         {
             var ui=doc.FindConstructors("TUnitUIModuleDescriptor");
             if(ui.Count!=1||!UnitValueConverter.TryFormatTarget(f,value,out _,out var inserted,out _))throw new InvalidDataException("不能安全补建单位特性");

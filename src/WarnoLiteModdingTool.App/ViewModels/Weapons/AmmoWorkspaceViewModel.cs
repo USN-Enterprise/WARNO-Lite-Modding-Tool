@@ -144,6 +144,19 @@ public sealed partial class AmmoWorkspaceViewModel : ObservableObject
         await _batchPending;
     }
 
+    public async Task OpenDamageAsync(System.Windows.Window owner)
+    {
+        await FlushAsync();
+        if(_transactions.IsTransactionBusy)throw new InvalidOperationException("事务处理中，暂时不能修改草稿。");
+        var targets=Ammunition.Where(a=>a.IsBatchSelected).Select(a=>a.Ammo).ToArray();
+        if(targets.Length==0 && SelectedAmmo is {} selected)targets=[selected.Ammo];
+        if(targets.Length==0)throw new InvalidOperationException("请先选择弹药");
+        _setStatus("正在读取伤害规则与引用…");
+        var damage=await Task.Run(()=>{var data=_transactions.Data.Rules!.Damage;_ = data.FullReferences();return data;});
+        _setStatus("伤害规则已加载");
+        new Controls.DamageAmmoWindow(damage,_data,_draftStore,targets,DraftEditScope.AllReferences,[],
+            ()=>{_transactions.RefreshExternalDraftState();RefreshFromDrafts();}){Owner=owner}.ShowDialog();
+    }
     public async Task UndoFieldAsync(WeaponFieldViewModel field)
     {
         var operation = _draftStore.Operations.FirstOrDefault(item => item.Id == field.Draft?.Id);

@@ -69,6 +69,19 @@ public partial class MainWindow : Window
 
     private void OpenAdvanced_Click(object sender, RoutedEventArgs e) { if (_viewModel.AdvancedMode) new Advanced.AdvancedWindow(_viewModel) { Owner = this }.ShowDialog(); }
 
+    private async void ChangeRecords_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.IsModToolsOpen = false;
+        try
+        {
+            await _viewModel.SaveBeforeLeavingAsync();
+            var window = new Changes.ChangeRecordsWindow(_viewModel) { Owner = this };
+            window.ShowDialog();
+            if (window.ModifiedTarget && _viewModel.HasOpenProject) await _viewModel.OpenProjectAsync(_viewModel.ProjectPath);
+        }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, Localisation.UiText.T("修改记录与还原")); }
+    }
+
     private async void OpenSettings_Click(object sender, RoutedEventArgs e)
     {
         var settings = new Settings.SettingsWindow(value => _viewModel.AdvancedMode = value) { Owner = this };

@@ -69,7 +69,9 @@ public enum DraftTargetKind
     WeaponBatch,
     DivisionText,
     TerrainField,
-    WeaponStructure
+    WeaponStructure,
+    DamageRule,
+    DamageDistance
 }
 
 public enum DraftEditScope

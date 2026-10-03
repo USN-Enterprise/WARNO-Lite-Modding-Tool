@@ -46,6 +46,16 @@ public static class UnitDraftLinks
         do
         {
             changed = false;
+            foreach (var name in result.Values.Where(o => o.TargetKind == DraftTargetKind.NdfField && (AviationMovement.IsField(o.FieldKey) || o.FieldKey == AviationMovement.Speed)).Select(o => o.ObjectName).Distinct().ToArray())
+                foreach (var op in combined.Where(o => o.ObjectName == name && o.TargetKind == DraftTargetKind.NdfField && (AviationMovement.IsField(o.FieldKey) || o.FieldKey == AviationMovement.Speed)))
+                    if (result.TryAdd(op.Id, op)) changed = true;
+            foreach (var distance in combined.Where(o => o.TargetKind == DraftTargetKind.DamageDistance))
+            {
+                var related = combined.Where(o => o.Id == distance.Id || Touches(o, distance.ObjectName) ||
+                    o.TargetKind == DraftTargetKind.DamageRule && (o.FieldKey == "matrix" || o.ObjectName == Weapons.DamageDistance.Read(distance).StairName) ||
+                    Weapons.WeaponBatch.IsWeaponEdit(o) && Weapons.WeaponBatch.Dependencies(o).Contains(distance.ObjectName)).ToArray();
+                if (related.Any(o => result.ContainsKey(o.Id))) foreach (var op in related) if (result.TryAdd(op.Id, op)) changed = true;
+            }
             foreach (var structure in combined.Where(o => o.TargetKind == DraftTargetKind.WeaponStructure || o.TargetKind == DraftTargetKind.UnitCreate && UnitCreation.Read(o).WeaponStructures.Count > 0))
             {
                 var states = Transactions.WeaponStructurePlanner.States([structure]);

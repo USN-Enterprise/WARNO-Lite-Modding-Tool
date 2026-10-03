@@ -67,7 +67,7 @@ public sealed class UnitProjectLoader(
                 units.ToDictionary(u => u.Name, u => u.Weapons, StringComparer.Ordinal),
                 units.ToDictionary(u => u.Name, u => u.Ammunition, StringComparer.Ordinal),
                 units.ToDictionary(u => u.Name, u => u.Divisions, StringComparer.Ordinal)),
-                localisation, damageResistance, diagnostics) { Rules = ProjectReadScope.Memo("rules", () => Rules.RuleWorkspace.Load(context.Layout.RootPath)) };
+                localisation, damageResistance, diagnostics) { Rules = ProjectReadScope.Memo("rules", () => Rules.RuleWorkspace.Load(context.Layout.RootPath)).NewSession() };
         }
 
         var weaponAmmo = BuildWeaponAmmo(index, sources, cancellationToken);
@@ -126,7 +126,7 @@ public sealed class UnitProjectLoader(
             new UnitReferenceIndex(unitWeapons, unitAmmo, unitDivisions),
             localisation,
             damageResistance,
-            diagnostics) { Rules = ProjectReadScope.Memo("rules", () => Rules.RuleWorkspace.Load(context.Layout.RootPath)) };
+            diagnostics) { Rules = ProjectReadScope.Memo("rules", () => Rules.RuleWorkspace.Load(context.Layout.RootPath)).NewSession() };
     }
 
     private void ReadNames(

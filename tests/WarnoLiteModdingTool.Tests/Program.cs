@@ -31,7 +31,15 @@ internal static partial class Program
     private static async Task<int> Main(string[] args)
     {
         VanillaNames.Replace(SyntheticNames());
+        if (args is ["--aviation-old-reader", var oldAviation]) { await AviationOldReader(oldAviation); return 0; }
+        if (args is ["--aviation-ui"]) { await AviationUi(); return 0; }
+        if (args is ["--changes"]) { await ChangeFocusedTests(); return 0; }
+        if (args is ["--changes-ui"]) { await ChangeUiTest(); return 0; }
+        if (args is ["--changes-perf"]) { await ChangePerformance(); return 0; }
         if (args is ["--supply-ui"]) { await SupplyCapacityUi(); return 0; }
+        if (args is ["--damage-ui"]) { await DamageUiTest(); return 0; }
+        if (args is ["--damage-old-reader",var oldDamageReader]) { await DamageOldReader(oldDamageReader); return 0; }
+        if (args is ["--damage-stock",var damageStock]) { DamageStock(damageStock); return 0; }
         if (args is ["--ammo-pro-ui"]) { await AmmoProfessionalUi(); return 0; }
         if (args is ["--ammo-pro-stock", var stockRoot]) { await AmmoProfessionalStock(stockRoot); return 0; }
         if (args is ["--ammo-pro-old-reader", var oldAmmoCore]) { await AmmoProfessionalOldReader(oldAmmoCore); return 0; }
@@ -111,6 +119,49 @@ internal static partial class Program
 
         var tests = new (string Name, Func<Task> Run)[]
         {
+            ("2.10.1 航空字段与批量", AviationContracts),
+            ("2.10.1 航空组合提交与恢复", AviationTransactions),
+            ("2.10.1 航空跨版本数值", AviationChangeMerge),
+            ("2.10 修改包完整记录与独立读取", ChangeCaptureRoundtrip),
+            ("2.10 分组部分还原与继续", ChangePartialContinuation),
+            ("2.10 依赖组与暂缓边界", ChangeGroupBoundaries),
+            ("2.10 显式对象对应", ChangeExplicitMapping),
+            ("2.10 旧回执与并发提交", ChangeLegacyAndReceiptRace),
+            ("2.10 独立CommonData与无变化", ChangeCommonDataAndNoChanges),
+            ("2.10 CSV按列合并", ChangeCsvColumns),
+            ("2.10 文本冲突选择", ChangeTextChoices),
+            ("2.10 文本处置回执与恢复", ChangeTextReceipts),
+            ("2.10 保存对应与暂缓进度", ChangeReviewPersistence),
+            ("2.10 进度读取及失效", ChangeReviewValidation),
+            ("2.10 MAP混合增删与数值", ChangeMapMixedMerge),
+            ("2.10 MAP冲突与原文边界", ChangeMapBoundaries),
+            ("2.10 MAP分隔与已满足", ChangeMapSeparatorsAndSatisfied),
+            ("2.10 无名MAP与注册身份", ChangeMapUnnamedAndIdentity),
+            ("2.10 MAP事务与分组限制", ChangeMapTransactionAndLimits),
+            ("2.10 NDF标量冲突选择", ChangeScalarChoices),
+            ("2.10 NDF选择证据与结构边界", ChangeScalarBoundaries),
+            ("2.10 NDF身份与引用排除", ChangeScalarExcludedIdentity),
+            ("2.10 NDF选择事务与恢复", ChangeScalarTransactions),
+            ("2.10 NDF选择进度与独立读取", ChangeScalarPersistence),
+            ("2.10 已知字段增删与混合还原", ChangeFieldPresenceMerge),
+            ("2.10 字段增删常见冲突", ChangeFieldPresenceConflicts),
+            ("2.10 字段增删独立读取与事务", ChangeFieldPresenceRoundtrip),
+            ("2.10 统一数值与新版保留", ChangeNumericMerge),
+            ("2.10 未知结构原文保持", ChangeUnknownPreservation),
+            ("2.10 事务恢复与重复应用", ChangeCommitRecovery),
+            ("2.10 预览前提与草稿保护", ChangePreconditions),
+            ("2.10 包格式与基线覆盖", ChangeArchiveValidation),
+            ("2.10 词典组合与引用校验", ChangeCsvAndReferences),
+            ("2.10 取消与输出保护", ChangeCaptureCancellation),
+            ("2.10 全局常量与身份冲突", ChangeRulesAndIdentities),
+            ("2.10 中断状态恢复", ChangeInterruptedRecovery),
+            ("2.10 扫描一致性与重名压缩条目", ChangeCaptureCoherence),
+            ("1.9.21 伤害矩阵语义与边界", DamageContracts),
+            ("1.9.21 伤害距离隔离组合与恢复", DamageTransactions),
+            ("1.9.21 距离依赖、冲突与失败恢复", DamageGuards),
+            ("1.9.21 矩阵批改与独立规则", DamageMathAndStandalone),
+            ("1.9.21 应用后伤害缓存与连续编辑", DamageRefresh),
+            ("1.9.21 专业已有阶梯引用与组合", DamageReferenceSelection),
             ("1.9.20 补给量字段、批量与边界", SupplyCapacityContracts),
             ("1.9.20 补给量组合应用与失败恢复", SupplyCapacityTransactions),
             ("1.9.18 师徽注册与同批合并", Emblem1918Registration),

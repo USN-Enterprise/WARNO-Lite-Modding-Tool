@@ -96,7 +96,7 @@ public static class WeaponBatch
     };
     public static IReadOnlyList<(string Key, WeaponFieldDefinition Definition)> Parameters(WeaponWorkspaceData data) => data.Weapons
         .SelectMany(w => w.Fields.Concat(w.Mounts.SelectMany(m => m.Fields))).Concat(data.Ammunition.SelectMany(a => a.Fields))
-        .Select(f => (Key: Semantic(f.Key), Definition: f.Definition)).DistinctBy(p => p.Key).ToArray();
+        .Where(f => f.Key != DamageDistance.ReferenceKey).Select(f => (Key: Semantic(f.Key), Definition: f.Definition)).DistinctBy(p => p.Key).ToArray();
     private static string Semantic(string key)
     {
         var parts = key.Split('.');

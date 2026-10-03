@@ -107,6 +107,9 @@ public static class UnitValueConverter
                     return Failure(definition.NonNegative ? "请输入不小于 0 的数字" : "请输入有效数字", out normalizedDisplay, out rawTarget, out error);
                 }
 
+                if (!AviationMovement.ValidTarget(definition.Key, number, out var aviationError))
+                    return Failure(aviationError, out normalizedDisplay, out rawTarget, out error);
+
                 normalizedDisplay = number.ToString("0.##########", CultureInfo.InvariantCulture);
                 rawTarget = normalizedDisplay.Contains('.', StringComparison.Ordinal)
                     ? normalizedDisplay

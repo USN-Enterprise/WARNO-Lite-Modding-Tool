@@ -26,7 +26,7 @@ public static class AmmoBatchPlanner
     public static IReadOnlyList<WeaponFieldDefinition> CommonFields(IEnumerable<AmmoRecord> targets)
     {
         var records = targets.ToArray();
-        return records.Length == 0 ? [] : WeaponFieldDefinitions.Ammo.Where(d => records.All(a => a.Fields.Count(f => f.Key == d.Key && f.CanEdit) == 1)).ToArray();
+        return records.Length == 0 ? [] : WeaponFieldDefinitions.Ammo.Where(d => d.Key != DamageDistance.ReferenceKey && records.All(a => a.Fields.Count(f => f.Key == d.Key && f.CanEdit) == 1)).ToArray();
     }
     public static IReadOnlyList<string> Choices(IEnumerable<AmmoRecord> targets,string key)
     {

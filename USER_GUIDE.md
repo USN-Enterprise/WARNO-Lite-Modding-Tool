@@ -1,6 +1,6 @@
 # WARNO Lite Modding Tool User Guide
 
-For version **1.9.20**, Windows x64. Available fields and features depend on the selected Mod's data and structure.
+For version **2.10.1**, Windows x64. Available fields and features depend on the selected Mod's data and structure.
 
 [Home](README.md#english) · [中文教程](使用教程.md) · [Release notes](RELEASE_NOTES.md#english)
 
@@ -20,6 +20,7 @@ For version **1.9.20**, Windows x64. Available fields and features depend on the
 12. [Creation, generation, development launch and upload](#mod-tools)
 13. [Settings, troubleshooting and feedback](#help)
 14. [Current limits](#limits)
+15. [Change records and cross-version restore](#change-records)
 
 <a id="prepare"></a>
 
@@ -58,7 +59,7 @@ For a first exercise, consider a dedicated test Mod. Transaction backups preserv
 3. Run `WarnoLiteModdingTool.exe`. Only one instance is allowed in the same Windows login session. If it reports that it is already running, return to the existing window.
 4. Before upgrading, close the old version normally. Extract the new version into a fresh directory. Drafts and transaction backups are stored inside the target Mod, not the editor installation.
 
-This guide describes 1.9.20. The download page may offer a later release; consult its release notes as well.
+This guide describes 2.10.1. The download page may offer a later release; consult its release notes as well.
 
 ### 2.2 Open an existing Mod
 
@@ -152,6 +153,9 @@ Creation backups are also used to verify the origin of newly created units. Keep
 Select a unit and edit supported fields in the relevant groups: costs, deployment, survivability, vision, movement and other recognized parameters. Text inputs, dropdowns and tag selectors have different purposes. Unknown existing values are preserved.
 
 - A display name is different from an internal variable name. Units sharing a name token can be renamed independently. Creating or renaming requires the local name dictionaries to be loaded for collision checks.
+- **Aircraft movement (2.10.1)**: use **Mobility and endurance → Fixed-wing flight / Helicopter flight**. Basic mode includes aircraft flight altitude and turn radius, plus helicopter normal altitude, near-ground altitude and climb speed. Professional mode adds aircraft minimum altitude, pitch, roll, roll rate and evacuation angle. Only unique numeric literals in matching modules are editable. Altitudes remain in GRU, not real-world meters or a separate entry-altitude setting.
+- **Aircraft maximum speed**: the existing maximum-speed control saves both generic and aircraft/helicopter movement speeds. Preview lists both changes. Opening a Mod preserves any original difference; resetting restores each original value. Batch formulas are supported, and linked speed drafts are applied or removed together.
+- **Validation and drafts**: minimum / near-ground altitude must not exceed normal altitude; fixed-wing normal altitude is checked against the selected Mod's maximum. Standard aircraft templates and direct movement modules are supported; unverified template mappings or ceilings prevent altitude application. Combined drafts can be saved before preview. Aviation drafts use schema 5 and require 2.10.1 or a later compatible reader; old drafts remain readable. Attack-strategy editing, global ceiling editing and a separate entry altitude are not included.
 - **Supply capacity**: under **Mobility and endurance → Supply**, edit the supply points carried by a unit in either mode, including unit batch editing. Nonnegative values, including decimals, are accepted. Only a unique direct numeric `TSupplyModuleDescriptor.SupplyCapacity` is editable; missing or ambiguous structures are not created. This does not change supply rates or ammunition supply costs.
 - ECM is displayed as a positive percentage; do not copy the sign from raw NDF values. Basic vision inputs scale related vision values using their original ratios. Check the combined preview.
 - Forward deployment accepts a nonnegative distance or an existing preset from the current Mod. A reference preset does not automatically add every related ability to a unit.
@@ -268,6 +272,17 @@ Ammunition still edits every reference; Weapons and the slot editor retain their
 
 Availability follows the selected Mod's structures and resources. Unknown projectile shapes, ambiguous references and missing assets are not guessed. Successful editing and synthetic transaction tests do not establish in-game effects.
 
+### 7.5 Distance rules and damage coefficients
+
+1. On Weapons, select a mount and the current/selected-unit scope. On Ammunition, check the targets; if none are checked, the current ammunition is used. Open **Distance rules and damage lookup**.
+2. Basic mode edits the interval only for **DamageFamily_ap ammunition with PiercingWeapon=True and a resolvable positive step**. For example, change 175 to 500 while retaining each target's AP. Professional mode also edits AP or selects a compatible existing rule in this Mod. Missing fields are not inserted and nil is not treated as 175.
+3. **Calculate preview**, inspect targets, GRU/AP and all affected units, then **Add to drafts**. Unsupported targets block the entire batch; revise the selection. In Professional batches, blank AP retains each target's current value; the interval must be explicit.
+4. Preview and apply in Draft overview. Local weapon edits isolate the necessary Weapon/Ammo objects; numeric changes create independent steps. Ammunition edits still affect every user of the selected Ammo, while other Ammo retains its original step.
+
+Distances are **raw GRU**. Arme.Index is retained; penetration at maximum range is not automatically preserved. Increasing the interval may change long-range results. Selecting an existing rule uses its current parameters; edit the shared definition on Game rules. Conflicting local/shared targets for the same field must be resolved first.
+
+**Damage coefficient lookup** selects a Mod unit and its front, sides, rear or top. It displays both Family/Index coordinates and a static matrix coefficient from formal files, **excluding unapplied drafts**. It is not final damage or shots to kill, and excludes distance, hit rolls, suppression mappings and cover resistance changes. Apply drafts and reopen the lookup to query the resulting files.
+
 <a id="divisions"></a>
 
 ## 8. Divisions, emblems and descriptive text
@@ -371,6 +386,19 @@ Basic mode offers damage-reduction percentages for recognized existing infantry 
 
 Changes affect eligible units on both sides in the current Mod. Terrain height is read-only. Terrain definitions and damage combinations cannot be added or removed, and missing combinations are not filled with zero. Projects containing only terrain-rule files can use the relevant functionality.
 
+### 10.4 Professional mode: damage matrices and shared distance rules
+
+Open **Game rules → Damage and resistance rules**:
+
+- **Matrix:** select damage and resistance families and their index ranges (blank means the whole family). Each row represents one exact cell. Use Ctrl/Shift or **Select all cells shown**, choose Set, Multiply or Add, optional bounds and Preserve zeros. **Calculate preview**, inspect the changed count and zero transitions, then **Add to drafts**. Calculations start from current draft values. Changing a family or range clears selection and the previous preview.
+- Coefficients may exceed 1. A zero entry is not immunity to every game mechanic. Negative values, expressions and values below supported precision remain read-only. Unknown rows/columns are not rebuilt. Physical and suppression families use the same editor; suppression coefficients are separate from ammunition SuppressDamages.
+- **Shared distance rules:** select a step, inspect the full reference chain, edit DistanceGRU and AP, then add to drafts. This directly changes the shared definition for all references, potentially on both sides. Use Weapons/Ammunition for scoped changes.
+- Family IDs, name registrations, Counts and matrix dimensions must agree. An unsupported matrix does not disable independent steps. Rules-only projects do not require unit files.
+
+Damage/distance drafts use **schema 4**, with a preserved copy before older drafts are upgraded. Version 1.9.20 and earlier reject this format. Switching to Basic mode retains Professional drafts for inspection, undo and application. Applying rechecks the combined result and references; changes after preview require a new preview, and failed commits roll back while retaining drafts.
+
+This release does not add/delete/reorder families or indices, edit suppression mappings, global penetration algorithms or complete fire chains, or automatically preserve long-range penetration. File operations and UI were verified; official generation and in-game verification were not run.
+
 <a id="professional"></a>
 
 ## 11. Professional tools and reference inspection
@@ -459,3 +487,71 @@ For reports to **QQ group 1013181135**, include the tool version, module, failin
 - Releases target self-contained Windows x64. Minimum Windows versions and real cross-monitor DPI behavior still need further validation. Generation/in-game checks remain incomplete for custom images, air layouts, weapon count and some newer rules; see the relevant [release notes](RELEASE_NOTES.md#english) for version-specific evidence.
 
 [Back to contents](#contents) · [Home](README.md#english) · [中文教程](使用教程.md)
+
+<a id="change-records"></a>
+
+## 15. Change records and cross-version restore (2.10 preview)
+
+Open Mod Tools → Change records and restore. A change file can be opened without an ordinary editing project. Capture reads formal files; unapplied drafts are excluded.
+
+### Capture changes from an existing Mod
+
+1. Under Capture existing files, select the old Mod root and a baseline Mod you confirm matches its original version. Its retained official base.zip is also supported, but only establishes the covered NDF baseline, not the prior absence of pictures or CSV files.
+2. Select one policy for all eligible numeric values: Keep the ratio or Keep the difference. For 100→120 and a new base value of 150, the results are 180 and 170 respectively.
+3. Analyze all changes. Inspect files, details, full text, and Coverage and issues. Filtering changes only the display. Unknown structures retain complete content; missing baseline evidence is explicitly shown as incomplete.
+4. Export one `.wlmtchanges` file. It contains before/after bytes and resources and can be reopened without the original Mod directory. Existing exports are never overwritten.
+
+Create a baseline Mod invokes the local official creator, filling the baseline on the capture tab or the target on the restore tab. It only creates the installed game version, not a lost historical version. A mismatched baseline mixes official updates with author changes; file timestamps alone cannot establish version compatibility.
+
+### Open a record and restore
+
+1. Open the change file. Its saved global numeric policy is selected. Changing it invalidates the preview and requires a clean target baseline.
+2. Select a confirmed unmodified new-version Mod and preview. Review old baseline, old modification, new baseline and result. Recognized direct and indirect target references are listed under Coverage and issues.
+3. The file table shows dependency groups. Select a file and use Defer selected group or Include selected group. Related files stay together. Groups can be separated only when every recorded change is a known quantity change; structural, identity, resource or unknown changes remain together.
+4. With no unresolved issues in the selected groups, apply and review the target folder and selected/deferred counts. Deferred content stays in the complete original record; partial completion reports the remaining count.
+5. Preview or reopen the same record to continue only the remaining groups. Applied groups are never recalculated. Another record or numeric policy requires recovering all previous batches or a clean baseline. External target changes block continuation against the previous baseline.
+6. Recover batches from newest to oldest through Backups and recovery. Subsequent external changes block overwriting. Recover interrupted transactions before continuing.
+
+### Objects renamed or moved in the new version
+
+After previewing, select a recorded file and choose Map target objects. Candidates come from the current target Mod. Each changed object must map to a distinct object of the same type within one target file. Review all four values and shared effects in the new preview. Applied mappings are stored in receipts and loaded when reopening.
+
+Mapping only supports files whose changes can be fully explained as known quantities on existing objects. New-version names, identities, references and unrelated fields stay intact. Selecting another name cannot resolve structural, reference, identity or additional text changes. Multiple recorded files cannot currently map to the same target file. Matching types alone do not establish equivalent meaning. Applied mappings require recovery before changing them; pending mappings can be saved as review progress.
+
+### Adding and removing known quantity MAP entries
+
+Supported vision, cost, ammunition accuracy and rule MAPs match entries by stable keys. Existing quantities follow the one global ratio/difference policy. New keys use their recorded value because no old quantity exists; a missing value is never treated as zero. Removed entries are deleted only if their target value and associated text remain unchanged. Matching existing additions or already absent removals are marked satisfied without duplication.
+
+For example, a recorded standard-vision change of 100→120 with target 150 yields 180 under the ratio policy. A high-altitude entry added with value 300 remains 300. Other target keys, their order, unrelated fields and untouched text survive. Details show additions, removals and calculations; selecting a row shows its full field path and reason.
+
+Added and removed entries must currently occupy standalone lines; the target closing bracket must also be on its own line for appending. Target line endings and indentation are retained, and trailing separators are handled. Unknown key semantics, expressions, duplicate keys, changed deletion targets, occupied keys and additional ordering/format changes remain conflicts. This does not adapt nested compound MAPs, ordinary lists or module additions/removals.
+
+UnitIds and DivisionIds are registration identities. Cross-version changes remain review items, with no ratio/difference arithmetic or automatic reassignment. Records containing MAP additions/removals stay together for application; defer cannot split their dependencies. Object mapping remains limited to quantity-only changes.
+
+### Adding and removing fields in existing objects
+
+Existing named objects and their uniquely located constructors support standalone additions/removals of known numeric, Boolean and supported string/enum fields. For example, a recorded `IsFireAndForget = True` addition can be inserted into the same ammunition object in the new baseline. An added aiming time of 5 stays 5: a missing old value is neither zero nor a ratio baseline. Existing numeric edits still follow the global policy.
+
+An added field already containing the same value is not inserted twice. A field is deleted only if its target line remains unchanged; an already absent field is satisfied. Unrelated target fields, comments and line endings survive. Insertions follow target indentation and comma style, with additions, removals and calculations listed separately.
+
+Changed fields must occupy complete standalone lines, and insertion requires a standalone constructor closing bracket. Occupied fields, changed deletion lines, duplicates and unknown structures remain review items. Whole-module changes, references and registration identities are outside this addition. Original records remain complete and these structural changes stay in one group. Use preview.6 or a later supporting version to preview this capability; package, receipt and review formats are unchanged.
+
+### Field and dictionary conflicts, and saved review
+
+Matching TOKEN dictionaries merge by token and text column. An author edit to English and an upstream edit to French can both survive, along with target row order, line endings and encoding. When both sides change the same cell, select its CSV file and conflict row in Change details. Review all three values, then choose Keep target value or Use recorded value. Each conflict requires a choice; unresolved items still block the entire group.
+
+Known NDF string/enum fields in existing named declarations also support individual decisions: MotherCountry, UnitRole, Coalition and FactoryType. The declaration, constructor and field must each be uniquely located. All three enum values must belong to the same family; strings must be complete quoted literals. Review the raw values and use the same buttons for each conflict, or Clear conflict choice to undo a decision. Other target fields, order, comments and line endings remain intact; quantities still follow the global policy. Valid Boolean equality or one-sided edits merge directly without artificial choices.
+
+Keeping the target value means that recorded change is omitted. Its count and reason remain visible after processing and reopening; it is never reported as fully restored. Decisions are saved in receipts and require recovering the batch before changing them. This control does not resolve added, deleted or missing tokens, column or recorded encoding changes, NDF identities or unknown mechanisms. Numeric changes still use one global policy.
+
+Under Review and progress, Save review progress records mappings, deferred groups and conflict choices inside the target without changing formal Mod files or the portable `.wlmtchanges` file. Reopen the same record, policy and target, then Load review progress to revalidate and resume. Each save retains older snapshots; loading uses the newest snapshot for that record. **Save explicitly before closing**; unsaved choices are temporary.
+
+Changed target files or receipts invalidate saved progress. Preview and review again. If previous conflict choices no longer match the three values, use Clear selected file conflict choices before previewing again. Local progress lives in `.warno-editor/change-review/`; it is not a second required portable record. Review and progress also exports original or modified files for manual review.
+
+Valid files on an identical baseline support exact restoration. Cross-version automatic merging covers uniquely located supported unit, ammunition and rule quantities, controlled object changes, and matching TOKEN dictionaries. Unknown structure, ambiguous references, unsupported list reordering and concurrently changed resources retain their content and block the affected group. NDF choices cannot override references, GUIDs, name tokens, registration IDs, missing/duplicate fields, unknown fields or additional structural/text edits, and cannot be combined with object mapping. These records still stay together for application. This version does not automatically repair changed game mechanisms or reassign identifiers, and never invokes official UpdateMod.
+
+Change files, backups and receipts from preview.1 through preview.5 remain readable; the portable record stays at version 1. NDF conflict choices use version 4 receipts and version 2 review sessions. Other operations retain version 3 receipts and version 1 sessions. Preview.1–4 do not recognize the new receipt/session versions; manage these targets with this or a later compatible version. Preview.1/2 also cannot read version 3 receipts.
+
+Read/write limits: 256 MiB per file, 1 GiB of total before/after payloads, 100000 entries. Exceeding a limit reports an error without truncating the record. Text preview displays up to 200000 characters; full content remains in the package. Scripts and executables may be recorded but are neither restored automatically nor executed.
+
+Successful file restoration does not establish official generation or in-game success. Those remain separate workflows.

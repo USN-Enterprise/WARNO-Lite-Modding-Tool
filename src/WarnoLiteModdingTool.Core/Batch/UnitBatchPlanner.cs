@@ -227,6 +227,22 @@ public static class UnitBatchPlanner
                 }
             }
 
+            if (definition.Key == AviationMovement.Speed && AviationMovement.SpeedFields(unit).Count > 1)
+            {
+                try
+                {
+                    var linked = AviationMovement.SpeedDrafts(unit, normalized);
+                    var existingSpeed = request.ExistingDrafts.Where(o => o.ObjectName == unit.Name && AviationMovement.IsSpeed(o.FieldKey)).ToArray();
+                    var changes = linked.Upserts.Any(o => existingSpeed.All(e => e.Id != o.Id || e.TargetRaw != o.TargetRaw)) || linked.Removals.Any(id => existingSpeed.Any(e => e.Id == id));
+                    if (!changes) { unchangedCount++; continue; }
+                    changedUnits.Add(unit); upserts.AddRange(linked.Upserts); removals.AddRange(linked.Removals);
+                    if (samples.Count < SampleLimit) samples.Add(new(unit.Name, unit.DisplayName, currentValue, normalized));
+                    warnings.Add(unit.DisplayName + "：最大速度同时修改通用与航空运动速度");
+                }
+                catch (InvalidOperationException ex) { targetErrors[ex.Message] = targetErrors.GetValueOrDefault(ex.Message) + 1; }
+                continue;
+            }
+
             if (string.Equals(normalized, currentValue, StringComparison.Ordinal))
             {
                 unchangedCount++;

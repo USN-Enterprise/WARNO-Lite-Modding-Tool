@@ -23,6 +23,7 @@
                                         <ToggleButton Content="{l:Loc Key='批量编辑'}" IsChecked="{Binding AmmoWorkspace.BatchOpen}"/>
                                     </WrapPanel>
                                     <TextBlock Text="{Binding AmmoWorkspace.BatchSelectionText}" TextWrapping="Wrap" Margin="0,0,0,7"/>
+                                    <Button Content="{l:Loc Key='距离规则与伤害查询'}" Style="{StaticResource SecondaryButton}" Click="Damage_Click" ToolTip="{l:Loc Key='使用勾选弹药；未勾选时使用当前弹药'}" Margin="0,0,0,7" HorizontalAlignment="Left"/>
                                     <DockPanel Margin="0,0,0,7">
                                         <TextBlock Text="{l:Loc Key='Ammo 列表'}" FontWeight="SemiBold" />
                                         <TextBlock DockPanel.Dock="Right" Foreground="{DynamicResource MutedTextBrush}" FontSize="10">

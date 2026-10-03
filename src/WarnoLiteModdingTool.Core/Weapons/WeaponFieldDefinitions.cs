@@ -40,7 +40,7 @@ public static class WeaponFieldDefinitions
 
     public static IReadOnlyList<WeaponFieldDefinition> Ammo { get; } = StandardAmmo
         .Select(f => f with { CanInsert = f.FieldName is "IsFireAndForget" or "MaxAccelerationGRU" or "AimingTime" or "DispersionAtMinRangeGRU" or "DispersionAtMaxRangeGRU" })
-        .Concat(AmmoProfessional.Definitions).ToArray();
+        .Concat(AmmoProfessional.Definitions).Append(DamageDistance.ReferenceDefinition).ToArray();
 
     public static WeaponFieldDefinition Salves(int ammoBox) =>
         new($"weapon.salves.{ammoBox}", "库存", $"AmmoBox {ammoBox} 齐射次数", "Weapon.Salves 中与 AmmoBoxIndex 对应的项。", WeaponFieldOwner.Weapon, "Salves", WeaponValueKind.Integer, true, Section: "挂载与库存");

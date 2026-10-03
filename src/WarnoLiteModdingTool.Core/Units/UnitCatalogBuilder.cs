@@ -71,7 +71,7 @@ public sealed class UnitCatalogBuilder(NdfFieldLocator? locator = null)
                 []);
         }
 
-        if (match.Values.Count > 1)
+        if (match.Values.Count > 1 || AviationMovement.IsField(definition.Key) && definition.Selector.ModuleTypes.Sum(t => document.FindConstructors(t).Count) > 1)
         {
             return new UnitFieldValue(
                 definition,
@@ -92,7 +92,9 @@ public sealed class UnitCatalogBuilder(NdfFieldLocator? locator = null)
             offset,
             document.Length(value),
             line,
-            definition.Selector.DisplayPath);
+            definition.Selector.AlternateModuleType is { } alternate && document.FindConstructors(alternate).Count == 1
+                ? (definition.Selector with { ModuleType = alternate, AlternateModuleType = null }).DisplayPath
+                : definition.Selector.DisplayPath);
 
         if (!UnitValueConverter.TryReadDisplay(definition, document, value, out var display, out var error))
         {

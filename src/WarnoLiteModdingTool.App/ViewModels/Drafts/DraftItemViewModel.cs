@@ -9,12 +9,29 @@ public sealed class DraftItemViewModel : ObservableObject
     {
         Resolved = resolved;
         _record=strategic?.Records.FirstOrDefault(r=>r.Id==resolved.Operation.ObjectName);
+        if(resolved.Operation.TargetKind is DraftTargetKind.DamageRule or DraftTargetKind.DamageDistance)
+        {
+            try
+            {
+                if(resolved.Operation.TargetKind==DraftTargetKind.DamageRule)
+                    _damageDetails=string.Join("\n",Core.Rules.DamageWorkspace.Read(resolved.Operation).Changes.Select(c=>c.Key+"："+c.Before+" → "+c.After));
+                else
+                {
+                    var state=Core.Weapons.DamageDistance.Read(resolved.Operation);
+                    _damageDetails="DistanceGRU = "+state.Distance+" · AP = "+state.AP+"\n"+state.StairName+"\n"+
+                        Localisation.UiText.T(state.ChangeReference?"使用已有距离规则":"保持现有引用，按范围独立调整")+"\n"+
+                        (resolved.Operation.EditScope==DraftEditScope.AllReferences?Localisation.UiText.T("全部引用"):string.Join("\n",resolved.Operation.SelectedUnitNames??[]));
+                }
+            }
+            catch(Exception e)when(e is InvalidDataException or InvalidOperationException or NullReferenceException){_damageDetails=e.Message;}
+        }
         if(IsStrategic)try{_changes=WarnoLiteModdingTool.Core.Strategic.StrategicDiff.Compare(resolved.Operation);}catch(Exception e)when(e is System.Text.Json.JsonException or InvalidDataException or NullReferenceException){_error="战略草稿无法解析，请查看冲突原因";}
     }
 
     private readonly WarnoLiteModdingTool.Core.Strategic.StrategicRecord? _record;
     private readonly IReadOnlyList<WarnoLiteModdingTool.Core.Strategic.StrategicChange> _changes=[];
     private readonly string? _error;
+    private readonly string? _damageDetails;
     private bool _selected;
     public bool IsSelected { get => _selected; set => SetProperty(ref _selected, value); }
     public string BatchSummary => Localisation.UiText.T("批量修改") + " · " + Localisation.UiText.T(WarnoLiteModdingTool.Core.Units.UnitFieldDefinitions.All.FirstOrDefault(f=>f.Key==Resolved.Operation.FieldKey)?.Label ?? Module);
@@ -22,7 +39,7 @@ public sealed class DraftItemViewModel : ObservableObject
     public ResolvedDraftOperation Resolved { get; }
 
     public bool IsStrategic => Resolved.Operation.TargetKind == DraftTargetKind.StrategicPlan;
-    public string RawValues => Resolved.Operation.BaselineValue + "\n↓\n" + Resolved.Operation.TargetValue;
+    public string RawValues => BaselineValue + "\n↓\n" + TargetValue;
     public string ChangeDetails => _error ?? string.Join("\n\n",_changes.Select(c=>$"{Localisation.UiText.T(c.Path)}：{c.Before} → {c.After}"));
     public string Summary => IsStrategic ? $"{Localisation.UiText.T("将军模式")} · {Localisation.GameText.Display("country",string.IsNullOrEmpty(_record?.Country)?"未知":_record.Country)} · {_record?.DisplayName??ObjectName} · {_changes.Count} {Localisation.UiText.T("项修改")}" : Resolved.Operation.Summary;
 
@@ -53,9 +70,9 @@ public sealed class DraftItemViewModel : ObservableObject
 
     public string BaselineValue => IsStrategic ? "以下为同一编制事务的全部修改" : Resolved.Operation.BaselineValue;
 
-    public string TargetValue => IsStrategic ? ChangeDetails : Resolved.Operation.TargetValue;
+    public string TargetValue => _damageDetails ?? (IsStrategic ? ChangeDetails : Resolved.Operation.TargetValue);
 
-    public string Scope => Resolved.Operation.EditScope switch
+    public string Scope => Resolved.Operation.TargetKind==DraftTargetKind.DamageRule ? "全部引用" : Resolved.Operation.EditScope switch
     {
         DraftEditScope.CurrentUnit => "仅当前 Unit",
         DraftEditScope.SelectedUnits => "所选 Unit",

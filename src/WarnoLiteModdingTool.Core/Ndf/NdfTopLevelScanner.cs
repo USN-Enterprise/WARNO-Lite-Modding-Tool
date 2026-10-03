@@ -111,7 +111,7 @@ public sealed class NdfTopLevelScanner
 
             var declarationStart = parseCursor;
             var firstToken = ReadToken(source, ref parseCursor);
-            var hasExportKeyword = string.Equals(firstToken, "export", StringComparison.Ordinal);
+            var hasExportKeyword = firstToken is "export" or "private";
             string name;
             if (hasExportKeyword)
             {
@@ -122,7 +122,7 @@ public sealed class NdfTopLevelScanner
                     declaration = DeclarationCandidate.Invalid(
                         declarationStart,
                         NextLineStart(source, lineStart),
-                        "export 后缺少对象名称。");
+                        firstToken + " 后缺少对象名称。");
                     return true;
                 }
             }

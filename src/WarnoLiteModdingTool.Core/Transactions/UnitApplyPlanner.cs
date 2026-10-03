@@ -49,9 +49,9 @@ public sealed class UnitApplyPlanner(
         var allOperations = UnitDraftLinks.Expand(operations, currentDrafts.Operations);
         var deleteNames = allOperations.Where(o=>o.TargetKind==DraftTargetKind.UnitDelete).Select(o=>o.ObjectName).ToHashSet();
         operations = allOperations.Where(o=>!deleteNames.Contains(o.ObjectName)||o.TargetKind==DraftTargetKind.UnitDelete).ToArray();
-        var lifecycle = allOperations.Any(o=>UnitDraftLinks.Lifecycle(o)||o.TargetKind is DraftTargetKind.UnitCreate or DraftTargetKind.UnitPicture or DraftTargetKind.WeaponBatch or DraftTargetKind.WeaponStructure);
+        var lifecycle = allOperations.Any(o=>UnitDraftLinks.Lifecycle(o)||o.TargetKind is DraftTargetKind.UnitCreate or DraftTargetKind.UnitPicture or DraftTargetKind.WeaponBatch or DraftTargetKind.WeaponStructure or DraftTargetKind.DamageDistance);
         var sharedAmmo = allOperations.Any(Batch.AmmoBatchPlanner.IsShared);
-        var reviewInputs = lifecycle || sharedAmmo || allOperations.Any(o => o.InsertAmmoField || AmmoProfessional.RequiresV3(o.FieldKey) || o.TargetKind is DraftTargetKind.DivisionText or DraftTargetKind.DivisionIdentity or DraftTargetKind.TerrainField);
+        var reviewInputs = lifecycle || sharedAmmo || allOperations.Any(o => o.InsertAmmoField || AmmoProfessional.RequiresV3(o.FieldKey) || o.TargetKind is DraftTargetKind.DivisionText or DraftTargetKind.DivisionIdentity or DraftTargetKind.TerrainField or DraftTargetKind.DamageRule or DraftTargetKind.DamageDistance);
         var unitReview = reviewInputs ? new UnitProjectGraph(root).Dependencies : null;
         var historyPath = Path.Combine(root,UnitCreationHistory.LedgerPath);
         if(unitReview is not null) unitReview[UnitCreationHistory.LedgerPath] = File.Exists(historyPath)?File.ReadAllBytes(historyPath):[];
@@ -64,19 +64,19 @@ public sealed class UnitApplyPlanner(
 
         var index = await _indexer.IndexAsync(context, cancellationToken: cancellationToken);
         var unitCapability = index.Modules.FirstOrDefault(item => item.Key == "units");
-        if (operations.Any(o => !Batch.AmmoBatchPlanner.IsShared(o) && o.TargetKind != DraftTargetKind.AmmoName && o.TargetKind is not (DraftTargetKind.StrategicPlan or DraftTargetKind.StrategicPack or DraftTargetKind.GlobalRule or DraftTargetKind.ExperienceLevel or DraftTargetKind.TerrainField or DraftTargetKind.DivisionText)) &&
+        if (operations.Any(o => !Batch.AmmoBatchPlanner.IsShared(o) && !(o.TargetKind == DraftTargetKind.DamageDistance && o.EditScope == DraftEditScope.AllReferences) && o.TargetKind != DraftTargetKind.AmmoName && o.TargetKind is not (DraftTargetKind.StrategicPlan or DraftTargetKind.StrategicPack or DraftTargetKind.GlobalRule or DraftTargetKind.ExperienceLevel or DraftTargetKind.TerrainField or DraftTargetKind.DamageRule or DraftTargetKind.DivisionText)) &&
             (unitCapability?.CanScan != true || unitCapability.Availability == ModuleAvailability.ParseError))
         {
             throw new TransactionValidationException("单位模块当前不可安全写入；请先处理扫描诊断。");
         }
 
         var hasWeaponOperations = operations.Any(item => item.TargetKind is
-            DraftTargetKind.WeaponField or DraftTargetKind.MountedWeaponAmmo or DraftTargetKind.AmmoField or DraftTargetKind.UnitWeaponReference or DraftTargetKind.UnitCreate or DraftTargetKind.AmmoName or DraftTargetKind.WeaponBatch or DraftTargetKind.WeaponStructure);
+            DraftTargetKind.WeaponField or DraftTargetKind.MountedWeaponAmmo or DraftTargetKind.AmmoField or DraftTargetKind.UnitWeaponReference or DraftTargetKind.UnitCreate or DraftTargetKind.AmmoName or DraftTargetKind.WeaponBatch or DraftTargetKind.WeaponStructure or DraftTargetKind.DamageDistance);
         if (hasWeaponOperations)
         {
             var weaponCapability = index.Modules.FirstOrDefault(item => item.Key == "weapons");
             var ammoCapability = index.Modules.FirstOrDefault(item => item.Key == "ammo");
-            var needsWeapons = operations.Any(o => o.TargetKind is DraftTargetKind.WeaponField or DraftTargetKind.MountedWeaponAmmo or DraftTargetKind.UnitWeaponReference or DraftTargetKind.UnitCreate or DraftTargetKind.WeaponBatch or DraftTargetKind.WeaponStructure || o.TargetKind == DraftTargetKind.AmmoField && !Batch.AmmoBatchPlanner.IsShared(o));
+            var needsWeapons = operations.Any(o => o.TargetKind is DraftTargetKind.WeaponField or DraftTargetKind.MountedWeaponAmmo or DraftTargetKind.UnitWeaponReference or DraftTargetKind.UnitCreate or DraftTargetKind.WeaponBatch or DraftTargetKind.WeaponStructure || o.TargetKind == DraftTargetKind.AmmoField && !Batch.AmmoBatchPlanner.IsShared(o) || o.TargetKind == DraftTargetKind.DamageDistance && o.EditScope != DraftEditScope.AllReferences);
             if ((needsWeapons && weaponCapability?.CanScan != true) || weaponCapability?.Availability == ModuleAvailability.ParseError || unitCapability?.Availability == ModuleAvailability.ParseError ||
                 ammoCapability?.CanScan != true || ammoCapability.Availability == ModuleAvailability.ParseError)
             {
@@ -118,6 +118,13 @@ public sealed class UnitApplyPlanner(
         }
 
         ValidateOperationIdentity(operations);
+        var damageOperations = operations;
+        DistanceExpansion? distanceExpansion = null;
+        if (operations.Any(o => o.TargetKind == DraftTargetKind.DamageDistance))
+        {
+            distanceExpansion = DamageDistance.Expand(workspace.Rules!.Damage, weaponWorkspace!, operations);
+            weaponWorkspace = distanceExpansion.Workspace; operations = distanceExpansion.Operations;
+        }
         if (operations.Any(o=>o.Module != "rules")) ValidateArmorFamilies(workspace, operations);
         if (weaponWorkspace is not null)
         {
@@ -309,6 +316,8 @@ public sealed class UnitApplyPlanner(
         if(strategic is not null)StrategicPackEditing.Plan(strategic,operations,plannedFiles);
         DivisionText.Plan(root, divisionWorkspace, operations, currentDrafts.Operations, plannedFiles);
         workspace.Rules?.Terrain.Plan(operations, plannedFiles);
+        if (distanceExpansion is not null) DamageDistance.Append(root, distanceExpansion, plannedFiles);
+        if (operations.Any(o => o.TargetKind == DraftTargetKind.DamageRule)) workspace.Rules!.Damage.Plan(operations, plannedFiles);
         var experienceEdits = operations.Any(o => o.TargetKind == DraftTargetKind.ExperienceLevel) ? workspace.Rules!.Experience : null;
         var finalExperience = experienceEdits?.Plan(operations, plannedFiles);
         var experience = operations.Any(o=>o.FieldKey=="experience.type") ? ExperienceCatalog.Load(root) : null;
@@ -321,6 +330,9 @@ public sealed class UnitApplyPlanner(
         if (finalExperience is not null && operations.Any(o => o.TargetKind is DraftTargetKind.UnitRename or DraftTargetKind.UnitDelete))
             finalExperience = Rules.ExperienceWorkspace.Load(root, plannedFiles.Where(f => f.Kind == FormalTextFileKind.Ndf).ToDictionary(f => f.RelativePath, f => Encoding.UTF8.GetString(f.CandidateBytes), StringComparer.OrdinalIgnoreCase));
         if(operations.Any(o=>o.TargetKind is DraftTargetKind.UnitRename or DraftTargetKind.UnitDelete)) UnitLifecycleValidation.Validate(root,plannedFiles);
+        if (distanceExpansion is not null) DamageDistance.ValidateFinal(new Rules.DamageWorkspace(root, plannedFiles), damageOperations, distanceExpansion);
+        var aviationDependencies = AviationMovement.ValidateFinal(root, workspace.Units, operations, plannedFiles);
+        foreach (var dependency in aviationDependencies) pictureDependencies[dependency.Key] = dependency.Value;
         var backupId = CreateBackupId("apply");
         UnitCreationHistory.Plan(root,operations,plannedFiles,backupId);
         var preparedUtc = DateTimeOffset.UtcNow;
@@ -365,7 +377,7 @@ public sealed class UnitApplyPlanner(
             preparedUtc,
             allOperations.ToArray(),
             plannedFiles,
-            validation.ToArray()) { PictureReadDependencies = pictureDependencies, ReadDependencies = experience?.Dependencies ?? new(), ExperienceReview = experienceEdits?.Review(operations), UnitReadDependencies = unitReview, DraftReview = reviewInputs ? currentDrafts.Operations.ToArray() : null };
+            validation.ToArray()) { PictureReadDependencies = pictureDependencies, ReadDependencies = experience?.Dependencies ?? new(), ExperienceReview = experienceEdits?.Review(operations), UnitReadDependencies = unitReview, DraftReview = reviewInputs || operations.Any(o => AviationMovement.IsField(o.FieldKey) || o.GroupId?.StartsWith("aviation-speed:", StringComparison.Ordinal) == true) ? currentDrafts.Operations.ToArray() : null };
     }
 
     internal static string CreateBackupId(string prefix) =>
@@ -397,7 +409,8 @@ public sealed class UnitApplyPlanner(
                 DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity or DraftTargetKind.DivisionText => "divisions",
                 DraftTargetKind.StrategicPlan => "strategic",
                 DraftTargetKind.StrategicPack => "sp",
-                DraftTargetKind.GlobalRule or DraftTargetKind.ExperienceLevel or DraftTargetKind.TerrainField => "rules",
+                DraftTargetKind.GlobalRule or DraftTargetKind.ExperienceLevel or DraftTargetKind.TerrainField or DraftTargetKind.DamageRule => "rules",
+                DraftTargetKind.DamageDistance => "ammo",
                 _ => "units"
             };
             if (!string.Equals(operation.Module, expectedModule, StringComparison.Ordinal) ||

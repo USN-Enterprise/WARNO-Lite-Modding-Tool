@@ -1,4 +1,4 @@
-﻿设置|Settings
+设置|Settings
 常规|General
 外观|Appearance
 关于|About
@@ -1459,3 +1459,190 @@ AI 难度|AI difficulty
 补建弹药字段需要专业模式|Adding omitted Ammo fields requires Professional mode.
 请选择当前 Mod 的有效候选|Select a valid choice from this Mod.
 请选择当前 Mod 的已有标签|Select tags already used in this Mod.
+伤害与抗性规则|Damage and resistance rules
+打开伤害与抗性规则|Open damage and resistance rules
+按家族与档位编辑物理或压制系数；共享阶梯修改会影响全部引用。|Edit physical or suppression coefficients by family and index. Shared steps affect all references.
+使用勾选弹药；未勾选时使用当前弹药|Use checked ammunition, or the current ammunition if none is checked.
+伤害与抗性矩阵|Damage and resistance matrix
+距离规则与伤害查询|Distance rules and damage lookup
+伤害系数查询|Damage coefficient lookup
+伤害家族|Damage family
+抗性家族|Resistance family
+攻击档位|Attack index
+抗性档位|Resistance index
+原值|Original
+草稿值|Draft
+预览值|Preview
+共享距离规则|Shared distance rules
+共享规则作用于所有匹配对象，包括双方单位。这里只保存草稿，正式应用与备份在草稿中心完成。|Shared rules affect all matching objects, including units on both sides. Save drafts here; apply and back up from the draft center.
+按伤害家族和抗性家族选择单元|Select cells by damage and resistance family
+系数允许大于 1；0 表示此矩阵项为零。未知表达式只读。按住 Ctrl 或 Shift 可多选，批量计算从当前草稿值继续。|Coefficients may exceed 1; zero means a zero matrix entry. Unknown expressions are read-only. Use Ctrl or Shift to select multiple cells. Calculations start from current draft values.
+计算方式|Operation
+设为|Set to
+乘以|Multiply by
+增加|Add
+下限（可选）|Minimum (optional)
+上限（可选）|Maximum (optional)
+保留零值|Preserve zeros
+全选当前表格|Select all cells shown
+计算预览|Calculate preview
+撤销所选单元草稿|Undo selected cell drafts
+涉及的家族引用（含间接与全局定义）|Family references, including indirect and global definitions
+输入已变化，请重新计算预览。|Inputs changed. Calculate a new preview.
+已选单元|Selected cells
+当前状态不能编辑，请处理草稿冲突或切换专业模式。|Editing is unavailable. Resolve draft conflicts or switch to Professional mode.
+请先选择单元|Select cells first.
+请先计算预览|Calculate a preview first.
+预览变化|Changed cells
+零值变为非零|Zero to nonzero
+非零变为零|Nonzero to zero
+已撤销草稿|Draft undone
+编辑共享距离阶梯|Edit a shared distance step
+修改本体会影响下列全部引用。仅调整某些弹药或单位，请从弹药页或武器页进入距离编辑器。|Editing the shared definition affects all references below. To change selected ammunition or units, open the distance editor from the ammunition or weapons page.
+距离间隔（GRU 原值）|Distance interval (raw GRU)
+每阶变化量（AP）|Change per step (AP)
+改变间隔时保持 Arme.Index 不变，远距离结果也可能变化；此处不自动补偿最大射程穿深。|Arme.Index stays unchanged when the interval changes, so long-range results may change. Penetration at maximum range is not automatically preserved.
+完整引用链（含全局定义）|Full reference chain, including global definitions
+请选择距离规则|Select a distance rule.
+有尚未加入草稿的输入，是否放弃并关闭？|Some inputs have not been saved as drafts. Discard them and close?
+诊断|Diagnostics
+原距离规则|Original distance rule
+原值（GRU / AP）|Original (GRU / AP)
+草稿或预览（GRU / AP）|Draft or preview (GRU / AP)
+影响单位数|Affected units
+距离规则|Distance rules
+调整所选弹药的距离阶梯|Adjust distance steps for selected ammunition
+弹药本体：影响所选弹药的全部使用者；其他弹药保留原阶梯。|Ammunition scope: affects all users of the selected ammunition. Other ammunition keeps its original step.
+单位范围：仅所列单位使用修改后的弹药和阶梯，其他单位保持原值。|Unit scope: only the listed units receive the modified ammunition and steps. Other units retain their original values.
+保持现有引用，按范围独立调整|Keep current reference and edit within this scope
+使用已有距离规则|Use an existing distance rule
+批量时 AP 留空会保留各自的当前值。选择已有规则会直接引用其当前参数；需要修改共享本体请到游戏规则页。|Leave AP blank to retain each target's current value. Selecting an existing rule uses its current parameters. Edit the shared definition on the game rules page.
+普通模式仅调整已识别动能穿甲弹的间隔；每阶变化量保持不变。其他家族和引用切换在专业模式处理。|Basic mode edits intervals for recognized kinetic AP ammunition and keeps each step's AP unchanged. Other families and reference changes require Professional mode.
+撤销此范围距离草稿|Undo distance drafts in this scope
+完整单位影响范围|All affected units
+所选弹药的直接引用（基线）|Selected ammunition: direct references (baseline)
+无法识别现有阶梯|Current step cannot be resolved
+所选范围含普通模式不支持的弹药；请缩小选择或使用专业模式。|This selection includes ammunition unsupported in Basic mode. Reduce the selection or use Professional mode.
+普通模式不支持此弹药|This ammunition requires Professional mode
+预览已完成；确认目标和影响范围后加入草稿。|Preview ready. Review the targets and scope, then add to drafts.
+弹药对目标单位的静态系数|Static coefficient against a target unit
+按当前正式文件查询，不包含未应用草稿。系数不是最终伤害，不计距离、命中、压制映射或掩护带来的抗性切换。|Looks up current formal files, excluding unapplied drafts. This coefficient is not final damage. It excludes distance, hit rolls, suppression mappings and resistance changes from cover.
+攻击弹药|Attacking ammunition
+目标部位|Target side
+正面|Front
+侧面|Sides
+后方|Rear
+顶部|Top
+当前组合无法查询|This combination cannot be resolved
+矩阵系数|Matrix coefficient
+请输入有限数值|Enter a finite number.
+请输入有限非负数值|Enter a finite non-negative number.
+下限不能大于上限|Minimum must not exceed maximum.
+未知计算方式|Unknown calculation operation.
+距离间隔与每阶变化量必须为正数；特殊规则暂不支持|Interval and AP per step must be positive. Special steps are not supported.
+伤害矩阵缺失或不唯一|The damage matrix is missing or ambiguous.
+伤害家族重复或档位数无效|Duplicate families or invalid index counts.
+家族注册与矩阵顺序不一致|Family registration does not match matrix order.
+伤害矩阵不是直接数组|The damage matrix is not a direct array.
+伤害矩阵行数与档位数不一致|Matrix rows do not match damage index counts.
+伤害矩阵列数与抗性档位数不一致|Matrix columns do not match resistance index counts.
+距离规则作用域不兼容|The distance rule is incompatible with this scope.
+伤害规则草稿格式无效|Invalid damage rule draft format.
+伤害矩阵结构已变化|The damage matrix structure has changed.
+距离规则基线已变化|The distance rule baseline has changed.
+距离规则字段基线已变化|A distance rule field baseline has changed.
+未知伤害规则操作|Unknown damage rule operation.
+伤害规则候选回读不一致|Damage rule readback did not match.
+距离草稿格式无效|Invalid distance draft format.
+弹药缺少唯一距离规则字段|Ammunition has no unique distance rule field.
+弹药距离规则字段不可编辑|The ammunition distance rule field is not editable.
+距离修改缺少单位作用域|No unit scope was selected for the distance edit.
+距离草稿对应弹药不存在|The ammunition in the distance draft no longer exists.
+弹药距离规则基线已变化|The ammunition distance rule baseline has changed.
+引用的距离规则基线已变化|The referenced distance rule baseline has changed.
+弹药原距离规则不能唯一解析|The original ammunition distance rule cannot be uniquely resolved.
+更换引用和修改共享规则须分别处理|Changing a reference and editing a shared definition are separate operations.
+距离修改作用域无效|Invalid distance edit scope.
+距离修改单位引用已变化|Unit references in the distance edit have changed.
+距离规则重名：{0}|Duplicate distance rule: {0}
+缺少唯一参数：{0}|Missing or ambiguous parameter: {0}
+伤害家族计数表格式不支持：{0}|Unsupported family count table: {0}
+家族名称注册缺失或不唯一：{0}|Missing or ambiguous family registration: {0}
+家族ID与矩阵顺序不一致：{0}|Family ID does not match matrix order: {0}
+伤害矩阵字段基线已变化：{0}|Matrix cell baseline changed: {0}
+最终距离规则引用无法解析：{0}|Final distance rule reference cannot be resolved: {0}
+距离规则引用|Distance rule reference
+由距离规则编辑器维护|Managed by the distance rule editor
+独立距离规则|Independent distance rule
+伤害与抗性共享规则；所有匹配对象（双方）适用|Shared damage and resistance rules affect all matching objects on both sides.
+独立距离规则；未选弹药保留原共享配置|Independent distance rules; unselected ammunition keeps the shared originals.
+此范围已有专业引用草稿，请先应用、撤销或在专业模式处理。|This scope has a Professional reference draft. Apply it, undo it, or edit it in Professional mode.
+当前阶梯有未保存输入，是否放弃并切换？|This step has unsaved inputs. Discard them and switch?
+正在读取伤害规则与引用…|Loading damage rules and references…
+伤害规则已加载|Damage rules loaded
+数值小于当前编辑精度，请保留原值|This number is below the supported editing precision. Keep the original value.
+档位范围|Index range
+留空表示本家族全部档位|Leave blank for all indices in this family.
+档位范围必须在当前家族边界内|Index ranges must stay within the current family.
+
+修改记录与还原|Change records and restore
+
+固定翼飞行|Fixed-wing flight
+直升机飞行|Helicopter flight
+飞行高度|Flight altitude
+最低飞行高度|Minimum flight altitude
+固定翼运动速度|Aircraft movement speed
+转弯半径|Turning radius
+飞机俯仰角|Aircraft pitch angle
+飞机滚转角|Aircraft roll angle
+滚转速度|Roll rate
+撤离角度|Evacuation angle
+直升机飞行高度|Helicopter flight altitude
+近地飞行高度|Near-ground altitude
+直升机运动速度|Helicopter movement speed
+上升速度|Climb speed
+常态飞行高度；攻击机动可改变高度，不代表独立入场高度|Normal flight altitude; attack maneuvers can change altitude. This is not a separate entry-altitude setting.
+最低高度参数，不能高于常态飞行高度；不等于固定投弹高度|Minimum altitude must not exceed normal flight altitude. It is not a fixed bombing altitude.
+通过最大速度入口与通用速度一起修改|Edited together with generic speed through the maximum-speed control.
+机动半径参数，不是固定转弯用时|Maneuver radius, not a fixed turn duration.
+飞机运动俯仰角参数，不等于固定投弹俯冲角|Aircraft pitch parameter, not a fixed dive-bombing angle.
+飞机运动滚转角参数|Aircraft roll-angle parameter.
+飞机滚转角速度|Aircraft roll angular speed.
+撤离运动角度；撤离高度在游戏规则中调整|Evacuation angle; evacuation altitude is edited in Game rules.
+直升机常态飞行高度|Normal helicopter flight altitude.
+不能高于常态飞行高度；实际近地飞行还受地形规则影响|Must not exceed normal flight altitude. Near-ground flight also depends on terrain rules.
+直升机上升速度参数|Helicopter climb-speed parameter.
+修改时同步通用与航空运动速度；恢复基线时保留原有速度差异|Edits synchronize generic and aircraft movement speeds. Reset restores each original value.
+航空速度关联字段缺失、多义或不是直接数值，无法安全同步|Linked aircraft speed fields are missing, ambiguous, or not numeric literals; synchronization is unavailable.
+航空速度必须大于零|Aircraft speed must be greater than zero.
+航空速度、转弯半径和角速度必须大于零|Aircraft speeds, turn radius and roll rate must be greater than zero.
+航空关联值不是直接有限数值，不能确认组合结果|A related aviation value is not a finite numeric literal; the final combination cannot be verified.
+最低/近地飞行高度不能高于常态飞行高度：{0}|Minimum / near-ground altitude cannot exceed normal flight altitude: {0}
+航空速度必须与通用速度同时修改并保持一致：{0}|Aircraft and generic speeds must be edited together and agree: {0}
+飞机高度须满足最低高度 ≤ 常态高度 ≤ 当前Mod最大高度：{0}|Aircraft altitude must satisfy minimum ≤ normal ≤ the current Mod maximum: {0}
+{0}：最大速度同时修改通用与航空运动速度|{0}: maximum speed updates both generic and aircraft movement speeds.
+飞机高度字段缺失或多义：{0}|Aircraft altitude field is missing or ambiguous: {0}
+无法确认当前Mod的飞机运动模板；高度修改未应用|The current Mod aircraft movement template cannot be verified; altitude changes were not applied.
+飞机运动模板类型不受支持|Unsupported aircraft movement template type.
+飞机运动模板不唯一|Aircraft movement template is ambiguous.
+飞机高度模板映射不受支持|Unsupported aircraft altitude template mapping.
+飞机最大高度缺失或多义|Aircraft maximum altitude is missing or ambiguous.
+飞机最大高度引用不受支持，不能确认上限|Unsupported aircraft maximum-altitude reference; the limit cannot be verified.
+飞机最大高度常量缺失、多义或不是直接数值|Aircraft maximum-altitude constant is missing, ambiguous, or not a numeric literal.
+还原后的航空字段不唯一或不是直接数值：{0}|Restored aviation fields are ambiguous or not numeric literals: {0}
+飞行高度（GRU）|Flight altitude (GRU)
+最低飞行高度（GRU）|Minimum flight altitude (GRU)
+固定翼运动速度（km/h）|Aircraft movement speed (km/h)
+转弯半径（GRU）|Turning radius (GRU)
+飞机俯仰角（°）|Aircraft pitch angle (°)
+飞机滚转角（°）|Aircraft roll angle (°)
+滚转速度（°/s）|Roll rate (°/s)
+撤离角度（°）|Evacuation angle (°)
+直升机飞行高度（GRU）|Helicopter flight altitude (GRU)
+近地飞行高度（GRU）|Near-ground altitude (GRU)
+直升机运动速度（km/h）|Helicopter movement speed (km/h)
+上升速度（km/h）|Climb speed (km/h)
+正在保存草稿...|Saving draft...
+目标 Unit 中不存在唯一对应结构|The target Unit has no unique matching structure.
+直接显示已解析值|Parsed value, without conversion.
+最终飞机高度对象无法完整定位，修改未应用|Final aircraft altitude objects could not all be located; changes were not applied.

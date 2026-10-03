@@ -38,7 +38,7 @@
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="290" Margin="0,0,12,0">
                     <TextBlock Text="{Binding ProjectName}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding ProjectPath}"/>
-                    <TextBlock Text="1.9.20" Foreground="{DynamicResource MutedTextBrush}" FontSize="11"/>
+                    <TextBlock Text="2.10.1" Foreground="{DynamicResource MutedTextBrush}" FontSize="11"/>
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
@@ -82,6 +82,7 @@
 
                                     <Button Content="{l:Loc Key='自动查找 Mod'}" Click="FindMods_Click" IsEnabled="{Binding CanOpenProject}" Padding="12,8" Margin="0,0,0,8"/>
                                     <Button x:Name="ModToolsOpenProjectButton" Content="{l:Loc Key='打开 Mod 文件夹'}" Style="{StaticResource PrimaryButton}" Padding="12,8" IsEnabled="{Binding CanOpenProject}" Click="OpenProject_Click" />
+                                    <Button Content="{l:Loc Key='修改记录与还原'}" Style="{StaticResource SecondaryButton}" Padding="12,8" IsEnabled="{Binding CanOpenProject}" Click="ChangeRecords_Click" Tag="change-records-entry" />
                                     <TextBlock Text="{l:Loc Key='选择包含 GameData 的 Mod 根目录'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="2,3,0,8" />
 
                                     <Button Content="{l:Loc Key='创建新 Mod'}"

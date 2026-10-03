@@ -41,6 +41,8 @@ public static class UnitFieldDefinitions
         ScalarDecimal("movement.deceleration", "机动与续航", "速度与操纵", "减速度", "陆地移动模块减速度系数", "TLandMovementModuleDescriptor", "MaxDecelerationGRU", "GRU"),
         ScalarDecimal("movement.turnTime", "机动与续航", "速度与操纵", "转向时间", "陆地移动模块转向时间系数", "TLandMovementModuleDescriptor", "TempsDemiTour", "秒"),
 
+        .. AviationMovement.Fields,
+
         ScalarDecimal("fuel.capacity", "机动与续航", "燃油", "燃油容量", "显示燃油量", "TFuelModuleDescriptor", "FuelCapacity", null),
         ScalarDecimal("fuel.duration", "机动与续航", "燃油", "可持续移动时间", "实际可运行时间", "TFuelModuleDescriptor", "FuelMoveDuration", "秒"),
         ScalarDecimal("supply.capacity", "机动与续航", "补给", "补给总量", "单位携带的补给点总量；不改变补给速度或弹药消耗", "TSupplyModuleDescriptor", "SupplyCapacity", null),

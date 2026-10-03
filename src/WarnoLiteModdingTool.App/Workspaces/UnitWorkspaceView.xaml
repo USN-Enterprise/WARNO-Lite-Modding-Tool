@@ -268,7 +268,7 @@
                                                                                                 <TextBlock Foreground="{DynamicResource MutedTextBrush}" FontSize="9" TextWrapping="Wrap"><Run Text="{l:Loc Key='位置：'}" /><Run Text="{Binding SourceLocation, Mode=OneWay}" /></TextBlock>
                                                                                                 <TextBlock Foreground="{DynamicResource MutedTextBrush}" FontSize="9" TextWrapping="Wrap"><Run Text="{l:Loc Key='NDF 原值：'}" /><Run Text="{Binding RawValue, Mode=OneWay}" /></TextBlock>
                                                                                                 <TextBlock Foreground="{DynamicResource MutedTextBrush}" FontSize="9" TextWrapping="Wrap"><Run Text="{l:Loc Key='草稿目标：'}" /><Run Text="{Binding TargetRaw, Mode=OneWay}" /></TextBlock>
-                                                                                                <TextBlock Text="{Binding ConversionSource}" Foreground="{DynamicResource MutedTextBrush}" FontSize="9" TextWrapping="Wrap" />
+                                                                                                <TextBlock Text="{l:LocalizedBinding Path=ConversionSource}" Foreground="{DynamicResource MutedTextBrush}" FontSize="9" TextWrapping="Wrap" />
                                                                                             </StackPanel></StackPanel>
                                                                                     </Border>
                                                                                 </DataTemplate>

@@ -50,7 +50,7 @@ public sealed class DraftStore : IDisposable
                 var json = await File.ReadAllTextAsync(DraftPath, cancellationToken);
                 var document = JsonSerializer.Deserialize<DraftDocument>(json, JsonOptions)
                     ?? throw new JsonException("草稿内容为空。");
-                if (document.SchemaVersion is not (1 or 2 or 3))
+                if (document.SchemaVersion is not (1 or 2 or 3 or 4 or 5))
                 {
                     _blocked = true;
                     return new DraftLoadResult(
@@ -193,7 +193,8 @@ public sealed class DraftStore : IDisposable
             || o.TargetKind == DraftTargetKind.WeaponStructure && Weapons.WeaponStructure.Read(o).AmmoFields.Values.Any(f => f.Keys.Any(Weapons.AmmoProfessional.RequiresV3))
             || o.TargetKind == DraftTargetKind.UnitCreate && Units.UnitCreation.Read(o).WeaponStructures.Any(s => s.AmmoFields.Values.Any(f => f.Keys.Any(Weapons.AmmoProfessional.RequiresV3)))
             || o.TargetKind == DraftTargetKind.WeaponBatch && Weapons.WeaponBatch.ReadCells(o).Any(c => c.InsertAmmoField || Weapons.AmmoProfessional.RequiresV3(c.Key)));
-        return new(Math.Max(_document.SchemaVersion, ammo ? 3 : advanced ? 2 : 1), DateTimeOffset.UtcNow, operations);
+        var aviation = operations.Any(o => Units.AviationMovement.IsField(o.FieldKey) || o.GroupId?.StartsWith("aviation-speed:", StringComparison.Ordinal) == true || o.TargetKind == DraftTargetKind.UnitCreate && Units.UnitCreation.Read(o).Fields.Keys.Any(k => Units.AviationMovement.IsField(k) || k == Units.AviationMovement.Speed));
+        return new(Math.Max(_document.SchemaVersion, aviation ? 5 : operations.Any(o => o.TargetKind is DraftTargetKind.DamageRule or DraftTargetKind.DamageDistance) ? 4 : ammo ? 3 : advanced ? 2 : 1), DateTimeOffset.UtcNow, operations);
     }
 
     private async Task SaveCandidateAsync(DraftDocument candidate, CancellationToken cancellationToken)

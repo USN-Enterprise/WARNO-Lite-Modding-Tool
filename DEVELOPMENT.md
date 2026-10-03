@@ -6,7 +6,7 @@
 
 ## 开发环境
 
-本文对应根目录的 **1.9.20 / .NET 8 / WPF** 工程。普通用户请下载便携包并阅读[使用教程](使用教程.md)，不需要安装开发工具。
+本文对应根目录的 **2.10.1 / .NET 8 / WPF** 工程。普通用户请下载便携包并阅读[使用教程](使用教程.md)，不需要安装开发工具。
 
 - Windows 与 Microsoft .NET 8 x64 SDK。
 - NuGet 依赖：ZstdSharp.Port 0.8.8，用于解码本机游戏图片，采用 [MIT 许可证](licenses/ZstdSharp-MIT.txt)。首次还原需能访问 NuGet.org，或具备所需包的本地缓存。
@@ -53,7 +53,7 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 - 按当前实现更新两份教程，同步步骤、作用域和限制；教程描述当前能力，版本变化集中写入发布说明。
 - README 保留短流程和文档入口，不再逐版本累加操作说明。
-- 当前教程面向 1.x 活动工程，不将其他实验工程的依赖或功能写入其使用说明。
+- 当前教程面向根目录活动工程（现为 2.10.1），不将封存 v2 等实验工程的依赖或功能写入其使用说明。
 
 ---
 
@@ -61,7 +61,7 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 ## Development environment
 
-This document covers the root **1.9.20 / .NET 8 / WPF** project. End users should download the portable release and read the [user guide](USER_GUIDE.md); developer tools are not required.
+This document covers the root **2.10.1 / .NET 8 / WPF** project. End users should download the portable release and read the [user guide](USER_GUIDE.md); developer tools are not required.
 
 - Windows and the Microsoft .NET 8 x64 SDK.
 - NuGet dependency: ZstdSharp.Port 0.8.8, used to decode local game images under the [MIT license](licenses/ZstdSharp-MIT.txt). Initial restore requires NuGet.org access or a local cache containing the required packages.
@@ -108,4 +108,4 @@ Public user documents live at the root and belong in version control; internal `
 
 - Update both guides together, including steps, scope and limits. Guides describe current behavior; release notes record changes by version.
 - Keep the README focused on the short workflow and navigation instead of appending version-specific instructions.
-- These guides cover the active 1.x project; keep experimental projects' dependencies and features separate.
+- These guides cover the active root project (now 2.10.1); keep the archived v2 and other experimental projects' dependencies and features separate.

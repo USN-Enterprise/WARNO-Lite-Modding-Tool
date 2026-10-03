@@ -62,6 +62,14 @@ public sealed class RulesView : UserControl
                 list.Children.Add(ExperienceRulesView.Build(vm, _expanded));
             if (vm.Category is "全部" or "地形规则" || vm.Search.Length > 0)
                 list.Children.Add(TerrainRulesView.Build(vm, _expanded));
+            if (Advanced.EditorMode.IsAdvanced && (vm.Category is "全部" or "伤害与抗性规则" || vm.Search.Length > 0))
+            {
+                var damage=new StackPanel{Margin=new Thickness(12)};
+                damage.Children.Add(DamageUi.Text("按家族与档位编辑物理或压制系数；共享阶梯修改会影响全部引用。",true));
+                damage.Children.Add(DamageUi.AsyncButton("打开伤害与抗性规则",()=>vm.OpenDamageAsync(Window.GetWindow(this)),e=>MessageBox.Show(Window.GetWindow(this),UiText.T(e.Message),UiText.T("伤害与抗性规则")),"damage-rules-open"));
+                var entry=new Expander{Header=RulePresentation.Heading(UiText.T("伤害与抗性规则"),"RuleCategoryHeading"),Content=damage,IsExpanded=vm.Category=="伤害与抗性规则",Margin=new Thickness(0,0,0,8),Padding=new Thickness(8)};
+                entry.SetResourceReference(BackgroundProperty,"SurfaceBrush");list.Children.Add(entry);
+            }
         }
         _observed=vm.View;_render=(_,_)=>{if(IsVisible)Render();else RequestBuild();};_observed.CollectionChanged+=_render;Render();
         panel.Children.Add(new ScrollViewer{Content=list,VerticalScrollBarVisibility=ScrollBarVisibility.Auto});Content=panel;

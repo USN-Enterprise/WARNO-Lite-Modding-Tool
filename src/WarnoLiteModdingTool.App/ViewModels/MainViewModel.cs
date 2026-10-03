@@ -604,7 +604,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
                 _draftStore = new DraftStore(context.Layout.RootPath);
                 var draftLoad = await _draftStore.LoadAsync(scanCancellation.Token);
-                await Task.Run(() => snapshot.Units.Rules?.Experience.PrepareDrafts(_draftStore.Operations), scanCancellation.Token);
+                await Task.Run(() => { snapshot.Units.Rules?.Experience.PrepareDrafts(_draftStore.Operations); if(_draftStore.Operations.Any(o=>o.TargetKind is DraftTargetKind.DamageRule or DraftTargetKind.DamageDistance))_ = snapshot.Units.Rules?.Damage; }, scanCancellation.Token);
                 scanCancellation.Token.ThrowIfCancellationRequested();
                 if (draftLoad.Error is not null)
                 {
@@ -977,7 +977,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         view.SortDescriptions.Add(new SortDescription(nameof(NdfObjectInfo.CharacterOffset), ListSortDirection.Ascending));
         }
         ObjectsView = view;
-        SelectedModule = Modules.FirstOrDefault(module => module.Key != "problems" && module.CanBrowse) ?? _problemModule;
+        SelectedModule = Modules.FirstOrDefault(module => module.Key is "units" or "weapons" or "ammo" && module.CanBrowse)
+            ?? Modules.FirstOrDefault(module => module.Key != "problems" && module.CanBrowse) ?? _problemModule;
         RefreshFilter();
     }
 

@@ -274,6 +274,20 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
             () => { _transactions.RefreshExternalDraftState(); RebuildFields(); }) { Owner = owner };
         window.ShowDialog();
     }
+    public async Task OpenDamageAsync(System.Windows.Window owner)
+    {
+        await FlushAsync();
+        if(_transactions.IsTransactionBusy)throw new InvalidOperationException("事务处理中，暂时不能修改草稿。");
+        var ammo=_data.Ammo(SelectedMount?.Mount.AmmoName??"")??throw new InvalidOperationException("请先选择弹药");
+        var scope=ToScope();
+        IReadOnlyList<string> units=scope==DraftEditScope.AllReferences?[]:scope==DraftEditScope.CurrentUnit?[SelectedUnit?.InternalName??""]:
+            Units.Where(u=>u.IsWeaponScopeSelected).Select(u=>u.InternalName).ToArray();
+        _setStatus("正在读取伤害规则与引用…");
+        var damage=await Task.Run(()=>{var data=_transactions.Data.Rules!.Damage;_ = data.FullReferences();return data;});
+        _setStatus("伤害规则已加载");
+        new Controls.DamageAmmoWindow(damage,_data,_draftStore,[ammo],scope,units,
+            ()=>{_transactions.RefreshExternalDraftState();RebuildFields();}){Owner=owner}.ShowDialog();
+    }
     public async Task OpenStructureAsync(System.Windows.Window owner)
     {
         await FlushAsync();

@@ -14,6 +14,15 @@ public sealed record RuleGroup(RuleDefinition Definition, IReadOnlyList<RuleCell
 public sealed class RuleWorkspace(string root, IReadOnlyList<RuleGroup> groups)
 {
     public string Root { get; } = root;
+    private DamageWorkspace? _damage;
+    private readonly object _damageGate=new();
+    public DamageWorkspace Damage { get { lock(_damageGate)return _damage ??= new(Root); } }
+    // Rules are memoized, while this graph is loaded later outside that memo's dependency scope.
+    // Keep its lifetime within a single workspace generation so an apply cannot reuse stale damage data.
+    internal RuleWorkspace NewSession()
+    {
+        var session=(RuleWorkspace)MemberwiseClone();session._damage=null;return session;
+    }
     public TerrainWorkspace Terrain { get; } = TerrainWorkspace.Load(root);
     public ExperienceWorkspace Experience { get; } = ExperienceWorkspace.Load(root);
     public IReadOnlyList<RuleGroup> Groups { get; } = groups;

@@ -1,10 +1,66 @@
-﻿# WARNO Lite Modding Tool 发布说明
+# WARNO Lite Modding Tool 发布说明
 
 [中文](#chinese) | [English](#english)
 
 <a id="chinese"></a>
 
 仅列出功能更新和影响使用的问题修复。
+
+## 2.10.1 — 2026-10-03
+
+- 单位“机动与续航”新增固定翼高度、最低高度、转弯半径、俯仰、滚转、滚转速度、撤离角度，以及直升机飞行／近地高度和上升速度；复杂姿态参数置于专业模式。
+- 航空最大速度沿用原入口，同步通用与航空运动模块，支持单项、批量、组合草稿和恢复原有差异；未应用草稿不修改正式Mod。
+- 应用前核对高度组合、当前Mod上限、字段基线和关联草稿。含航空编辑的草稿升级为schema5，旧草稿仍可读取；旧版拒读新格式。新字段支持2.10修改记录的统一数值还原，并验证航空组合。
+- 沿用2.10-preview.6修改记录与还原能力。独立入场高度、攻击策略和全局高度编辑不在本次范围；未验证游戏内效果。
+
+## 2.10-preview.6 — 2026-10-03
+
+- 支持已有具名对象内已知标量字段的独立行新增/删除：新增按记录原值，删除核对新版行，已满足不重复插入；已有数值仍使用统一方式。
+- 可与既有数值、MAP及词典还原组合，保留新版无关字段、换行、缩进和注释；明细列出增删原值、结果和完整字段路径，继续支持独立打开记录、应用、重开识别和恢复。
+- 修改包、回执及核对进度格式不变。按本轮要求优先常见修改，复杂模块/引用/身份适配和少见冲突继续暂缓；已有写入与备份保护保持。
+
+## 2.10-preview.5 — 2026-10-01
+
+- 已知 NDF 字符串／枚举冲突接入逐项“保留新版内容／使用记录内容”，覆盖已有具名对象的国家、角色、阵营和生产栏位；多个冲突分别处理，原有统一数值方式保持。
+- 选择绑定字段和完整三方原文，目标变化后旧选择失效；引用、注册身份、未知字段及结构变化不能强行套用。保留新版继续明确显示为原修改未还原，支持保存进度、关闭重开和备份恢复。
+- 含 NDF 选择时使用第4版回执、第2版核对进度，旧格式继续读取，便携修改文件格式不变。请用本版或之后兼容版本管理新回执／进度；其余操作继续沿用原版本。
+- 界面统一为内容/冲突术语，显示所选字段全路径，窗口缩小时保持所选明细可见。复杂身份适配与自动重编号仍未实现，官方生成和游戏效果未验证。
+
+## 2.10-preview.4 — 2026-10-01
+
+- 新增已知数量 MAP 的按键还原：混合数值修改、新增和删除；已有值使用全局方式，新增键保持原值，删除前核对新版，保留其他新版键与原文。
+- 支持独立行条目的增删、末项逗号、目标换行/缩进及已满足识别；未知键、复杂结构、占用或新版改过的删除项继续阻止整组写入。
+- 明细显示 MAP 增删、完整字段路径和冲突原值；对象对应失败时保留已获得的数值明细。UnitIds/DivisionIds 明确作为注册身份，不参与数量计算，注册编号及已知 MAP 重复检查补齐。
+- 包、核对进度和回执格式沿用上一版。MAP结构变化仍整体处理，不开放自动重编号、复杂列表/模块适配；未运行官方生成、游戏或上传发布。
+
+## 2.10-preview.3 — 2026-10-01
+
+- TOKEN 词典按文本列合并，保留新版其他语言、行顺序、换行及编码；同一格双方均改时可明确选择保留新版或使用记录文本。
+- 保留新版的文本单独显示为原修改未还原，处置写入第3版回执，支持重开核对与备份恢复；不增加逐字段数值模式。
+- 新增“核对与进度”：主动保存/读取尚未应用的对应、暂缓和文本选择。每次保存保留旧快照，目标或回执改变时拒绝沿用过期选择。
+- 保持单文件修改格式及旧回执读取；本版处理的目标需本版或之后兼容版本管理。改善窄窗口与缩放下的冲突明细。复杂机制适配和自动重编号未实现，官方生成及游戏效果未验证。
+
+## 2.10-preview.2 — 2026-10-01
+
+- 新增“选择对应对象”：已有对象改名或移动后，对完全可解释的已知数值修改，从目标Mod选择同类型候选并重新预览；新版身份、引用和无关内容保持。
+- 新增按依赖组暂缓、纳入和部分还原后继续。仅已知数值变化可拆组，结构、资源和未知关系保持整体；已应用组不重算，剩余工作和已应用对应写入第2版回执。
+- 继续读取preview.1修改文件与旧回执；备份按从新到旧恢复，外部变化或另一包/数值方式阻止沿用旧基础继续。后续批次失败不会撤掉先前成功批次。
+- 补齐数值计算冲突的原值展示，修正外部修改后误报完整应用。未自动重编号，未运行官方生成、游戏或上传发布。
+
+## 2.10-preview.1 — 2026-10-01
+
+- 新增“修改记录与还原”：读取已有Mod与指定基础／官方base.zip，对全部纳入文件提取净差异，导出独立`.wlmtchanges`文件并重新读取，包含原文、资源及新增／删除。
+- 全包统一选择比例或增减；可对新版基础预览已支持数值、对象和TOKEN词典的还原，保留新版无关内容。未知结构或基线不足明确显示，不静默遗漏。
+- 接入整包事务、备份恢复、外部修改检查和重复应用保护。中英文、双主题及窄窗口实际操作已检查。
+- 当前为本地预览，复杂对象映射、编号重分配和依赖组部分应用未开放；未执行官方生成或游戏验收，不调用UpdateMod。
+
+## 1.9.21 — 2026-09-29
+
+- 新增武器/弹药“距离规则与伤害查询”：普通模式改已识别动能 AP 弹的距离间隔，专业模式可改每阶 AP 或选择已有阶梯。175→500 等修改按所选范围隔离必要引用。
+- 专业游戏规则新增伤害/抗性矩阵与共享距离阶梯：支持物理及压制族、单格/档位范围、固定值/乘加/上下限、保零、变动预览及完整引用链。
+- 目标单位四面抗性可查询静态系数；明确区别正式文件、未应用草稿与最终实战伤害。改变间隔不自动补偿最大射程穿深。
+- 新操作接入草稿格式 4、组合校验、备份与失败恢复；修复独立弹药项目的默认入口及应用后伤害数据刷新。基础/专业和中英文界面已验证。
+- 不扩展家族/档位结构或编辑压制映射、全局穿甲算法。未运行官方生成器或游戏验收。
 
 ## 1.9.20 — 2026-09-28
 
@@ -287,6 +343,62 @@
 [中文](#chinese) | [English](#english)
 
 Feature updates and fixes that affect everyday use.
+
+## 2.10.1 — 2026-10-03
+
+- Added fixed-wing altitude, minimum altitude, turn radius, pitch, roll, roll rate and evacuation angle, plus helicopter normal / near-ground altitude and climb speed. Advanced attitude parameters appear in Professional mode.
+- The existing maximum-speed control synchronizes generic and aircraft movement speeds, including batch edits, linked drafts and restoration of original differences.
+- Final previews validate altitude combinations, the current Mod ceiling, baselines and linked drafts. Aviation drafts use schema 5; old drafts remain readable and older versions reject the new format. New quantities participate in 2.10 numeric restoration with aviation combination checks.
+- Retains 2.10-preview.6 change-record features. Separate entry altitude, attack strategies and global ceiling editing are outside this release. In-game effects have not been verified.
+
+## 2.10-preview.6 — 2026-10-03
+
+- Added standalone additions/removals of known scalar fields inside existing named objects. New fields use recorded values, deletion checks the target line, and satisfied additions are not duplicated. Existing quantities keep the global policy.
+- Combines with existing numeric, MAP and dictionary restoration while retaining unrelated target fields, line endings, indentation and comments. Details show presence changes and full field paths; independent reopening, application receipts and recovery remain supported.
+- Portable record, receipt and review formats are unchanged. This iteration focuses on common changes; complex module/reference/identity adaptation and uncommon conflicts remain deferred. Existing write and backup protections stay in place.
+
+## 2.10-preview.5 — 2026-10-01
+
+- Known NDF string/enum conflicts now offer individual Keep target value / Use recorded value choices for country, role, coalition and factory fields in existing named declarations. Multiple conflicts are handled separately; numeric edits keep the single global policy.
+- Decisions bind the field and all three original values. Target changes invalidate them; references, registration identities, unknown fields and structural edits cannot be forced. Kept target values remain explicitly omitted recorded changes, with saved progress, reopening and recovery.
+- NDF choices use version 4 receipts and version 2 review sessions. Old formats remain readable and the portable record format is unchanged. Use this or a later compatible version for these new receipts/sessions; other operations keep their existing formats.
+- Unified content/conflict labels, full selected field paths and selection visibility after window resizing. Complex identity adaptation and automatic reassignment remain unimplemented; official generation and in-game behavior are unverified.
+
+## 2.10-preview.4 — 2026-10-01
+
+- Added stable-key restoration for known quantity MAPs, including mixed value edits, additions and removals. Existing quantities follow the global policy; added keys retain their recorded value, while removal verifies the new baseline. Unrelated target entries and text survive.
+- Supports standalone entry lines, trailing separators, target line endings/indentation and already-satisfied entries. Unknown keys, complex structures, occupied keys or changed deletion targets still block the whole group.
+- Details show MAP additions/removals, full field paths and conflict values; failed object mappings retain available numeric details. UnitIds/DivisionIds remain registration identities, with no quantity arithmetic; registration-number and known-MAP duplicate checks are extended.
+- Record, review-progress and receipt formats remain unchanged. MAP structural changes stay together. Automatic identity reassignment and complex list/module adaptation are not implemented; official generation, game testing and upload were not performed.
+
+## 2.10-preview.3 — 2026-10-01
+
+- TOKEN dictionaries merge by text column, retaining other upstream languages, row order, line endings and encoding. Concurrent edits to the same cell offer explicit keep-target or use-recorded choices.
+- Retained target text is reported as an omitted recorded change and stored in version 3 receipts, with reopening and recovery support. Numeric changes still use one global policy.
+- Added Review and progress to explicitly save/load pending mappings, deferred groups and text choices. Saves retain prior snapshots; changed target files or receipts invalidate old choices.
+- Portable record format and old-receipt reading remain compatible; targets processed by this version require this or a later compatible version. Improved conflict details at narrow sizes and scaling. Complex mechanism adaptation and automatic identity reassignment are not implemented; official generation and in-game behavior remain unverified.
+
+## 2.10-preview.2 — 2026-10-01
+
+- Added explicit object mapping for known quantity-only changes when an existing object was renamed or moved. Choose same-type candidates from the target Mod and review results; target identities, references and unrelated content stay intact.
+- Added defer/include dependency groups and partial continuation for fully understood quantity-only records. Structural, resource and unknown relationships stay together. Completed groups are not recalculated; remaining work and applied mappings are stored in version 2 receipts.
+- Continue reading preview.1 change files and receipts. Recover batches newest first; external changes or a different package/policy block continuation. Failed later batches preserve earlier successful work.
+- Fixed review details for failed numeric calculations and incorrect complete-status reporting after external edits. No automatic identifier reassignment, official generation, game execution or online publishing was performed.
+
+## 2.10-preview.1 — 2026-10-01
+
+- Added Change records and restore: compare an existing Mod against a baseline folder or official base.zip, preserve net changes including source text, resources, additions and deletions, and export/reopen one independent `.wlmtchanges` file.
+- One global ratio/difference policy; preview supported numeric, object and TOKEN-dictionary changes on a new baseline while retaining unrelated upstream content. Unknown structures and missing baseline evidence remain explicit.
+- Whole-record transactions, backups/recovery, external-change checks and duplicate-application protection. UI operations checked in both languages, two themes and narrow layouts.
+- Local preview: advanced object mapping, identifier reassignment and partial dependency-group application are not available. Official generation and in-game behavior remain unverified. UpdateMod is not invoked.
+
+## 1.9.21 — 2026-09-29
+
+- Added **Distance rules and damage lookup** to Weapons/Ammunition. Basic mode edits recognized kinetic AP intervals; Professional mode also edits AP per step or selects existing rules. Changes such as 175→500 isolate references within the selected scope.
+- Professional Game rules now edits physical/suppression matrices and shared distance steps: exact cells and index ranges, set/multiply/add/bounds, zero preservation, previews and full reference chains.
+- Static coefficients can be queried against all four armor sides of a Mod unit. Formal files, unapplied drafts and final combat damage are distinguished. Maximum-range penetration is not automatically preserved.
+- New operations use draft schema 4, combined validation, backups and failure recovery. Independent Ammo projects retain their default entry; damage data refreshes after applying. Modes and bilingual UI were verified.
+- Family/index structure expansion, suppression mapping and global penetration algorithm editing are outside this release. Official generation and in-game verification were not run.
 
 ## 1.9.20 — 2026-09-28
 

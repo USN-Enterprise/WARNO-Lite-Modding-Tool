@@ -390,6 +390,11 @@
                 <Setter Property="Margin" Value="10,0,0,0" />
             </Style>
 
+            <Style x:Key="EditorGridValueText" TargetType="TextBlock" BasedOn="{StaticResource PrimaryGridText}">
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}" />
+            </Style>
+
             <Style x:Key="IndexPrimaryGridText" TargetType="TextBlock" BasedOn="{StaticResource PrimaryGridText}">
                 <Setter Property="Margin" Value="14,0,0,0" />
             </Style>

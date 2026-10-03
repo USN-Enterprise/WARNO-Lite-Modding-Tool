@@ -9,11 +9,21 @@ public sealed class RulesWorkspaceViewModel : ObservableObject
 {
     public RulesWorkspaceViewModel(RuleWorkspace data,DraftStore store,Action changed)
     {
+        _data=data;_store=store;_changed=changed;
         Terrains = data.Terrain.Terrains.Select(t => new TerrainViewModel(t, t.Cells.Select(c => new TerrainFieldViewModel(data.Terrain, t, c, store, changed)).ToArray())).ToArray();
         TerrainDiagnostics = data.Terrain.Diagnostics;
         Groups = data.Groups.Select(g => new RuleGroupViewModel(data,g,store,changed)).ToArray();
         Experience = data.Experience.Routes.Select(r => new ExperienceRouteViewModel(r, r.Levels.Select(l => new ExperienceLevelViewModel(data.Experience, r, l, store, changed)).ToArray())).ToArray();
         View = CollectionViewSource.GetDefaultView(Groups); View.Filter = o => o is RuleGroupViewModel g && (Advanced.EditorMode.IsAdvanced || g.Group.Definition.Basic) && (Search.Length>0 || Category=="全部" || g.Group.Definition.Category==Category) && (Search.Length == 0 || (Localisation.UiText.T(g.Group.Definition.Category).Contains(Search,StringComparison.OrdinalIgnoreCase) || g.Title.Contains(Search,StringComparison.OrdinalIgnoreCase)) || g.Group.Definition.Fields.Contains(Search,StringComparison.OrdinalIgnoreCase));
+    }
+    private readonly RuleWorkspace _data;
+    private readonly DraftStore _store;
+    private readonly Action _changed;
+    public async Task OpenDamageAsync(System.Windows.Window owner)
+    {
+        await FlushAsync();
+        var damage=await Task.Run(()=>{var data=_data.Damage;_ = data.FullReferences();return data;});
+        new Controls.DamageRulesWindow(damage,_store,_changed){Owner=owner}.ShowDialog();
     }
     public IReadOnlyList<TerrainViewModel> Terrains { get; }
     public IReadOnlyList<string> TerrainDiagnostics { get; }
@@ -23,7 +33,7 @@ public sealed class RulesWorkspaceViewModel : ObservableObject
     public string Search {get;set;} = "";
     private string _category="全部";
     public string Category {get=>_category;set{if(SetProperty(ref _category,value))Refresh();}}
-    public IReadOnlyList<string> Categories {get;} = ["全部","对局设置","经济与收入","AI 难度","战斗与单位行为","后勤与补给","将军模式","空军","经验与老练度","地形规则"];
+    public IReadOnlyList<string> Categories {get;} = ["全部","对局设置","经济与收入","AI 难度","战斗与单位行为","后勤与补给","将军模式","空军","经验与老练度","地形规则","伤害与抗性规则"];
     public void Refresh() => View.Refresh();
     public void Restore() {foreach(var field in Terrains.SelectMany(t => t.Fields))field.Restore();foreach(var group in Groups)group.Restore(); foreach(var level in Experience.SelectMany(r => r.Levels))level.Restore();}
     public async Task FlushAsync()

@@ -598,7 +598,7 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
 
         try
         {
-            if (operation.GroupId?.StartsWith("vision:") == true || operation.GroupId?.StartsWith("armor:") == true)
+            if (operation.GroupId?.StartsWith("aviation-speed:") == true || operation.GroupId?.StartsWith("vision:") == true || operation.GroupId?.StartsWith("armor:") == true)
                 await _draftStore.ApplyBatchAsync([], _draftStore.Operations.Where(o => o.GroupId == operation.GroupId).Select(o => o.Id).ToArray());
             else await _draftStore.RemoveAsync(operation.Id);
             field.MarkPersisted(null, field.BaseValue, "已撤销草稿");
@@ -638,7 +638,8 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
     {
         await WaitForPendingEditsAsync();
         foreach(var creation in _draftStore.Operations.Where(o=>ids.Contains(o.Id)&&o.TargetKind==DraftTargetKind.UnitCreate).ToArray()) await UnitDraftLinks.CancelCreationAsync(_draftStore,creation);
-        await _draftStore.ApplyBatchAsync([], ids.ToArray());
+        var speedGroups = _draftStore.Operations.Where(o => ids.Contains(o.Id) && o.GroupId?.StartsWith("aviation-speed:", StringComparison.Ordinal) == true).Select(o => o.GroupId).ToHashSet();
+        await _draftStore.ApplyBatchAsync([], ids.Concat(_draftStore.Operations.Where(o => speedGroups.Contains(o.GroupId)).Select(o => o.Id)).Distinct().ToArray());
         RefreshExternalDraftState();
     }
 
@@ -799,6 +800,18 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
                 foreach(var op in linked.Upserts)fields[op.FieldKey]=op.TargetValue;
             }
             state=state with{Fields=fields};}_=UnitCreation.Project(mother,state,creation.BaselineRaw);var createOp=UnitCreation.Operation(mother,state,creation.BaselineRaw);await _draftStore.UpsertAsync(createOp);fieldViewModel.MarkPersisted(null,input,"草稿已保存");RefreshDraftState();return;}
+        if (fieldViewModel.Key == AviationMovement.Speed && AviationMovement.SpeedFields(fieldViewModel.Unit).Count > 1)
+        {
+            try
+            {
+                var linked = AviationMovement.SpeedDrafts(fieldViewModel.Unit, input);
+                await _draftStore.ApplyBatchAsync(linked.Upserts, linked.Removals);
+                if (fieldViewModel.IsCurrentEdit(input)) fieldViewModel.MarkPersisted(_draftStore.Operations.FirstOrDefault(o => o.ObjectName == fieldViewModel.Unit.Name && o.FieldKey == fieldViewModel.Key), input, "草稿已保存");
+                RefreshDraftState();
+            }
+            catch (InvalidOperationException ex) { fieldViewModel.RevertAfterFailure(ex.Message); }
+            return;
+        }
         if(fieldViewModel.Key=="armor.front.family")
         {
             var family=_data.DamageResistance.ResistanceFamilies.FirstOrDefault(f=>f.Name==NdfSyntaxDocument.Leaf(input));

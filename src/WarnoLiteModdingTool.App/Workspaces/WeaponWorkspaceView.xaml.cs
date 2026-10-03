@@ -23,6 +23,13 @@ public partial class WeaponWorkspaceView : UserControl
             catch (Exception ex) { MessageBox.Show(Window.GetWindow(this), ex.Message, Localisation.UiText.T("批量修改武器")); }
         }
     }
+    private async void Damage_Click(object sender,RoutedEventArgs e)
+    {
+        var button=(Button)sender;button.IsEnabled=false;
+        try{if(DataContext is ViewModels.MainViewModel vm && vm.WeaponWorkspace is {} workspace)await workspace.OpenDamageAsync(Window.GetWindow(this));}
+        catch(Exception ex){MessageBox.Show(Window.GetWindow(this),Localisation.UiText.T(ex.Message),Localisation.UiText.T("距离规则与伤害查询"));}
+        finally{button.IsEnabled=true;}
+    }
     private MainWindow Host => WarnoLiteModdingTool.App.Controls.FloatingPanels.Host(this);
     private void ClearDrafts_Click(object sender, RoutedEventArgs e) => Host.ClearDrafts_Click(sender, e);
     private void ClearWeaponScopeSelection_Click(object sender, RoutedEventArgs e) => Host.ClearWeaponScopeSelection_Click(sender, e);
