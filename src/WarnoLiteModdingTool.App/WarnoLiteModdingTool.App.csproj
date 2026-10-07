@@ -6,9 +6,9 @@
     <RootNamespace>WarnoLiteModdingTool.App</RootNamespace>
     <AssemblyName>WarnoLiteModdingTool</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>2.10.1</Version>
-    <FileVersion>2.10.1.0</FileVersion>
-    <InformationalVersion>2.10.1</InformationalVersion>
+    <Version>2.11.2</Version>
+    <FileVersion>2.11.2.0</FileVersion>
+    <InformationalVersion>2.11.2</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <ApplicationIcon>Assets/App.ico</ApplicationIcon>
     <AssemblyTitle>WARNO Lite Modding Tool</AssemblyTitle>
@@ -22,9 +22,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\WarnoLiteModdingTool.Core\WarnoLiteModdingTool.Core.csproj" />
+    <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\licenses\ZstdSharp-MIT.txt" Link="licenses\ZstdSharp-MIT.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\licenses\AvalonEdit-MIT.txt" Link="licenses\AvalonEdit-MIT.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\README.md" Link="README.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\使用教程.md" Link="使用教程.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\USER_GUIDE.md" Link="USER_GUIDE.md" CopyToOutputDirectory="PreserveNewest" />

@@ -129,7 +129,7 @@ StrategicConstantes is TStrategicTunableConstante (
         Assert(units.DraftItems.Any(d=>d.Resolved.Operation.TargetKind==DraftTargetKind.GlobalRule&&d.Resolved.Operation.FieldKey=="7"),"规则UI进入草稿");
         RunWithDispatcher(income.UndoAsync(),window.Dispatcher);
         Assert(income.Cells.Single().Value=="260","规则撤销恢复值");
-        vm.AdvancedMode=true;Assert(rules.View.Cast<object>().Count()==54,"专业界面增加空军四组");
+        vm.AdvancedMode=true;Assert(rules.View.Cast<object>().Count()==55,"专业界面包含距离比例尺");
         var workbench=new WarnoLiteModdingTool.App.Advanced.AdvancedWindow(vm);
         typeof(WarnoLiteModdingTool.App.Advanced.AdvancedWindow).GetMethod("LoadFields",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.Invoke(workbench,null);
         ((System.Windows.Controls.TabControl)workbench.Content).SelectedIndex=1;SaveUiSnapshot(workbench,"184-workbench.png");

@@ -31,6 +31,8 @@ public sealed class UnitApplyPlanner(
         CancellationToken cancellationToken = default)
     {
         var readSnapshot = new ProjectReadScope();
+        if (operations.Any(o => o.TargetKind == DraftTargetKind.SourceFile))
+            return await SourceWorkspace.SourceEditing.Prepare(projectRoot, operations, cancellationToken);
         using var readScope = readSnapshot.Enter();
         if (operations.Count == 0)
         {
@@ -52,7 +54,8 @@ public sealed class UnitApplyPlanner(
         var lifecycle = allOperations.Any(o=>UnitDraftLinks.Lifecycle(o)||o.TargetKind is DraftTargetKind.UnitCreate or DraftTargetKind.UnitPicture or DraftTargetKind.WeaponBatch or DraftTargetKind.WeaponStructure or DraftTargetKind.DamageDistance);
         var sharedAmmo = allOperations.Any(Batch.AmmoBatchPlanner.IsShared);
         var reviewInputs = lifecycle || sharedAmmo || allOperations.Any(o => o.InsertAmmoField || AmmoProfessional.RequiresV3(o.FieldKey) || o.TargetKind is DraftTargetKind.DivisionText or DraftTargetKind.DivisionIdentity or DraftTargetKind.TerrainField or DraftTargetKind.DamageRule or DraftTargetKind.DamageDistance);
-        var unitReview = reviewInputs ? new UnitProjectGraph(root).Dependencies : null;
+        var deletionReview = operations.Any(UnitDeletionV2.IsNew) ? new UnitProjectGraph(root, deletionScope: true) : null;
+        var unitReview = reviewInputs && deletionReview is null ? new UnitProjectGraph(root).Dependencies : null;
         var historyPath = Path.Combine(root,UnitCreationHistory.LedgerPath);
         if(unitReview is not null) unitReview[UnitCreationHistory.LedgerPath] = File.Exists(historyPath)?File.ReadAllBytes(historyPath):[];
 
@@ -327,14 +330,15 @@ public sealed class UnitApplyPlanner(
         foreach(var (path, bytes) in emblemDependencies) pictureDependencies[path] = bytes;
         UnitIdentityEditing.Plan(root,operations,plannedFiles);
         UnitDeletion.Plan(root,workspace,operations,plannedFiles);
+        var deletionResult = deletionReview is null ? null : UnitDeletionV2.Plan(root, workspace, operations, plannedFiles);
         if (finalExperience is not null && operations.Any(o => o.TargetKind is DraftTargetKind.UnitRename or DraftTargetKind.UnitDelete))
             finalExperience = Rules.ExperienceWorkspace.Load(root, plannedFiles.Where(f => f.Kind == FormalTextFileKind.Ndf).ToDictionary(f => f.RelativePath, f => Encoding.UTF8.GetString(f.CandidateBytes), StringComparer.OrdinalIgnoreCase));
-        if(operations.Any(o=>o.TargetKind is DraftTargetKind.UnitRename or DraftTargetKind.UnitDelete)) UnitLifecycleValidation.Validate(root,plannedFiles);
+        if(operations.Any(o=>o.TargetKind is DraftTargetKind.UnitRename or DraftTargetKind.UnitDelete)) UnitLifecycleValidation.Validate(root,plannedFiles, deletionResult);
         if (distanceExpansion is not null) DamageDistance.ValidateFinal(new Rules.DamageWorkspace(root, plannedFiles), damageOperations, distanceExpansion);
         var aviationDependencies = AviationMovement.ValidateFinal(root, workspace.Units, operations, plannedFiles);
         foreach (var dependency in aviationDependencies) pictureDependencies[dependency.Key] = dependency.Value;
         var backupId = CreateBackupId("apply");
-        UnitCreationHistory.Plan(root,operations,plannedFiles,backupId);
+        UnitCreationHistory.Plan(root,operations,plannedFiles,backupId, deletionResult);
         var preparedUtc = DateTimeOffset.UtcNow;
         if (weaponWorkspace is not null &&
             (weaponPlan.ValidationMessages.Count > 0 || structureMessages.Count > 0 || operations.Any(o => o.TargetKind == DraftTargetKind.UnitCreate)))
@@ -351,6 +355,12 @@ public sealed class UnitApplyPlanner(
         validation.AddRange(weaponPlan.ValidationMessages);
         validation.AddRange(structureMessages);
         validation.AddRange(divisionPlan.ValidationMessages);
+        if (deletionResult is not null)
+        {
+            validation.RemoveAll(m => m.StartsWith("NDF 对象签名") || m.StartsWith("战术默认 Deck"));
+            validation.Add("删除已检查明确目标及写入区段；共享资源保留 / Deletion target and patches checked; shared resources retained");
+            validation.AddRange(deletionResult.Warnings);
+        }
         if (lifecycle) validation.Add("单位声明、注册与能力按当前Mod引用证据校验；提交前复查输入文件及关联草稿");
         if (deleteNames.Count > 0) validation.Add("删除组中同单位的编辑草稿本次不写入，删除成功后随组清理；共享资源保留");
         if (finalExperience is not null)
@@ -377,7 +387,7 @@ public sealed class UnitApplyPlanner(
             preparedUtc,
             allOperations.ToArray(),
             plannedFiles,
-            validation.ToArray()) { PictureReadDependencies = pictureDependencies, ReadDependencies = experience?.Dependencies ?? new(), ExperienceReview = experienceEdits?.Review(operations), UnitReadDependencies = unitReview, DraftReview = reviewInputs || operations.Any(o => AviationMovement.IsField(o.FieldKey) || o.GroupId?.StartsWith("aviation-speed:", StringComparison.Ordinal) == true) ? currentDrafts.Operations.ToArray() : null };
+            validation.ToArray()) { DeletionReview = deletionReview, DeletionWarnings = deletionResult?.Warnings.ToArray() ?? [], ObservedFiles = readSnapshot.ObservedPaths, PictureReadDependencies = pictureDependencies, ReadDependencies = experience?.Dependencies ?? new(), ExperienceReview = experienceEdits?.Review(operations), UnitReadDependencies = unitReview, DraftReview = reviewInputs || operations.Any(o => AviationMovement.IsField(o.FieldKey) || o.GroupId?.StartsWith("aviation-speed:", StringComparison.Ordinal) == true) ? currentDrafts.Operations.ToArray() : null };
     }
 
     internal static string CreateBackupId(string prefix) =>

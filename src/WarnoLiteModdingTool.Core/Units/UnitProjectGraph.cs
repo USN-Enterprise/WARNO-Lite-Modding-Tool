@@ -13,6 +13,9 @@ public sealed class UnitProjectGraph
     public string Root { get; }
     public Dictionary<string, Source> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, byte[]> Dependencies { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public List<string> CoverageIssues { get; } = [];
+    public HashSet<string> UnverifiedFiles { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public string[] CatalogPaths { get; } = [];
     private readonly Dictionary<string, HashSet<string>> _namespaces = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, NdfObjectInfo[]> _byName;
     public IEnumerable<NdfObjectInfo> Objects => Files.Values.SelectMany(f => f.Objects);
@@ -29,11 +32,19 @@ public sealed class UnitProjectGraph
         }
     }
 
-    public UnitProjectGraph(string root, IReadOnlyList<PlannedFileChange>? candidates = null)
+    public UnitProjectGraph(string root, IReadOnlyList<PlannedFileChange>? candidates = null, bool deletionScope = false)
     {
         Root = Path.GetFullPath(root);
-        foreach (var path in InputFiles(Root).Concat(candidates?.Where(f => f.Kind == FormalTextFileKind.Ndf).Select(f => f.RelativePath) ?? []).Distinct(StringComparer.OrdinalIgnoreCase))
+        if (deletionScope)
         {
+            var catalog = SourceWorkspace.SourceFiles.Discover(Root);
+            CatalogPaths = catalog.Files.Select(f => f.Path).Where(p => SourceWorkspace.SourceFiles.IsNdf(p) && !p.StartsWith(".warno-editor/", StringComparison.OrdinalIgnoreCase) && !p.StartsWith(".git/", StringComparison.OrdinalIgnoreCase)).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+            CoverageIssues.AddRange(catalog.Errors.Order(StringComparer.Ordinal));
+        }
+        foreach (var path in (deletionScope ? CatalogPaths : InputFiles(Root)).Concat(candidates?.Where(f => f.Kind == FormalTextFileKind.Ndf).Select(f => f.RelativePath) ?? []).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+          try
+          {
             var snapshot = TextFileSnapshot.Load(Root, path, FormalTextFileKind.Ndf, true);
             Dependencies[path] = snapshot.OriginalBytes;
             var candidate = candidates?.SingleOrDefault(f => f.RelativePath.Equals(path, StringComparison.OrdinalIgnoreCase));
@@ -41,9 +52,19 @@ public sealed class UnitProjectGraph
             var text = candidate is null ? snapshot.Text : Encoding.UTF8.GetString(candidate.CandidateBytes);
             var syntax = new NdfSyntaxDocument(text);
             var starts = syntax.Tokens.Select(t=>t.Start).ToHashSet();
-            var objects = new NdfTopLevelScanner().Scan(text, snapshot.FullPath, "units", Root).Objects.Where(o=>starts.Contains(o.CharacterOffset)).ToArray();
+            var scan = new NdfTopLevelScanner().Scan(text, snapshot.FullPath, "units", Root);
+            if (deletionScope && scan.Diagnostics.Any(d => d.Severity == NdfDiagnosticSeverity.Error))
+            { UnverifiedFiles.Add(path); CoverageIssues.Add(path + " · NDF结构未验证 / NDF structure unverified"); }
+            var objects = scan.Objects.Where(o=>starts.Contains(o.CharacterOffset)).ToArray();
             Files[path] = new(path, text, syntax, objects);
             _namespaces[path] = [];
+          }
+          catch (Exception ex) when (deletionScope && ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
+          {
+              UnverifiedFiles.Add(path); CoverageIssues.Add(path + " · " + ex.Message);
+              try { Dependencies[path] = System.IO.File.ReadAllBytes(SourceWorkspace.SourceFiles.Resolve(Root, path)); }
+              catch (Exception readError) when (readError is IOException or UnauthorizedAccessException) { }
+          }
         }
         // Existing exported references are the project's binding evidence. Multiple
         // prefixes for one source are ambiguous and are deliberately not guessed.

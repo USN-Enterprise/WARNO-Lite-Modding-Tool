@@ -33,7 +33,7 @@ public sealed class RulesWorkspaceViewModel : ObservableObject
     public string Search {get;set;} = "";
     private string _category="全部";
     public string Category {get=>_category;set{if(SetProperty(ref _category,value))Refresh();}}
-    public IReadOnlyList<string> Categories {get;} = ["全部","对局设置","经济与收入","AI 难度","战斗与单位行为","后勤与补给","将军模式","空军","经验与老练度","地形规则","伤害与抗性规则"];
+    public IReadOnlyList<string> Categories {get;} = ["全部","对局设置","经济与收入","AI 难度","战斗与单位行为","后勤与补给","将军模式","空军","距离与比例尺","经验与老练度","地形规则","伤害与抗性规则"];
     public void Refresh() => View.Refresh();
     public void Restore() {foreach(var field in Terrains.SelectMany(t => t.Fields))field.Restore();foreach(var group in Groups)group.Restore(); foreach(var level in Experience.SelectMany(r => r.Levels))level.Restore();}
     public async Task FlushAsync()

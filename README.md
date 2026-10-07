@@ -6,7 +6,7 @@
 
 面向新手和 Mod 作者的 **Windows WARNO 图形化编辑器**。通过界面调整单位、武器、弹药、战术师、将军模式和游戏规则，无需手写代码；支持单位卡片图片和师徽编辑。
 
-当前版本：**2.10.1** · Windows x64 · 便携运行
+当前版本：**2.11.2** · Windows x64 · 便携运行
 
 发布包、更新说明和历史版本见下方 GitHub Releases。
 
@@ -16,11 +16,12 @@
 
 | 模块 | 可以做什么 |
 | --- | --- |
-| 单位 | 编辑数值、名称、经验类型与能力，批量修改，从模板创建单位，修改卡片图片 |
+| 单位 | 编辑数值、名称、经验类型与能力，批量修改，从模板创建单位，删除单位或强行保留引用删除，修改卡片图片 |
 | 武器与弹药 | 编辑挂载、炮塔和弹药参数，按单位隔离修改，或编辑共享弹药并查看全部使用者；调整距离阶梯与查询伤害系数 |
 | 战术师 | 调整单位池、运输和费用，从模板创建战术师，修改名称、师徽与简介 |
 | 将军模式与战略 Pack | 编辑现有营编制、棋子属性，以及共享 Pack 的单位、运输和老练度 |
 | 游戏规则 | 调整对局、经济、AI、战斗、后勤、将军模式、空军、经验路线、地形、伤害矩阵与共享距离规则 |
+| 开发者工作台（预览） | 编辑所选 Mod 根目录及任意子目录的全部 NDF 和配套 CSV；多标签、搜索替换、草稿、差异、三方核对、整组应用与恢复 |
 | 修改记录与还原 | 对比既有 Mod 与对应基础，完整保存差异为单文件；在新基础上预览还原、对应改名对象，按支持的依赖组暂缓与继续，还原已知字段及MAP增删、处理词典及已知NDF字段冲突及保存核对进度 |
 
 提供搜索筛选、基础/专业模式、中英文界面、主题与面板调整；修改通过草稿、预览和备份流程应用。
@@ -51,7 +52,7 @@
 
 ## 许可证
 
-项目原创代码与文档采用 [MIT 许可证](LICENSE)。游戏资料不属于本项目授权范围。图片解码使用 [ZstdSharp.Port（MIT）](licenses/ZstdSharp-MIT.txt)。
+项目原创代码与文档采用 [MIT 许可证](LICENSE)。游戏资料不属于本项目授权范围。图片解码使用 [ZstdSharp.Port（MIT）](licenses/ZstdSharp-MIT.txt)，源码编辑使用 [AvalonEdit（MIT）](licenses/AvalonEdit-MIT.txt)。
 
 ---
 
@@ -59,7 +60,7 @@
 
 **A Windows graphical editor for WARNO Mods**, for beginners and Mod authors. Edit units, weapons, ammunition, divisions, Army General and game rules without writing code. Unit portraits and division emblems can also be edited.
 
-Current version: **2.10.1** · Windows x64 · Portable
+Current version: **2.11.2** · Windows x64 · Portable
 
 Portable packages, release notes and previous versions are available on GitHub Releases below.
 
@@ -74,6 +75,7 @@ Portable packages, release notes and previous versions are available on GitHub R
 | Divisions | Adjust unit pools, transport and costs; create divisions from templates; edit names, emblems and descriptive text |
 | Army General and Strategic Packs | Edit existing battalion formations, pawn properties and the units, transport and veterancy of shared Packs |
 | Game rules | Adjust match, economy, AI, combat, logistics, Army General, air, experience routes, terrain, damage matrices and shared distance rules |
+| Developer workspace (preview) | Edit every NDF and accompanying CSV recursively under the selected Mod root; tabs, search/replace, drafts, comparison, three-way review, grouped apply and recovery |
 | Change records and restore | Save complete differences from existing files in one record, preview on a new baseline, map renamed objects, defer or resume supported dependency groups, restore known field/MAP additions and removals, resolve dictionary and supported NDF field conflicts and save review progress |
 
 Includes search and filters, basic/professional modes, Chinese/English UI, themes and adjustable panels. Changes use a draft, preview and backup workflow.
@@ -104,4 +106,4 @@ Start with the [first-edit walkthrough](USER_GUIDE.md#first-edit). Module instru
 
 ## License
 
-Original project code and documentation use the [MIT license](LICENSE). Game content is outside this license. Image decoding uses [ZstdSharp.Port (MIT)](licenses/ZstdSharp-MIT.txt).
+Original project code and documentation use the [MIT license](LICENSE). Game content is outside this license. Image decoding uses [ZstdSharp.Port (MIT)](licenses/ZstdSharp-MIT.txt), and source editing uses [AvalonEdit (MIT)](licenses/AvalonEdit-MIT.txt).

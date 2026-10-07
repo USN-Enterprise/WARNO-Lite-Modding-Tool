@@ -30,6 +30,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private readonly ModuleItemViewModel _problemModule;
     private CancellationTokenSource? _scanCancellation;
     private DraftStore? _draftStore;
+    public DraftStore SourceDraftStore => _draftStore ?? throw new InvalidOperationException("请先打开项目 / Open a project first");
+    public Func<Task>? SaveSourceInputs { get; set; }
+    public event Action? SourceProjectClosing;
+    public bool SourceOperationBusy { get; set; }
+    public int SourceDraftCount => _draftStore?.Operations.Count(o => o.TargetKind == DraftTargetKind.SourceFile) ?? 0;
+    public bool HasSourceDrafts => SourceDraftCount > 0;
+    public void SourceDraftsChanged() { UnitWorkspace?.RefreshExternalDraftState(); OnPropertyChanged(nameof(SourceDraftCount)); OnPropertyChanged(nameof(HasSourceDrafts)); }
     private ICollectionView _objectsView = new ListCollectionView(new List<NdfObjectInfo>());
     private UnitWorkspaceViewModel? _unitWorkspace;
     private WeaponWorkspaceViewModel? _weaponWorkspace;
@@ -344,8 +351,20 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public bool CanInteract => !_isSavingBeforeLeave;
     public bool CanOpenProject => !IsScanning && !IsOfficialCommandBusy && !_isSavingBeforeLeave;
 
+    public async Task FlushBusinessInputsAsync()
+    {
+        if (UnitWorkspace?.RefreshRequired == true) return;
+        if (UnitWorkspace is not null) await UnitWorkspace.FlushAsync();
+        if (WeaponWorkspace is not null) await WeaponWorkspace.FlushAsync();
+        if (AmmoWorkspace is not null) await AmmoWorkspace.FlushAsync();
+        if (DivisionWorkspace is not null) await DivisionWorkspace.FlushAsync();
+        if (RulesWorkspace is not null) await RulesWorkspace.FlushAsync();
+        if (StrategicWorkspace is not null) await StrategicWorkspace.FlushAsync();
+    }
     public async Task SaveBeforeLeavingAsync()
     {
+        if (SourceOperationBusy) throw new InvalidOperationException("源码工作台操作进行中，请稍候 / Source workspace operation in progress");
+        if (SaveSourceInputs is not null) await SaveSourceInputs();
         if (UnitWorkspace?.RefreshRequired == true) return; // Inputs were flushed before the committed transaction; do not restage stale controls.
         if (_isSavingBeforeLeave) throw new InvalidOperationException("正在保存草稿，请稍候。");
         _isSavingBeforeLeave = true;
@@ -488,6 +507,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Mark("save-before-open");
         LastOpenUsedCache = false;
         CancelScan();
+        SourceProjectClosing?.Invoke();
         ResetProjectResults();
         var sourceReads = new ProjectReadScope();
         using var sourceScope = sourceReads.Enter();
@@ -524,6 +544,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
 
         AddProjectDiagnostics(context);
+        _draftStore = new DraftStore(context.Layout.RootPath);
+        await _draftStore.LoadAsync();
+        SourceDraftsChanged();
         if (!context.IsRecognized)
         {
             StatusText = context.Summary;
@@ -602,7 +625,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                     RecordModProblem("单位工作区", diagnostic, location: context.Layout.RootPath, severity: ProblemSeverity.Warning);
                 }
 
-                _draftStore = new DraftStore(context.Layout.RootPath);
                 var draftLoad = await _draftStore.LoadAsync(scanCancellation.Token);
                 await Task.Run(() => { snapshot.Units.Rules?.Experience.PrepareDrafts(_draftStore.Operations); if(_draftStore.Operations.Any(o=>o.TargetKind is DraftTargetKind.DamageRule or DraftTargetKind.DamageDistance))_ = snapshot.Units.Rules?.Damage; }, scanCancellation.Token);
                 scanCancellation.Token.ThrowIfCancellationRequested();

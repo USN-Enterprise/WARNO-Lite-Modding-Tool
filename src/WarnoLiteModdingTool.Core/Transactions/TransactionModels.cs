@@ -27,10 +27,16 @@ public sealed record ApplyPreview(
     IReadOnlyList<PlannedFileChange> Files,
     IReadOnlyList<string> ValidationMessages)
 {
+    public string[] ObservedFiles { get; init; } = [];
+    public Dictionary<string, byte[]?>? SourceSnapshot { get; init; }
+    public string[] SourceCatalogErrors { get; init; } = [];
+    public bool SourceAcknowledged { get; set; }
     public Dictionary<string,byte[]> ReadDependencies {get;init;} = new();
     public Dictionary<string,byte[]> PictureReadDependencies {get;init;} = new();
     public string? ExperienceReview { get; init; }
     public Dictionary<string,byte[]>? UnitReadDependencies {get;init;}
+    public Units.UnitProjectGraph? DeletionReview { get; init; }
+    public string[] DeletionWarnings { get; init; } = [];
     public IReadOnlyList<DraftOperation>? DraftReview {get;init;}
     public int FormalFileCount => Files.Count(item => item.Kind is FormalTextFileKind.Ndf or FormalTextFileKind.Csv or FormalTextFileKind.Binary);
 
@@ -82,4 +88,7 @@ public sealed record BackupSummary(
     bool CanRestore,
     string? Error);
 
-public sealed class TransactionValidationException(string message) : InvalidOperationException(message);
+public sealed class TransactionValidationException(string message, string? code = null) : InvalidOperationException(message)
+{
+    public string? Code { get; } = code;
+}

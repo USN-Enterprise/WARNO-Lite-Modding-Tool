@@ -38,7 +38,7 @@
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="290" Margin="0,0,12,0">
                     <TextBlock Text="{Binding ProjectName}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding ProjectPath}"/>
-                    <TextBlock Text="2.10.1" Foreground="{DynamicResource MutedTextBrush}" FontSize="11"/>
+                    <TextBlock Text="2.11.2" Foreground="{DynamicResource MutedTextBrush}" FontSize="11"/>
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
@@ -199,7 +199,7 @@
                             <Button Grid.Column="0" Content="{l:Loc Key='打开'}" Style="{StaticResource SecondaryButton}" Padding="10,6" Click="OpenRecent_Click" />
                             <Button Grid.Column="2" Content="{l:Loc Key='移除'}" Style="{StaticResource SecondaryButton}" Padding="10,6" Click="RemoveRecent_Click" />
                         </Grid>
-                    <Button Content="{l:Loc Key='引用工作台'}" Click="OpenAdvanced_Click" Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,6,0,0" /><Button Content="{l:Loc Key='设置'}" Click="OpenSettings_Click" Margin="0,6,0,0" Padding="12,7" /><CheckBox x:Name="AdvancedModeCheckBox"
+                    <Button Content="{l:Loc Key='开发者工作台'}" Click="OpenAdvanced_Click" Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,6,0,0" /><Button Content="{l:Loc Key='源码草稿与应用'}" Click="OpenAdvanced_Click" Visibility="{Binding HasSourceDrafts, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,6,0,0"/><Button Content="{l:Loc Key='设置'}" Click="OpenSettings_Click" Margin="0,6,0,0" Padding="12,7" /><CheckBox x:Name="AdvancedModeCheckBox"
                               Content="{l:Loc Key='专业模式'}"
                               IsChecked="{Binding AdvancedMode}"
                               Checked="AdvancedMode_Changed"

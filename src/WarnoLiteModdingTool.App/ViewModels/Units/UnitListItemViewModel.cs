@@ -18,8 +18,9 @@ public sealed class UnitListItemViewModel(UnitRecord unit, Action? batchSelectio
     public string InternalName => Unit.Name;
     private string? _pendingName;
     private bool _pendingDelete;
+    private bool _forceDelete;
     public string PendingName => _pendingName ?? InternalName;
-    public void UpdateLifecycle(string? name,bool deleted){_pendingName=name;_pendingDelete=deleted;OnPropertyChanged(nameof(PendingName));OnPropertyChanged(nameof(DraftStatus));}
+    public void UpdateLifecycle(string? name,bool deleted,bool force=false){_pendingName=name;_pendingDelete=deleted;_forceDelete=force;OnPropertyChanged(nameof(PendingName));OnPropertyChanged(nameof(DraftStatus));}
 
     public string Coalition => Unit.Coalition;
 
@@ -37,7 +38,7 @@ public sealed class UnitListItemViewModel(UnitRecord unit, Action? batchSelectio
 
     public string AmmunitionText => Unit.Ammunition.Count == 0 ? "无已识别 Ammo" : string.Join(", ", Unit.Ammunition);
 
-    public string DraftStatus => _pendingDelete ? "待删除" : _hasConflict ? "冲突" : _hasDraft ? "有草稿" : string.Empty;
+    public string DraftStatus => _pendingDelete ? _forceDelete ? Localisation.UiText.T("待强行删除") : "待删除" : _hasConflict ? "冲突" : _hasDraft ? "有草稿" : string.Empty;
 
     public bool IsWeaponScopeSelected
     {

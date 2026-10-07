@@ -6,6 +6,34 @@
 
 仅列出功能更新和影响使用的问题修复。
 
+## 2.11.2 — 2026-10-07
+
+- 专业模式新增“游戏规则 → 距离与比例尺”，编辑所选 Mod 的 LBU→GRU 全局换算系数；只接受正数，缺失或不明确结构不补建。沿用草稿、预览、备份及失败恢复；不自动批改速度、射程或模型。
+- 无新增运行依赖或数据格式，保留旧草稿和备份。比例尺游戏内效果尚未实测。
+- 新增公路速度倍率单项和批量编辑，基础／专业模式均可用；原“最大公路速度”更名“公路显示速度”，两项独立修改。
+
+## 2.11.1 — 2026-10-05（本地便携版）
+
+- 单位检查器可删除任意来源的正式单位，不再要求本工具创建备份；保留取消创建和撤销删除。
+- 专业模式增加强行删除，允许保留未解决引用及接受未验证范围；预览、应用结果和正式记录列明残留，提供工作台定位。
+- 引用扫描覆盖自建目录NDF，支持精确清理/替代及备份恢复；共享资源保留。强行模式仍校验目标、写入基线和替代目标，并与源码草稿协调。
+- 新删除草稿schema7、删除载荷v2、单位历史v2；旧版明确拒读，原有v1删除草稿继续严格核对来源。删除编号保留，防止自动复用。
+- 使用合成项目验证，未运行官方生成器或游戏；残留引用可能导致生成或加载失败。工作台仍保留既有预览功能与验证限制。
+
+## 2.11-preview.2 — 2026-10-04（本地优化预览）
+
+- 修正应用后无关标签的基线、只浏览文件的转码范围，以及保存期间继续输入的状态；仍可编辑所选 Mod 任意目录内的全部 NDF。
+- 合批与流式保存草稿，后台分析、内容校验索引缓存、增量文件树；搜索分批返回并分页，显示全部命中数量，Ctrl+A 仅选择当前页。
+- 新增按行对齐的差异块与跳转、窄窗单栏比较、替换预览和整批撤销、独立定义候选、按需恢复标签、三方差异导航与备份总览。
+- 无关联业务草稿可单独应用；检查与应用共用源码组合候选，增加可识别航空组合和新旧规则错误区分。未识别语义仍明确列出，完整编译/引用分析未提供。
+- 构建、源码专项、窗口回归及性能对照使用合成项目。schema6 与旧版拒读保护不变；大文件仍可能占用较多内存。干净 Windows、真实跨屏 DPI/IME、低权限与磁盘不足实机、游戏效果仍待验证。
+
+## 2.11-preview.1 — 2026-10-04（本地预览）
+
+- 新增内置开发者工作台，可编辑所选 Mod 根目录及任意子目录的全部 NDF 和配套 CSV，业务模块缺失也可使用；支持多标签、新建 NDF、搜索与选中替换、大纲、有限补全和定义/文本引用导航。
+- 源码自动草稿使用 schema6，支持关闭重开、三方核对、整组差异与应用、独立源码备份和中断恢复；协调表单依赖和项目写入，保留原引用/字段工具。
+- 中英文、七主题、自适应布局；内置 AvalonEdit（MIT），随便携包分发。未知语义须在应用前核对；大文件简化分析并有较高内存占用。完整跨文件业务校验、干净 Windows、真实 DPI/输入法及游戏效果仍未验证。本地交付，未上传 GitHub。
+
 ## 2.10.1 — 2026-10-03
 
 - 单位“机动与续航”新增固定翼高度、最低高度、转弯半径、俯仰、滚转、滚转速度、撤离角度，以及直升机飞行／近地高度和上升速度；复杂姿态参数置于专业模式。
@@ -343,6 +371,34 @@
 [中文](#chinese) | [English](#english)
 
 Feature updates and fixes that affect everyday use.
+
+## 2.11.2 — 2026-10-07
+
+- Added professional **Game rules → Distance and scale** editing for the selected Mod's global LBU-to-GRU factor. Requires a positive numeric literal and an unambiguous existing structure. Uses drafts, preview, backup and recovery without automatically rewriting speeds, ranges or models.
+- No new runtime dependencies or data formats; existing drafts and backups remain supported. In-game scale behavior has not been tested.
+- Added individual and batch road speed multiplier editing in both modes. Renamed Maximum road speed to Displayed road speed; the multiplier and displayed value are edited independently.
+
+## 2.11.1 — 2026-10-05 (local portable build)
+
+- Delete existing units from any source without requiring an editor creation backup. Cancel creation and undo pending deletion remain available.
+- Professional force deletion can keep unresolved references and accept unverified scope. Previews, results and formal logs report residuals; locate references in the source workspace.
+- Scan NDF files in custom folders and apply precise reference cleanup/replacements with backup restoration. Shared resources are retained. Target identity, baselines, valid replacements and source-draft coordination remain enforced.
+- New deletion drafts use schema7, payload v2 and unit history v2. Older versions refuse these formats; legacy v1 deletion drafts retain strict provenance checks. Removed registration numbers stay reserved.
+- Verified with synthetic projects, without the official generator or game. Residual references may prevent generation or loading. Existing source-workspace preview limitations remain.
+
+## 2.11-preview.2 — 2026-10-04 (local optimization preview)
+
+- Corrected unrelated tab baselines after apply, encoding-conversion scope, and edits made while saving. Every NDF under the selected Mod remains editable.
+- Batched and streamed draft saves, background analysis, content-based index reuse and incremental trees; search streams batches into complete, paged results. Ctrl+A selects the current page only.
+- Added aligned change blocks, change navigation, narrow single-column comparisons, replacement previews and batch undo, definition selection, lazy tab restoration, three-way navigation and a backup overview.
+- Independent business drafts can be applied separately. Check and apply use the same source candidate, with recognized aviation combinations and baseline-aware rule checks. Unsupported semantics remain explicit; this is not a complete compiler or reference graph.
+- Validation used synthetic projects. Schema6 and old-reader protection remain. Large files can still require substantial memory. Clean Windows, real cross-monitor DPI/IME, restricted-account/disk-full hardware tests and in-game effects remain unverified.
+
+## 2.11-preview.1 — 2026-10-04 (local preview)
+
+- Added an embedded developer workspace for every NDF and accompanying CSV recursively under the selected Mod root, including projects without recognized business modules. Includes tabs, new NDF files, search/selected replacement, outline, partial completion and definition/text-usage navigation.
+- Schema6 source drafts support automatic saving, reopening, three-way review, grouped comparison/apply, source backups and interrupted-transaction recovery. File dependencies and project writes coordinate with form editing; existing reference/field tools remain available.
+- Chinese/English, seven themes and adaptive layouts. AvalonEdit (MIT) is bundled. Review unverified semantics before applying; large files reduce analysis and can consume substantial memory. Complete cross-file business validation, clean-Windows deployment, actual DPI/IME and game behavior remain unverified. Delivered locally; not uploaded to GitHub.
 
 ## 2.10.1 — 2026-10-03
 

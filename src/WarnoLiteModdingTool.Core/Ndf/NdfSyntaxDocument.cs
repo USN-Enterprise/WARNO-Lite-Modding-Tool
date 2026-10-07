@@ -6,7 +6,7 @@ public sealed class NdfSyntaxDocument
     private readonly List<NdfToken> _tokens;
     public IReadOnlyList<NdfToken> Tokens => _tokens;
 
-    public NdfSyntaxDocument(string source, int startOffset = 0, int? length = null)
+    public NdfSyntaxDocument(string source, int startOffset = 0, int? length = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(source);
         if (startOffset < 0 || startOffset > source.Length)
@@ -21,7 +21,7 @@ public sealed class NdfSyntaxDocument
         }
 
         _source = source;
-        _tokens = Tokenize(source, startOffset, actualLength);
+        _tokens = Tokenize(source, startOffset, actualLength, cancellationToken);
     }
 
     public IReadOnlyList<NdfConstructorSpan> FindConstructors(string typeName) =>
@@ -447,13 +447,14 @@ public sealed class NdfSyntaxDocument
         return -1;
     }
 
-    private static List<NdfToken> Tokenize(string source, int startOffset, int length)
+    private static List<NdfToken> Tokenize(string source, int startOffset, int length, CancellationToken cancellationToken)
     {
         var tokens = new List<NdfToken>();
         var end = startOffset + length;
         var index = startOffset;
         while (index < end)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var character = source[index];
             if (char.IsWhiteSpace(character))
             {
@@ -466,6 +467,7 @@ public sealed class NdfSyntaxDocument
                 index += 2;
                 while (index < end && source[index] is not '\r' and not '\n')
                 {
+                    if ((index & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
                     index++;
                 }
 
@@ -487,6 +489,7 @@ public sealed class NdfSyntaxDocument
                 var escaped = false;
                 while (index < end)
                 {
+                    if ((index & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
                     var current = source[index++];
                     if (escaped)
                     {
@@ -516,6 +519,7 @@ public sealed class NdfSyntaxDocument
             var atomStart = index;
             while (index < end)
             {
+                if ((index & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
                 character = source[index];
                 if (char.IsWhiteSpace(character) ||
                     character is '(' or ')' or '[' or ']' or ',' or '=' or '\'' or '"' ||

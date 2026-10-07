@@ -67,7 +67,34 @@ public partial class MainWindow : Window
 
     private void Window_SourceInitialized(object? sender, EventArgs e) => UpdateNativeTitleBar();
 
-    private void OpenAdvanced_Click(object sender, RoutedEventArgs e) { if (_viewModel.AdvancedMode) new Advanced.AdvancedWindow(_viewModel) { Owner = this }.ShowDialog(); }
+    private SourceWorkspace.SourceWorkspaceWindow? _sourceWindow;
+    internal async Task OpenSourceReferenceAsync(string path, int offset)
+    {
+        await _viewModel.SaveBeforeLeavingAsync();
+        if (_sourceWindow is null)
+        {
+            _sourceWindow = new SourceWorkspace.SourceWorkspaceWindow(_viewModel) { Owner = this };
+            _sourceWindow.Closed += (_, _) => _sourceWindow = null; _sourceWindow.Show();
+        }
+        await _sourceWindow.Initialization; await _sourceWindow.OpenFileAsync(path, offset); _sourceWindow.Activate();
+    }
+    private async void OpenAdvanced_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (_sourceWindow is not null) { _sourceWindow.Activate(); return; }
+            if (!Directory.Exists(_viewModel.ProjectPath))
+            {
+                var dialog = new OpenFolderDialog { Title = Localisation.UiText.T("选择 Mod 或源码项目根目录") };
+                if (dialog.ShowDialog(this) != true) return;
+                await _viewModel.OpenProjectAsync(dialog.FolderName);
+            }
+            await _viewModel.SaveBeforeLeavingAsync();
+            _sourceWindow = new SourceWorkspace.SourceWorkspaceWindow(_viewModel) { Owner = this };
+            _sourceWindow.Closed += (_, _) => _sourceWindow = null; _sourceWindow.Show();
+        }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, Localisation.UiText.T("开发者工作台")); }
+    }
 
     private async void ChangeRecords_Click(object sender, RoutedEventArgs e)
     {
@@ -449,13 +476,29 @@ public partial class MainWindow : Window
 
     internal async void PreviewApply_Click(object sender, RoutedEventArgs e)
     {
+        var selectionBeforeSave = sender is FrameworkElement { Tag: "selected" } ? _viewModel.UnitWorkspace?.DraftItems.Where(i=>i.IsSelected).Select(i=>i.Resolved.Operation.Id).ToHashSet() : null;
+        try { CommitActiveEditor(); await _viewModel.SaveBeforeLeavingAsync(); }
+        catch (Exception ex) { MessageBox.Show(this,ex.Message,"无法应用"); return; }
         if (_viewModel.UnitWorkspace is not { } workspace)
         {
+            if (_viewModel.HasSourceDrafts) OpenAdvanced_Click(sender,e);
             return;
         }
 
-        IReadOnlySet<string>? selectedIds = sender is FrameworkElement { Tag: "selected" } ? workspace.DraftItems.Where(i => i.IsSelected).Select(i => i.Resolved.Operation.Id).ToHashSet() : null;
+        IReadOnlySet<string>? selectedIds = selectionBeforeSave;
         if (selectedIds?.Count == 0) { MessageBox.Show(this, "请先选择草稿", "草稿"); return; }
+        if (_viewModel.HasSourceDrafts)
+        {
+            var chosen = _viewModel.SourceDraftStore.Operations.Where(o => selectedIds is null || selectedIds.Contains(o.Id)).ToArray();
+            if (chosen.Any(o => o.TargetKind == WarnoLiteModdingTool.Core.Drafts.DraftTargetKind.SourceFile))
+            {
+                if (chosen.All(o => o.TargetKind == WarnoLiteModdingTool.Core.Drafts.DraftTargetKind.SourceFile)) { OpenAdvanced_Click(sender,e); return; }
+                var choice = MessageBox.Show(this, "源码组与业务草稿分别预览和提交。是：打开完整源码组；否：仅预览本次选择的业务草稿；取消：返回。", "选择应用范围", MessageBoxButton.YesNoCancel);
+                if (choice == MessageBoxResult.Cancel) return;
+                if (choice == MessageBoxResult.Yes) { OpenAdvanced_Click(sender,e); return; }
+            }
+            selectedIds = chosen.Where(o => o.TargetKind != WarnoLiteModdingTool.Core.Drafts.DraftTargetKind.SourceFile).Select(o => o.Id).ToHashSet();
+        }
         ApplyPreview preview;
         try
         {

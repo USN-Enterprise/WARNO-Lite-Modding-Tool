@@ -27,6 +27,8 @@ public sealed class OfficialCommandRunner
         CancellationToken cancellationToken = default)
     {
         var root = Path.GetFullPath(projectRoot).TrimEnd(Path.DirectorySeparatorChar);
+        using var projectGate = ProjectWriteGate.Enter(root);
+        SourceWorkspace.SourceTransactions.EnsureRecovered(root);
         var fullPath = Path.GetFullPath(commandPath);
         if (!fullPath.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
             !File.Exists(fullPath) ||

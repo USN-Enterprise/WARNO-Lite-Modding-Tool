@@ -29,6 +29,11 @@ public sealed partial class MainViewModel
             { /* A rebuildable cache must not turn a successful load or commit into a failure. */ }
         });
     }
+    public async Task RefreshSourceProjectAsync(ApplyPreview preview)
+    {
+        if (_snapshot is not null) await RefreshAfterApplyAsync(preview);
+        SourceDraftsChanged();
+    }
     private async Task RefreshAfterApplyAsync(ApplyPreview preview)
     {
         if (_snapshot is not { } previous || _draftStore is null) throw new InvalidOperationException("项目会话不可用，请重新打开项目。");
@@ -122,6 +127,6 @@ public sealed partial class MainViewModel
 
         RulesWorkspace = new RulesWorkspaceViewModel(unitData.Rules!, store, UnitWorkspace.RefreshExternalDraftState);
         OnPropertyChanged(nameof(RulesWorkspace)); OnPropertyChanged(nameof(IsRulesModule)); OnPropertyChanged(nameof(IsObjectModule));
-        ProjectSummary = $"2.10.1 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
+        ProjectSummary = $"2.11.2 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
     }
 }

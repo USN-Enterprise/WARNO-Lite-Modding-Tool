@@ -32,6 +32,9 @@ public static class ChangeTransactions
     }
     public static ChangeJournal Commit(ChangePreview preview, CancellationToken cancel = default, Action<int>? afterWrite = null)
     {
+        using var projectGate = Transactions.ProjectWriteGate.Enter(preview.Root);
+        SourceWorkspace.SourceTransactions.EnsureRecovered(preview.Root);
+        EnsureNoSourceDrafts(preview.Root);
         if (!preview.CanApply) throw new InvalidOperationException("预览不可应用 / Preview cannot be applied");
         var root = preview.Root; using var gate = Lock(root); Verify(preview, cancel);
         var previous = List(root);
@@ -78,10 +81,24 @@ public static class ChangeTransactions
     }
     public static void Recover(string root, string id)
     {
+        using var projectGate = Transactions.ProjectWriteGate.Enter(root);
+        SourceWorkspace.SourceTransactions.EnsureRecovered(root, false);
+        EnsureNoSourceDrafts(root);
         using var gate = Lock(root); var list = List(root); var journal = list.Single(j => j.Id == id);
         if (journal.State == "RolledBack") return;
         if (list.Last(j => j.State != "RolledBack").Id != id) throw new InvalidOperationException("请先恢复较新的批次，再恢复此批次 / Recover newer batches before this batch");
         RecoverLocked(root, journal);
+    }
+    private static void EnsureNoSourceDrafts(string root)
+    {
+        var path = ChangePaths.Resolve(root, ".warno-editor/draft-v1.json");
+        if (File.Exists(path))
+        {
+            using var json = JsonDocument.Parse(File.ReadAllBytes(path));
+            if (json.RootElement.TryGetProperty("operations", out var operations) && operations.ValueKind == JsonValueKind.Array && operations.GetArrayLength() == 0) return;
+        }
+        using var store = new Drafts.DraftStore(root); var loaded = store.LoadAsync().GetAwaiter().GetResult();
+        if (loaded.IsBlocked || store.Operations.Any(o => o.TargetKind == Drafts.DraftTargetKind.SourceFile)) throw new InvalidOperationException("请先处理源码草稿 / Resolve source drafts first");
     }
     private static void RecoverLocked(string root, ChangeJournal journal)
     {

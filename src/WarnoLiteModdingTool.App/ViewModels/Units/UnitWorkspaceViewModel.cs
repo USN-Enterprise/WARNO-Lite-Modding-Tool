@@ -1116,7 +1116,7 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
             var matches = resolved.Where(item => item.Operation.ObjectName == unit.Unit.Name).ToArray();
             var draftName = matches.FirstOrDefault(item =>
                 item.Status == DraftResolutionStatus.Active && item.Operation.TargetKind == DraftTargetKind.UnitName)?.Operation.TargetValue;
-            unit.UpdateLifecycle(matches.FirstOrDefault(m=>m.Operation.TargetKind==DraftTargetKind.UnitRename) is {} rename ? UnitIdentityEditing.Read(rename.Operation).NewName : null, matches.Any(m=>m.Operation.TargetKind==DraftTargetKind.UnitDelete));
+            unit.UpdateLifecycle(matches.FirstOrDefault(m=>m.Operation.TargetKind==DraftTargetKind.UnitRename) is {} rename ? UnitIdentityEditing.Read(rename.Operation).NewName : null, matches.Any(m=>m.Operation.TargetKind==DraftTargetKind.UnitDelete), matches.Any(m=>m.Operation.TargetKind==DraftTargetKind.UnitDelete && UnitDeletion.Read(m.Operation).Force));
             unit.UpdateDraftState(
                 matches.Length > 0,
                 matches.Any(item => item.Status == DraftResolutionStatus.Conflict),

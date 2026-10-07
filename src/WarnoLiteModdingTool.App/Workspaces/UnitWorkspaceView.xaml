@@ -202,7 +202,7 @@
                                             <Button Content="{l:Loc Key='特性与实际能力'}" Tag="abilities" Click="UnitLifecycle_Click" IsEnabled="{Binding UnitWorkspace.CanEditSelectedLifecycle}" Margin="0,0,6,6"/>
                                             <Button Content="{l:Loc Key='修改单位变量名'}" Tag="rename" Click="UnitLifecycle_Click" IsEnabled="{Binding UnitWorkspace.CanEditSelectedLifecycle}" Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,6,6"/>
                                             <Button Content="{l:Loc Key='检查单位注册'}" Tag="registration" Click="UnitLifecycle_Click" IsEnabled="{Binding UnitWorkspace.CanEditSelectedLifecycle}" Margin="0,0,6,6"/>
-                                            <Button Content="{l:Loc Key='删除新建单位 / 撤销删除'}" Tag="delete" Click="UnitLifecycle_Click" Margin="0,0,6,6"/>
+                                            <Button Content="{l:Loc Key='删除单位 / 撤销删除'}" Tag="delete" Click="UnitLifecycle_Click" Margin="0,0,6,6"/>
                                         </WrapPanel>
                                         <TextBlock Text="{l:LocalizedBinding Path=UnitWorkspace.LifecycleState}" TextWrapping="Wrap" Margin="0,0,0,8"/>
                                         <ItemsControl x:Name="UnitFieldSections" ItemsSource="{Binding UnitWorkspace.FieldSections}">

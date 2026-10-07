@@ -5,9 +5,10 @@ namespace WarnoLiteModdingTool.Core.Units;
 
 public static class UnitLifecycleValidation
 {
-    public static void Validate(string root, IReadOnlyList<PlannedFileChange> files)
+    public static void Validate(string root, IReadOnlyList<PlannedFileChange> files, UnitDeleteResult? deletion = null)
     {
-        var graph = new UnitProjectGraph(root, files);
+        var graph = new UnitProjectGraph(root, files, deletionScope: deletion is not null);
+        bool Allowed(string path, string raw) => deletion?.AllowedUnreachable.Contains(UnitProjectGraph.Normalize(path) + "|" + raw) == true;
         var touched = files.Where(f => f.Kind == FormalTextFileKind.Ndf).Select(f => UnitProjectGraph.Normalize(f.RelativePath)).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var upgrade = new Dictionary<string, string>(StringComparer.Ordinal);
         string Id(NdfObjectInfo o) => UnitProjectGraph.Normalize(o.RelativeSourceFile) + "|" + o.Name;
@@ -18,7 +19,7 @@ public static class UnitLifecycleValidation
             {
                 var raw = doc.Raw(field); var target = graph.Resolve(obj.RelativeSourceFile, raw);
                 if (target?.TypeName == "TEntityDescriptor") upgrade[Id(obj)] = Id(target);
-                else if (touched.Contains(UnitProjectGraph.Normalize(obj.RelativeSourceFile)) && raw is not ("nil" or "null")) throw new TransactionValidationException("升级引用不可达：" + obj.Name + " → " + raw);
+                else if (touched.Contains(UnitProjectGraph.Normalize(obj.RelativeSourceFile)) && raw is not ("nil" or "null") && !Allowed(obj.RelativeSourceFile, raw)) throw new TransactionValidationException("升级引用不可达：" + obj.Name + " → " + raw);
             }
         }
         foreach (var start in upgrade.Keys)
@@ -36,7 +37,7 @@ public static class UnitLifecycleValidation
             foreach (var rule in file.Syntax.FindConstructors("TDeckUniteRule"))
             {
                 foreach (var unit in file.Syntax.FindDirectAssignments(rule, "UnitDescriptor"))
-                    if (graph.Resolve(file.Path, file.Syntax.Raw(unit))?.TypeName != "TEntityDescriptor") throw new TransactionValidationException("师单位引用不可达：" + file.Path + " · " + file.Syntax.Raw(unit));
+                    if (graph.Resolve(file.Path, file.Syntax.Raw(unit))?.TypeName != "TEntityDescriptor" && !Allowed(file.Path, file.Syntax.Raw(unit))) throw new TransactionValidationException("师单位引用不可达：" + file.Path + " · " + file.Syntax.Raw(unit));
                 var transport = file.Syntax.FindDirectAssignments(rule, "AvailableTransportList");
                 var without = file.Syntax.FindDirectAssignments(rule, "AvailableWithoutTransport");
                 if (transport.Count == 1 && without.Count == 1 && file.Syntax.Raw(without[0]) == "False" && file.Syntax.ReadArrayElements(transport[0]).Count == 0)

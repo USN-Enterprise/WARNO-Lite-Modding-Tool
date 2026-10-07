@@ -80,18 +80,18 @@ public static class AviationMovement
         return error.Length == 0;
     }
 
-    public static void ValidateRestored(string root, IReadOnlyList<Changes.RestoreFile> restored)
+    public static void ValidateRestored(string root, IReadOnlyList<Changes.RestoreFile> restored, bool reviewAllHeights = false)
     {
         var units = new List<UnitRecord>(); var edits = new List<DraftOperation>(); var candidates = new List<PlannedFileChange>();
         foreach (var file in restored.Where(f => f.After is not null && f.Path.EndsWith(".ndf", StringComparison.OrdinalIgnoreCase)))
         {
             var text = Changes.ChangeMerge.DecodeNdf(file.After!);
             var before = file.Before is null ? "" : Changes.ChangeMerge.DecodeNdf(file.Before);
-            if (text == before || !text.Contains("Movement", StringComparison.Ordinal)) continue;
+            if ((!reviewAllHeights && text == before) || !text.Contains("Movement", StringComparison.Ordinal)) continue;
             var full = Path.Combine(root, file.Path);
             var oldObjects = new NdfTopLevelScanner().Scan(before, full, "units", root).Objects.Where(o => o.TypeName == "TEntityDescriptor").ToDictionary(o => o.Name);
             var changed = new NdfTopLevelScanner().Scan(text, full, "units", root).Objects.Where(o => o.TypeName == "TEntityDescriptor" &&
-                (!oldObjects.TryGetValue(o.Name, out var oldObject) || !text.AsSpan(o.CharacterOffset, o.CharacterLength).SequenceEqual(before.AsSpan(oldObject.CharacterOffset, oldObject.CharacterLength)))).ToArray();
+                (reviewAllHeights || !oldObjects.TryGetValue(o.Name, out var oldObject) || !text.AsSpan(o.CharacterOffset, o.CharacterLength).SequenceEqual(before.AsSpan(oldObject.CharacterOffset, oldObject.CharacterLength)))).ToArray();
             IReadOnlyList<UnitRecord> ReadUnits(string source, IReadOnlyList<NdfObjectInfo> objects) => new UnitCatalogBuilder().Build(objects,
                 new Dictionary<string, string> { [full] = source }, applyChoices: false);
             var old = ReadUnits(before, changed.Where(o => oldObjects.ContainsKey(o.Name)).Select(o => oldObjects[o.Name]).ToArray()).ToDictionary(u => u.Name);
@@ -100,8 +100,8 @@ public static class AviationMovement
             {
                 foreach (var field in unit.Fields.Where(f => (IsField(f.Definition.Key) || f.Definition.Key == Speed) && f.Availability != UnitFieldAvailability.Missing))
                 {
-                    if (old.GetValueOrDefault(unit.Name)?.Field(field.Definition.Key)?.RawValue == field.RawValue) continue;
-                    if (!field.CanEdit) throw new TransactionValidationException("还原后的航空字段不唯一或不是直接数值：" + unit.Name);
+                    if (old.GetValueOrDefault(unit.Name)?.Field(field.Definition.Key)?.RawValue == field.RawValue && !(reviewAllHeights && field.Definition.Key is "flight.altitude" or "flight.minimumAltitude")) continue;
+                    if (!field.CanEdit) throw new TransactionValidationException("还原后的航空字段不唯一或不是直接数值：" + unit.Name, "aviation.unsupported");
                     edits.Add(new(field.Definition.Key, null, DraftTargetKind.NdfField, "units", file.Path, unit.Name, unit.Source.TypeName,
                         field.Definition.Key, "", "", "", "", field.DisplayValue, field.RawValue, "", null, false, DateTimeOffset.UtcNow));
                 }
@@ -115,7 +115,7 @@ public static class AviationMovement
         ValidateFinal(root, units, edits, candidates);
     }
     private static double Number(string raw) => double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var n) && double.IsFinite(n)
-        ? n : throw new TransactionValidationException("航空关联值不是直接有限数值，不能确认组合结果");
+        ? n : throw new TransactionValidationException("航空关联值不是直接有限数值，不能确认组合结果", "aviation.unsupported");
 
     public static void ValidateUnit(UnitRecord unit, IReadOnlyList<DraftOperation> operations)
     {
@@ -127,7 +127,8 @@ public static class AviationMovement
         if (edits.Any(o => IsSpeed(o.FieldKey)) && SpeedFields(unit).Count > 1)
         {
             var fields = SpeedFields(unit);
-            if (fields.Any(f => !f.CanEdit) || fields.Select(f => Number(Value(f.Definition.Key))).Distinct().Count() != 1 || Number(Value(Speed)) <= 0)
+            if (fields.Any(f => !f.CanEdit)) throw new TransactionValidationException("航空速度结构不能确定", "aviation.unsupported");
+            if (fields.Select(f => Number(Value(f.Definition.Key))).Distinct().Count() != 1 || Number(Value(Speed)) <= 0)
                 throw new TransactionValidationException("航空速度必须与通用速度同时修改并保持一致：" + unit.DisplayName);
         }
     }
@@ -155,14 +156,14 @@ public static class AviationMovement
                 var doc = new NdfSyntaxDocument(text, obj.CharacterOffset, obj.CharacterLength);
                 var direct = doc.FindConstructors(PlaneModule);
                 var module = direct.Count == 1 ? direct[0] : doc.FindConstructors(Template).Single();
-                double Field(string name) { var matches = doc.FindDirectAssignments(module, name); return matches.Count == 1 ? Number(doc.Raw(matches[0])) : throw new TransactionValidationException("飞机高度字段缺失或多义：" + name); }
+                double Field(string name) { var matches = doc.FindDirectAssignments(module, name); return matches.Count == 1 ? Number(doc.Raw(matches[0])) : throw new TransactionValidationException("飞机高度字段缺失或多义：" + name, "aviation.unsupported"); }
                 var ceiling = direct.Count == 1 ? Field("AltitudeMaxGRU") : templateCeiling ??= ReadTemplateCeiling(root, files, dependencies);
                 if (Field("AltitudeMinGRU") > Field("AltitudeGRU") || Field("AltitudeGRU") > ceiling)
                     throw new TransactionValidationException("飞机高度须满足最低高度 ≤ 常态高度 ≤ 当前Mod最大高度：" + obj.Name);
                 validated.Add(obj.Name);
             }
         }
-        if (!heightUnits.SetEquals(validated)) throw new TransactionValidationException("最终飞机高度对象无法完整定位，修改未应用");
+        if (!heightUnits.SetEquals(validated)) throw new TransactionValidationException("最终飞机高度对象无法完整定位，修改未应用", "aviation.unsupported");
         return dependencies;
     }
     private static double ReadTemplateCeiling(string root, IReadOnlyList<PlannedFileChange> files, Dictionary<string, byte[]> dependencies)
@@ -178,26 +179,26 @@ public static class AviationMovement
         var doc = new NdfSyntaxDocument(Read(templatePath));
         var tokens = doc.Tokens;
         var declarations = Enumerable.Range(0, Math.Max(0, tokens.Count - 2)).Where(i => tokens[i].Text == "template" && tokens[i + 1].Text == Template && tokens[i + 2].Text == "[").ToArray();
-        if (declarations.Length != 1) throw new TransactionValidationException("无法确认当前Mod的飞机运动模板；高度修改未应用");
+        if (declarations.Length != 1) throw new TransactionValidationException("无法确认当前Mod的飞机运动模板；高度修改未应用", "aviation.unsupported");
         var start = declarations[0]; var end = start + 3;
         while (end < tokens.Count && tokens[end].Text != "]") end++;
-        if (end + 2 >= tokens.Count || tokens[end + 1].Text != "is" || tokens[end + 2].Text != PlaneModule) throw new TransactionValidationException("飞机运动模板类型不受支持");
-        var module = doc.FindConstructors(PlaneModule).SingleOrDefault(c => c.TypeTokenIndex == end + 2) ?? throw new TransactionValidationException("飞机运动模板不唯一");
+        if (end + 2 >= tokens.Count || tokens[end + 1].Text != "is" || tokens[end + 2].Text != PlaneModule) throw new TransactionValidationException("飞机运动模板类型不受支持", "aviation.unsupported");
+        var module = doc.FindConstructors(PlaneModule).SingleOrDefault(c => c.TypeTokenIndex == end + 2) ?? throw new TransactionValidationException("飞机运动模板不唯一", "aviation.unsupported");
         foreach (var key in new[] { "AltitudeGRU", "AltitudeMinGRU" })
         {
             var values = doc.FindDirectAssignments(module, key);
-            if (values.Count != 1 || string.Concat(doc.Raw(values[0]).Where(c => !char.IsWhiteSpace(c))) != "<" + key + ">") throw new TransactionValidationException("飞机高度模板映射不受支持");
+            if (values.Count != 1 || string.Concat(doc.Raw(values[0]).Where(c => !char.IsWhiteSpace(c))) != "<" + key + ">") throw new TransactionValidationException("飞机高度模板映射不受支持", "aviation.unsupported");
         }
         var max = doc.FindDirectAssignments(module, "AltitudeMaxGRU");
-        if (max.Count != 1) throw new TransactionValidationException("飞机最大高度缺失或多义");
+        if (max.Count != 1) throw new TransactionValidationException("飞机最大高度缺失或多义", "aviation.unsupported");
         var raw = doc.Raw(max[0]);
         if (double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var literal) && double.IsFinite(literal)) return literal;
         // The supported standard template uses this exact relative constant binding.
-        if (raw != "~/MaxAltitudeGRU") throw new TransactionValidationException("飞机最大高度引用不受支持，不能确认上限");
+        if (raw != "~/MaxAltitudeGRU") throw new TransactionValidationException("飞机最大高度引用不受支持，不能确认上限", "aviation.unsupported");
         var constants = Read("GameData/Gameplay/Unit/AirplaneConstantes.ndf");
         var definition = new Rules.RuleDefinition(0, "飞机最大高度", "", "", "MaxAltitudeGRU", null);
         var group = Rules.RuleWorkspace.Read(definition, constants);
-        if (!group.CanEdit || group.Cells.Count != 1) throw new TransactionValidationException("飞机最大高度常量缺失、多义或不是直接数值");
+        if (!group.CanEdit || group.Cells.Count != 1) throw new TransactionValidationException("飞机最大高度常量缺失、多义或不是直接数值", "aviation.unsupported");
         return Number(group.Cells[0].Raw);
     }
 }

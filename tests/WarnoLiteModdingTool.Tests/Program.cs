@@ -31,6 +31,21 @@ internal static partial class Program
     private static async Task<int> Main(string[] args)
     {
         VanillaNames.Replace(SyntheticNames());
+        if (args is ["--distance-scale"]) { await DistanceScaleContracts(); await DistanceScaleTransactions(); Console.WriteLine("PASS distance scale contracts and transactions"); return 0; }
+        if (args is ["--distance-scale-ui"]) { await DistanceScaleUi(); return 0; }
+        if (args is ["--road-speed-ui"]) { await RoadSpeedUi(); return 0; }
+        if (args is ["--road-speed"]) { await RoadSpeedContracts(); await RoadSpeedTransactions(); Console.WriteLine("PASS road speed contracts and transactions"); return 0; }
+        if (args is ["--deletion-old-reader", var oldDeleteCore]) { await DeletionOldReader(oldDeleteCore); return 0; }
+        if (args is ["--deletion"]) { await DeletionFocused(); return 0; }
+        if (args is ["--deletion-ui"]) { await DeletionUi(); return 0; }
+        if (args is ["--source"]) { await SourceFocused(); return 0; }
+        if (args is ["--source-opt"]) { await SourceOptimization(); return 0; }
+        if (args is ["--source-environment"]) {await SourceEnvironment();return 0;}
+        if (args is ["--source-opt-perf",var sourceMode,var sourceAssembly]) { await SourceOptimizationPerformance(sourceMode,sourceAssembly);return 0; }
+        if (args is ["--source-ui"]) { await SourceUi(); return 0; }
+        if (args is ["--source-ui-large"]) {await SourceUi(true);return 0;}
+        if (args is ["--source-perf"]) { await SourcePerformance(); return 0; }
+        if (args is ["--source-old-reader", var sourceOldCore]) { await SourceOldReader(sourceOldCore); return 0; }
         if (args is ["--aviation-old-reader", var oldAviation]) { await AviationOldReader(oldAviation); return 0; }
         if (args is ["--aviation-ui"]) { await AviationUi(); return 0; }
         if (args is ["--changes"]) { await ChangeFocusedTests(); return 0; }
@@ -119,6 +134,14 @@ internal static partial class Program
 
         var tests = new (string Name, Func<Task> Run)[]
         {
+            ("源码工作台 文件发现与草稿", SourceDiscoveryAndDrafts),
+            ("源码工作台 整组提交与恢复", SourceCommitAndRestore),
+            ("源码工作台 外部变化与并发", SourceConflicts),
+            ("源码工作台 写入故障与恢复", SourceFailures),
+            ("源码工作台 语法搜索与编码", SourceLanguageAndEncoding),
+            ("源码工作台 表单依赖协调", SourceBusinessCoordination),
+            ("源码工作台 优化回归", SourceOptimization),
+            ("2.11.1 删除专项", DeletionFocused),
             ("2.10.1 航空字段与批量", AviationContracts),
             ("2.10.1 航空组合提交与恢复", AviationTransactions),
             ("2.10.1 航空跨版本数值", AviationChangeMerge),
@@ -162,6 +185,10 @@ internal static partial class Program
             ("1.9.21 矩阵批改与独立规则", DamageMathAndStandalone),
             ("1.9.21 应用后伤害缓存与连续编辑", DamageRefresh),
             ("1.9.21 专业已有阶梯引用与组合", DamageReferenceSelection),
+            ("距离比例尺定位与边界", DistanceScaleContracts),
+            ("距离比例尺提交与恢复", DistanceScaleTransactions),
+            ("公路倍率字段、批量与边界", RoadSpeedContracts),
+            ("公路倍率组合应用与失败恢复", RoadSpeedTransactions),
             ("1.9.20 补给量字段、批量与边界", SupplyCapacityContracts),
             ("1.9.20 补给量组合应用与失败恢复", SupplyCapacityTransactions),
             ("1.9.18 师徽注册与同批合并", Emblem1918Registration),

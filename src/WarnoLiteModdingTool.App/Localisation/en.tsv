@@ -1646,3 +1646,76 @@ AI 难度|AI difficulty
 目标 Unit 中不存在唯一对应结构|The target Unit has no unique matching structure.
 直接显示已解析值|Parsed value, without conversion.
 最终飞机高度对象无法完整定位，修改未应用|Final aircraft altitude objects could not all be located; changes were not applied.
+
+开发者工作台|Developer workspace
+源码草稿与应用|Source drafts and apply
+选择 Mod 或源码项目根目录|Select a Mod or source project root
+刷新文件|Refresh files
+新建 NDF|New NDF
+保存草稿|Save draft
+检查|Check
+预览并应用源码|Review and apply source
+三方核对|Three-way review
+丢弃当前草稿|Discard current draft
+源码备份与恢复|Source backups and recovery
+生成 Mod|Generate Mod
+引用与字段工具|Reference and field tools
+查找文本|Find text
+替换文本|Replacement text
+区分大小写|Match case
+仅当前文件|Current file only
+查找|Find
+替换选中命中|Replace selected matches
+取消搜索|Cancel search
+自动换行|Word wrap
+文件名或相对路径|File name or relative path
+查找结果|Search results
+文本|Text
+问题与输出|Issues and output
+对象与引用|Objects and references
+源码直接修改共享本体；引用分析可能不完整。|Source edits affect shared objects directly. Reference analysis may be incomplete.
+定义|Definition
+引用|References
+返回|Back
+返回业务对象|Open business object
+源码工作台|Source workspace
+更多操作|More actions
+替换|Replace
+双击可识别的文件行定位源码|Double-click a recognized file and line to navigate
+
+撤销上次替换|Undo last replacement
+备份总览|Backup overview
+选择应用范围|Choose apply scope
+源码组与业务草稿分别预览和提交。是：打开完整源码组；否：仅预览本次选择的业务草稿；取消：返回。|Source and business drafts are reviewed and committed separately. Yes: open the entire source group; No: preview only the selected business drafts; Cancel: return.
+
+删除单位|Delete unit
+删除单位 / 撤销删除|Delete unit / Undo deletion
+删除目标|Deletion target
+引用处置|Reference actions
+引用数量|References
+未验证范围|Unverified scope
+强行删除（允许保留未解决引用）|Force delete (allow unresolved references)
+已了解残留引用和未验证范围，仍保存强行删除草稿|I reviewed the remaining references and unverified scope and want to save a force deletion draft
+可删除任意来源单位；保存草稿后仍需在应用预览中提交。共享武器、弹药、模型和图片保留。|Units from any source can be deleted. Save a draft, then commit in the apply preview. Shared weapons, ammunition, models and pictures are retained.
+残留引用可能导致生成或游戏加载失败。正式应用前创建备份，恢复会影响整份文件。|Remaining references may cause generation or game loading to fail. A backup is created before applying; restoration affects whole files.
+保留引用|Keep reference
+在工作台定位|Locate in workspace
+默认联动清理|Remove automatically
+此引用不能自动处理；普通删除需先解除，强行删除将保留原文。|This reference cannot be handled automatically. Resolve it before normal deletion; force deletion preserves it.
+保存强行删除草稿|Save force deletion draft
+请先核对残留引用和未验证范围|Review the remaining references and unverified scope first
+待强行删除|Pending force deletion
+待强行删除；可能保留引用，撤销后可继续编辑|Pending force deletion; references may remain. Undo deletion to resume editing.
+
+公路显示速度|Displayed road speed
+仅修改界面显示；实际公路加成由公路速度倍率单独控制|Changes the displayed value only; road speed bonus is controlled separately by the road speed multiplier.
+公路速度倍率|Road speed multiplier
+陆地运动的公路速度加成因子；不自动同步公路显示速度|Road speed bonus factor for ground movement; does not automatically update the displayed road speed.
+
+距离与比例尺|Distance and scale
+距离比例尺|Distance scale
+换算系数（LBU → GRU）|Conversion factor (LBU → GRU)
+全局距离单位换算，影响整个 Mod。输入大于 0 的 LBU→GRU 原始系数，不是 1:N 的分母；不会自动改写单位速度、射程或模型。具体游戏效果需实测。|Global distance-unit conversion affecting the entire Mod. Enter a positive raw LBU-to-GRU factor, not the denominator of a 1:N scale. Unit speeds, ranges and models are not rewritten automatically. In-game effects require testing.
+距离比例尺需要唯一的距离单位初始化结构|Distance scale requires one unambiguous distance-unit initialization structure.
+距离比例尺不是直接数值，无法安全修改|Distance scale is not a numeric literal and cannot be edited safely.
+距离换算系数必须大于 0|The distance conversion factor must be greater than zero.

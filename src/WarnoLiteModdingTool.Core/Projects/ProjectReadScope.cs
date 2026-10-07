@@ -15,6 +15,7 @@ public sealed class ProjectReadScope
     public static ProjectReadScope? Current => Ambient.Value;
     public long ReadBytes { get; private set; }
     public int ReadFiles { get; private set; }
+    public string[] ObservedPaths => _observed.Keys.ToArray();
     public int ReusedProjections { get; private set; }
     public ProjectLoadCache? DiskCache { get; set; }
     public HashSet<string> ChangedFiles { get; } = new(StringComparer.OrdinalIgnoreCase);

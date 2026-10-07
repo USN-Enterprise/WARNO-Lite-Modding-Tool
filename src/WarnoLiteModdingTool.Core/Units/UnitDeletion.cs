@@ -6,12 +6,12 @@ using WarnoLiteModdingTool.Core.Transactions;
 
 namespace WarnoLiteModdingTool.Core.Units;
 
-public sealed record UnitDeleteState(int Version, string Guid, Dictionary<string, string> Replacements);
+public sealed record UnitDeleteState(int Version, string Guid, Dictionary<string, string> Replacements, bool Force = false, string? Review = null);
 public sealed record UnitDeleteUse(string Key, string File, string Description, string? Field, bool Automatic);
 
 public static class UnitDeletion
 {
-    public static UnitDeleteState Read(DraftOperation op) => JsonSerializer.Deserialize<UnitDeleteState>(op.TargetRaw) is { Version: 1, Replacements: not null } state ? state : throw new InvalidDataException("删除草稿版本无效");
+    public static UnitDeleteState Read(DraftOperation op) => JsonSerializer.Deserialize<UnitDeleteState>(op.TargetRaw) is { Version: 1 or 2, Replacements: not null } state && (state.Version == 1 && !state.Force || state.Version == 2 && state.Review is not null) ? state : throw new InvalidDataException("删除草稿版本无效");
     public static string Key(UnitProjectGraph.Reference reference) => reference.File.Path + "|" + (reference.Owner?.Name ?? "") + "|" + reference.Token.Start;
     public static DraftOperation Operation(UnitRecord unit, Dictionary<string, string>? replacements = null)
     {
@@ -22,13 +22,13 @@ public static class UnitDeletion
     {
         try
         {
-            var state = Read(op); var unit = units.Units.Single(u => u.Name == op.ObjectName);
-            if (UnitCreation.Source(unit) != op.BaselineRaw || UnitIdentityEditing.GuidOf(op.BaselineRaw) != state.Guid) throw new InvalidDataException("删除单位基线已变化");
+            var state = Read(op); var unit = units.Units.Single(u => u.Name == op.ObjectName && UnitProjectGraph.Normalize(u.Source.RelativeSourceFile) == UnitProjectGraph.Normalize(op.RelativeSourceFile));
+            if (UnitCreation.Source(unit) != op.BaselineRaw || (state.Version == 2 ? UnitDeletionV2.GuidOf(op.BaselineRaw) : UnitIdentityEditing.GuidOf(op.BaselineRaw)) != state.Guid) throw new InvalidDataException("删除单位基线已变化");
             return new(op, DraftResolutionStatus.Active, "");
         }
         catch (Exception ex) when (ex is IOException or InvalidOperationException or JsonException) { return new(op, DraftResolutionStatus.Conflict, ex.Message); }
     }
-    private static (string? Field, NdfValueSpan? Array, NdfValueSpan? Element) Context(UnitProjectGraph.Reference reference)
+    internal static (string? Field, NdfValueSpan? Array, NdfValueSpan? Element) Context(UnitProjectGraph.Reference reference)
     {
         var doc = reference.File.Syntax;
         foreach (var constructor in doc.FindConstructors("TDeckDivisionRule"))
@@ -68,7 +68,7 @@ public static class UnitDeletion
     }
     public static void Plan(string root, UnitWorkspaceData units, IReadOnlyList<DraftOperation> operations, List<PlannedFileChange> files)
     {
-        foreach (var op in operations.Where(o => o.TargetKind == DraftTargetKind.UnitDelete))
+        foreach (var op in operations.Where(o => o.TargetKind == DraftTargetKind.UnitDelete && Read(o).Version == 1))
         {
             if (operations.Where(o => o.TargetKind == DraftTargetKind.UnitCreate).Any(o => UnitCreation.Read(o).Mother == op.ObjectName)) throw new TransactionValidationException("请先完成或调整以此单位为母版的创建草稿");
             var originalGraph = new UnitProjectGraph(root);

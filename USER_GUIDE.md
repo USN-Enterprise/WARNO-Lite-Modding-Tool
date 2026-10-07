@@ -1,6 +1,6 @@
 # WARNO Lite Modding Tool User Guide
 
-For version **2.10.1**, Windows x64. Available fields and features depend on the selected Mod's data and structure.
+For version **2.11.2**, Windows x64. Available fields and features depend on the selected Mod's data and structure.
 
 [Home](README.md#english) · [中文教程](使用教程.md) · [Release notes](RELEASE_NOTES.md#english)
 
@@ -59,7 +59,7 @@ For a first exercise, consider a dedicated test Mod. Transaction backups preserv
 3. Run `WarnoLiteModdingTool.exe`. Only one instance is allowed in the same Windows login session. If it reports that it is already running, return to the existing window.
 4. Before upgrading, close the old version normally. Extract the new version into a fresh directory. Drafts and transaction backups are stored inside the target Mod, not the editor installation.
 
-This guide describes 2.10.1. The download page may offer a later release; consult its release notes as well.
+This guide describes 2.11.2. The download page may offer a later release; consult its release notes as well.
 
 ### 2.2 Open an existing Mod
 
@@ -142,7 +142,7 @@ Each application saves relevant originals and a transaction manifest under `<Mod
 4. After confirmation, the editor first backs up the current state, then restores. Check the completion or failure message.
 5. Inspect the reloaded data and remaining drafts. Regenerate if the restored data should take effect in the game.
 
-Creation backups are also used to verify the origin of newly created units. Keep them while you still need operations such as deleting those units. These backups restore relevant files; they do not promise recovery of the whole game installation or every external manual edit.
+Creation backups are also used to verify the origin of newly created units. Retain them for provenance checks and exclusive new name cleanup; deletion no longer requires them as eligibility evidence. These backups restore relevant files; they do not promise recovery of the whole game installation or every external manual edit.
 
 <a id="units"></a>
 
@@ -153,9 +153,10 @@ Creation backups are also used to verify the origin of newly created units. Keep
 Select a unit and edit supported fields in the relevant groups: costs, deployment, survivability, vision, movement and other recognized parameters. Text inputs, dropdowns and tag selectors have different purposes. Unknown existing values are preserved.
 
 - A display name is different from an internal variable name. Units sharing a name token can be renamed independently. Creating or renaming requires the local name dictionaries to be loaded for collision checks.
-- **Aircraft movement (2.10.1)**: use **Mobility and endurance → Fixed-wing flight / Helicopter flight**. Basic mode includes aircraft flight altitude and turn radius, plus helicopter normal altitude, near-ground altitude and climb speed. Professional mode adds aircraft minimum altitude, pitch, roll, roll rate and evacuation angle. Only unique numeric literals in matching modules are editable. Altitudes remain in GRU, not real-world meters or a separate entry-altitude setting.
+- **Aircraft movement (2.11.1)**: use **Mobility and endurance → Fixed-wing flight / Helicopter flight**. Basic mode includes aircraft flight altitude and turn radius, plus helicopter normal altitude, near-ground altitude and climb speed. Professional mode adds aircraft minimum altitude, pitch, roll, roll rate and evacuation angle. Only unique numeric literals in matching modules are editable. Altitudes remain in GRU, not real-world meters or a separate entry-altitude setting.
 - **Aircraft maximum speed**: the existing maximum-speed control saves both generic and aircraft/helicopter movement speeds. Preview lists both changes. Opening a Mod preserves any original difference; resetting restores each original value. Batch formulas are supported, and linked speed drafts are applied or removed together.
-- **Validation and drafts**: minimum / near-ground altitude must not exceed normal altitude; fixed-wing normal altitude is checked against the selected Mod's maximum. Standard aircraft templates and direct movement modules are supported; unverified template mappings or ceilings prevent altitude application. Combined drafts can be saved before preview. Aviation drafts use schema 5 and require 2.10.1 or a later compatible reader; old drafts remain readable. Attack-strategy editing, global ceiling editing and a separate entry altitude are not included.
+- **Validation and drafts**: minimum / near-ground altitude must not exceed normal altitude; fixed-wing normal altitude is checked against the selected Mod's maximum. Standard aircraft templates and direct movement modules are supported; unverified template mappings or ceilings prevent altitude application. Combined drafts can be saved before preview. Aviation drafts use schema 5 and require 2.11.1 or a later compatible reader; old drafts remain readable. Attack-strategy editing, global ceiling editing and a separate entry altitude are not included.
+- **Road speed multiplier**: under **Mobility and endurance → Speed and handling**, edit `TLandMovementModuleDescriptor.SpeedBonusFactorOnRoad` individually or in batches in either mode. Enter the raw multiplier (for example, `1.5`); finite nonnegative decimals are accepted. Missing, referenced, expression-based or ambiguous fields are not created or guessed. The former **Maximum road speed** is now **Displayed road speed**, which only edits `DisplayRoadSpeedInKmph`. These fields are saved independently, without automatic synchronization or conversion.
 - **Supply capacity**: under **Mobility and endurance → Supply**, edit the supply points carried by a unit in either mode, including unit batch editing. Nonnegative values, including decimals, are accepted. Only a unique direct numeric `TSupplyModuleDescriptor.SupplyCapacity` is editable; missing or ambiguous structures are not created. This does not change supply rates or ammunition supply costs.
 - ECM is displayed as a positive percentage; do not copy the sign from raw NDF values. Basic vision inputs scale related vision values using their original ratios. Check the combined preview.
 - Forward deployment accepts a nonnegative distance or an existing preset from the current Mod. A reference preset does not automatically add every related ability to a unit.
@@ -195,9 +196,11 @@ Use **Edit Creation Settings** to revise a pending unit. Applying writes the ide
 
 - **Rename unit variable** in professional mode changes the internal identifier and updates verifiable references. It does not mean changing the display name; GUIDs, name tokens and registration numbers have separate roles.
 - **Check unit registration** can generate a targeted repair draft when the issue is identifiable. Read the diagnostic and proposed changes; there is no need to run it repeatedly on every unit without a reason.
-- **Delete created unit / undo deletion** can cancel an unapplied creation. Deleting an applied unit requires verification of its creation backup and identity in the current project.
-- The deletion preview lists references. Safe division-rule and transport-candidate cleanup is linked to deletion; other users may need a replacement or removal of their reference first. Shared Weapon/Ammo resources remain.
-- Undo pending deletion before applying, or restore through file-level backups afterward. This is not a general-purpose command to delete arbitrary vanilla units.
+- **Delete unit / Undo deletion** is at the top of the unit inspector. It can cancel unapplied creation or delete existing units, units made by other tools, and units without creation backups.
+- Normal deletion lists references, removes verifiable registrations/division rules/transport candidates, and requires valid replacements for remaining supported uses. Unresolved references or unverified files prevent normal deletion. Scanning includes NDF files in custom folders.
+- In Professional mode, enable **Force delete (allow unresolved references)**. Review the residuals and unverified scope, then save the force deletion draft. Shared Weapon/Ammo, models and images are retained; name rows without verified creation provenance remain. Dangling references may cause generation or game loading to fail.
+- **Locate in workspace** closes the deletion dialog and opens the reference location. Reopen deletion after resolving references. Saving a draft does not change formal data; use the common apply preview to commit. Undo before applying, or restore through file-level backups afterward.
+- New deletion drafts use schema7 and deletion/reserved-number history uses v2. Older versions reject these formats; continue with 2.11.1 or a compatible newer build. Deleted registration numbers remain reserved against automatic reuse. External deck codes and saved games are not repaired automatically.
 
 ### 6.6 Unit portraits
 
@@ -367,6 +370,10 @@ Air layouts provide grid presets and card scaling:
 3. Scaling uses the card dimensions in the current formal files. Repeated previews do not compound. After application and reload, the new dimensions become the `1×` baseline, so another multiplier acts on those new dimensions.
 4. Takeoff interval, firing during evacuation and evacuation altitude are professional-mode settings. Check the actual layout and behavior in the game after generation.
 
+**Distance scale (professional mode)**: open **Game rules → Distance and scale → 55. Distance scale**. Edit `LBUToGRUConversionFactor` in the selected Mod's `CommonData/Gameplay/Constantes/InitialisationGameDistanceUnits.ndf`. Enter a positive raw LBU-to-GRU factor, not the denominator of an old 1:N scale. The original value comes from the current file. Unit speeds, weapon ranges and models are not rewritten automatically; generate and test the Mod to establish in-game effects.
+
+Changes use drafts, preview, backup and apply, with draft undo and backup restoration. Missing files/fields, duplicate structures, references and expressions are not created or guessed. This rule works without the unit module.
+
 ### 10.2 Experience-route levels and effects
 
 1. Expand experience/veterancy, then a route and level.
@@ -402,6 +409,28 @@ This release does not add/delete/reorder families or indices, edit suppression m
 <a id="professional"></a>
 
 ## 11. Professional tools and reference inspection
+
+### Developer workspace (2.11.1)
+
+Enable Professional mode and open **Developer workspace**. Select the Mod root; source editing also works without recognized unit or weapon modules. The tree recursively includes every `.ndf` (case-insensitive) and accompanying CSV in the root, hidden folders and arbitrary custom subfolders. There is no GameData or known-filename whitelist.
+
+1. Double-click a file to open a tab. Edits automatically save as source drafts; Ctrl+S saves immediately, including incomplete syntax. ● means unsaved input; ◇ means a pending source draft. Closing a tab preserves its draft.
+2. Ctrl+F searches the current editor; Ctrl+Shift+F / Ctrl+H focuses project search/replace. Search uses open buffers and saved drafts. Select matches before replacing; changed text invalidates stale search positions.
+3. **New NDF** takes a project-relative path. Ctrl+G goes to a line, F12 looks for definitions, and Ctrl+Space offers words observed in this project. The outline and references are partial indexes. Navigation remains in **More actions** at narrow widths. Ctrl+mouse wheel adjusts code font size.
+4. **Review and apply source** includes **all source drafts in this project**. Review each original/result and the unverified scope, then acknowledge before backing up and applying. NDF output is UTF-8 without BOM; conversion from other encodings requires confirmation.
+5. For external edits, use **More actions → Three-way review** to compare the original, disk and editable merged result. **Source backups and recovery** restores source transactions and handles interrupted commits. Resolve existing drafts before restoring a completed transaction.
+
+Search returns all matches in pages of up to 500; Ctrl+A selects the current page. Replacements show a before/after preview and save drafts only. **More actions → Undo last replacement** reverses the entire batch unless later edits require resolution first.
+
+The diff supports change navigation and a single-column view. Reopening restores tab order, the active tab, positions, font sizes and panel dimensions, loading inactive tabs on demand. The status bar distinguishes unchanged, unsaved, saving, saved draft, disk conflict and applied-but-cleanup-pending states, with line-ending information.
+
+**More actions → Backup overview** lists business backups, source transactions and cross-version restores, routing each to its recovery flow. Three-way review navigates disk/merged differences and can copy either the disk or local version into the editable result.
+
+Source and form drafts cannot overlap a file or read dependency. Unrelated drafts may coexist; select business drafts alone in the draft overview to apply them separately. Mixed selections prompt for the review scope. Source drafts still commit as a full group. Basic mode retains the source-draft entry. Existing reference/field tools remain under **More actions**. Direct source edits change shared objects without automatic per-unit isolation.
+
+Check and apply use the same pending source candidate. Validation covers limited lexical structure, some known fields/rules, dictionary tokens and recognized aviation height/linked-speed combinations. Existing errors do not exempt newly identifiable errors in other objects. Unmapped rules, unknown semantics, complete references, other cross-file constraints and game behavior remain unverified. Large files remain editable but use reduced highlighting/indexing and may consume substantial memory. Keep `.warno-editor/source-transactions` in the selected Mod for recovery. Generation is explicit and uses formal files only; double-click recognizable file/line entries in the output to navigate.
+
+Source drafts use schema6, which older versions refuse to read. Finish or explicitly discard source drafts with this version before returning to an older release. Clean-Windows deployment, actual cross-monitor DPI, IME composition and in-game checks remain unverified in this preview.
 
 Enable **Professional mode** for additional raw values, field paths, file locations and source information, and access to the reference workbench.
 
@@ -478,7 +507,7 @@ For reports to **QQ group 1013181135**, include the tool version, module, failin
 ## 14. Current limits
 
 - The editor targets structurally compatible Mods; it cannot safely write every unknown NDF structure. Missing, ambiguous or conflicting structures preserve original text and restrict the affected feature.
-- Units and divisions can be created from templates. Blank unit creation, cross-Mod unit import, arbitrary existing-unit deletion and whole-division deletion are not supported.
+- Units and divisions can be created from templates. Deletion of units from any source and professional force deletion are supported. Blank unit creation, cross-Mod unit import and whole-division deletion are not supported.
 - There is no separate default-deck editing page. Automatic registration during template creation does not mean unrestricted default-deck editing.
 - Weapon slot changes require supported structures; in-game effects remain unverified. Model, animation and camouflage authoring are not provided. Image editing covers unit portraits and division-emblem PNGs.
 - Army General edits existing battalion contents and pawn properties, not whole-battalion creation or campaign maps, events and stories.

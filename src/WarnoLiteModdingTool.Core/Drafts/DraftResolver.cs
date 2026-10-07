@@ -28,6 +28,7 @@ public static class DraftResolver
         var result = new List<ResolvedDraftOperation>();
         foreach (var operation in operations)
         {
+            if (operation.TargetKind == DraftTargetKind.SourceFile) { result.Add(SourceWorkspace.SourceEditing.Resolve(workspace.Localisation.ProjectRoot, operation)); continue; }
             if (operation.TargetKind == DraftTargetKind.DamageRule) { result.Add(workspace.Rules?.Damage.Resolve(operation) ?? new(operation, DraftResolutionStatus.Conflict, "伤害规则未加载")); continue; }
             if (operation.TargetKind == DraftTargetKind.DamageDistance) { result.Add(workspace.Rules is null ? new(operation, DraftResolutionStatus.Conflict, "伤害规则未加载") : DamageDistance.Resolve(workspace.Rules.Damage, weapons, operation)); continue; }
             if (operation.TargetKind == DraftTargetKind.WeaponStructure) { result.Add(WeaponStructure.Resolve(workspace, weapons, operation, operations)); continue; }

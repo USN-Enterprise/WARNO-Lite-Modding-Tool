@@ -36,7 +36,8 @@ public static class UnitFieldDefinitions
             "生存与防护"),
 
         ScalarDecimal("movement.maxSpeed", "机动与续航", "速度与操纵", "最大速度", "通用移动模块速度", "TGenericMovementModuleDescriptor", "MaxSpeedInKmph", "km/h"),
-        ScalarDecimal("movement.roadSpeed", "机动与续航", "速度与操纵", "最大公路速度", "单位在公路上的最高速度", "TUnitUIModuleDescriptor", "DisplayRoadSpeedInKmph", "km/h"),
+        ScalarDecimal("movement.roadSpeed", "机动与续航", "速度与操纵", "公路显示速度", "仅修改界面显示；实际公路加成由公路速度倍率单独控制", "TUnitUIModuleDescriptor", "DisplayRoadSpeedInKmph", "km/h"),
+        ScalarDecimal("movement.roadSpeedFactor", "机动与续航", "速度与操纵", "公路速度倍率", "陆地运动的公路速度加成因子；不自动同步公路显示速度", "TLandMovementModuleDescriptor", "SpeedBonusFactorOnRoad", "×"),
         ScalarDecimal("movement.acceleration", "机动与续航", "速度与操纵", "加速度", "陆地移动模块加速度系数", "TLandMovementModuleDescriptor", "MaxAccelerationGRU", "GRU"),
         ScalarDecimal("movement.deceleration", "机动与续航", "速度与操纵", "减速度", "陆地移动模块减速度系数", "TLandMovementModuleDescriptor", "MaxDecelerationGRU", "GRU"),
         ScalarDecimal("movement.turnTime", "机动与续航", "速度与操纵", "转向时间", "陆地移动模块转向时间系数", "TLandMovementModuleDescriptor", "TempsDemiTour", "秒"),

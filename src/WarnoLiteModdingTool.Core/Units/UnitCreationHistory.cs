@@ -5,7 +5,8 @@ using WarnoLiteModdingTool.Core.Transactions;
 namespace WarnoLiteModdingTool.Core.Units;
 
 public sealed record CreatedUnitIdentity(string Guid, string Name, string Mother, string Token, int SerializerId, string Source, string Evidence, bool Deleted = false, string? NamingRoot = null);
-public sealed record UnitCreationLedger(int Version, IReadOnlyList<CreatedUnitIdentity> Units, IReadOnlyList<int> ReservedIds);
+public sealed record DeletedUnitIdentity(string Source, string Name, string Guid, string BackupId, bool Force, int[] RemovedIds, DateTimeOffset? DraftUtc = null);
+public sealed record UnitCreationLedger(int Version, IReadOnlyList<CreatedUnitIdentity> Units, IReadOnlyList<int> ReservedIds, IReadOnlyList<DeletedUnitIdentity>? DeletedUnits = null);
 
 public static class UnitCreationHistory
 {
@@ -14,7 +15,7 @@ public static class UnitCreationHistory
     {
         var path = TextFileSnapshot.ResolveInsideRoot(root, LedgerPath);
         if (!File.Exists(path)) return new(1, [], []);
-        return JsonSerializer.Deserialize<UnitCreationLedger>(File.ReadAllText(path)) is { Version: 1, Units: not null, ReservedIds: not null } ledger ? ledger : throw new InvalidDataException("新建单位来源记录无效");
+        return JsonSerializer.Deserialize<UnitCreationLedger>(File.ReadAllText(path)) is { Version: 1 or 2, Units: not null, ReservedIds: not null } ledger ? ledger : throw new InvalidDataException("单位来源记录版本不支持 / Unsupported unit history version");
     }
     public static CreatedUnitIdentity Require(UnitProjectGraph graph, string file, string name)
     {
@@ -41,13 +42,23 @@ public static class UnitCreationHistory
         }
         throw new TransactionValidationException("无法核对本项目成功创建记录，请保留或提供对应创建备份：" + name);
     }
-    public static void Plan(string root, IReadOnlyList<DraftOperation> ops, List<PlannedFileChange> files, string backupId)
+    public static void Plan(string root, IReadOnlyList<DraftOperation> ops, List<PlannedFileChange> files, string backupId, UnitDeleteResult? deletion = null)
     {
         if (!ops.Any(o => o.TargetKind is DraftTargetKind.UnitCreate or DraftTargetKind.UnitRename or DraftTargetKind.UnitDelete)) return;
         var ledger = Load(root); var units = ledger.Units.ToList(); var ids = ledger.ReservedIds.ToHashSet();
-        var graph = new UnitProjectGraph(root);
+        var deleted = ledger.DeletedUnits?.ToList() ?? []; var version = ledger.Version;
+        var graph = new UnitProjectGraph(root, deletionScope: ops.Any(UnitDeletionV2.IsNew));
         foreach (var op in ops)
         {
+            if (UnitDeletionV2.IsNew(op))
+            {
+                var state = UnitDeletion.Read(op); var removed = deletion?.RemovedIds.GetValueOrDefault(op.Id) ?? [];
+                ids.UnionWith(removed); version = 2;
+                deleted.Add(new(op.RelativeSourceFile, op.ObjectName, state.Guid, backupId, state.Force, removed, op.UpdatedUtc));
+                for (var i = 0; i < units.Count; i++)
+                    if (units[i].Source == op.RelativeSourceFile && units[i].Name == op.ObjectName && units[i].Guid == state.Guid) units[i] = units[i] with { Deleted = true };
+                continue;
+            }
             if (op.TargetKind == DraftTargetKind.UnitCreate)
             {
                 var s = UnitCreation.Read(op); units.RemoveAll(u => u.Guid == "GUID:{" + s.Guid + "}");
@@ -64,6 +75,6 @@ public static class UnitCreationHistory
                 else units.Add(entry with { Name = UnitIdentityEditing.Read(op).NewName });
             }
         }
-        UnitProjectGraph.Put(root, LedgerPath, JsonSerializer.Serialize(new UnitCreationLedger(1, units, ids.Order().ToArray()), new JsonSerializerOptions { WriteIndented = true }), files, "维护新建单位来源与保留编号", FormalTextFileKind.Metadata);
+        UnitProjectGraph.Put(root, LedgerPath, JsonSerializer.Serialize(new UnitCreationLedger(version, units, ids.Order().ToArray(), deleted), new JsonSerializerOptions { WriteIndented = true }), files, "维护单位来源、删除记录与保留编号", FormalTextFileKind.Metadata);
     }
 }

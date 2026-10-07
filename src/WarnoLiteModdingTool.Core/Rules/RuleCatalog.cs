@@ -1,9 +1,9 @@
 namespace WarnoLiteModdingTool.Core.Rules;
-public sealed record RuleDefinition(int Number, string Label, string File, string Constructor, string Fields, string? MapKey)
+public sealed record RuleDefinition(int Number, string Label, string File, string Constructor, string Fields, string? MapKey, string? SourcePath = null, string? Hint = null)
 {
     public bool Basic => Number <= 16 || Number is >= 33 and <= 48 || Number == 54;
-    public string Category => Number switch { >=51 => "空军", >=49 => "AI 难度", >=33 => "将军模式", >=23 and <=30 => "后勤与补给", >=17 => "战斗与单位行为", >=13 => "AI 难度", >=3 and <=6 => "对局设置", _ => "经济与收入" };
-    public string RelativePath => Number==54 ? AirLayout.Directory+AirLayout.Files[0] : "GameData/Gameplay/Constantes/" + File;
+    public string Category => Number switch { 55 => "距离与比例尺", >=51 => "空军", >=49 => "AI 难度", >=33 => "将军模式", >=23 and <=30 => "后勤与补给", >=17 => "战斗与单位行为", >=13 => "AI 难度", >=3 and <=6 => "对局设置", _ => "经济与收入" };
+    public string RelativePath => SourcePath ?? (Number==54 ? AirLayout.Directory+AirLayout.Files[0] : "GameData/Gameplay/Constantes/" + File);
 }
 public static class RuleCatalog
 {
@@ -62,5 +62,8 @@ public static class RuleCatalog
         new(52, "撤离时允许开火", "Airplane.ndf", "TAirplaneConstantesModernWarfareDescriptor", "UtiliserArmesPendantEvac", null),
         new(53, "撤离高度（GRU）", "Airplane.ndf", "TAirplaneConstantesModernWarfareDescriptor", "EvacuationAltitudeGRU", null),
         new(54, "飞机栏容量与布局", "", "AirLayout", "grid;scale", null),
+        new(55, "距离比例尺", "", "TInitialisationGameDistanceUnits", "LBUToGRUConversionFactor", null,
+            "CommonData/Gameplay/Constantes/InitialisationGameDistanceUnits.ndf",
+            "全局距离单位换算，影响整个 Mod。输入大于 0 的 LBU→GRU 原始系数，不是 1:N 的分母；不会自动改写单位速度、射程或模型。具体游戏效果需实测。"),
     ];
 }

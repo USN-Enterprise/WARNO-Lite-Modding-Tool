@@ -22,6 +22,10 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
         DraftStore draftStore,
         CancellationToken cancellationToken = default)
     {
+        if (preview.SourceSnapshot is not null) return await SourceWorkspace.SourceTransactions.Commit(preview, draftStore, cancellationToken);
+        using var projectGate = ProjectWriteGate.Enter(preview.ProjectRoot);
+        SourceWorkspace.SourceTransactions.EnsureRecovered(preview.ProjectRoot);
+        await SourceWorkspace.SourceEditing.CheckCoexistence(preview.ProjectRoot, draftStore.Operations, cancellationToken);
         if (!string.Equals(Path.GetFullPath(draftStore.ProjectRoot), Path.GetFullPath(preview.ProjectRoot), StringComparison.OrdinalIgnoreCase))
         {
             throw new TransactionValidationException("草稿存储与应用项目不一致。");
@@ -39,6 +43,15 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
                 throw new TransactionValidationException("单位或能力引用在预览后变化，请重新预览");
             if(preview.DraftReview is not null && System.Text.Json.JsonSerializer.Serialize(preview.DraftReview) != System.Text.Json.JsonSerializer.Serialize(draftStore.Operations))
                 throw new TransactionValidationException("关联草稿在预览后变化，请重新预览");
+        }
+        if (preview.DeletionReview is { } deletionReview)
+        {
+            var current = new Units.UnitProjectGraph(preview.ProjectRoot, deletionScope: true);
+            if (!current.CatalogPaths.SequenceEqual(deletionReview.CatalogPaths) || !current.CoverageIssues.Order().SequenceEqual(deletionReview.CoverageIssues.Order()) ||
+                current.Dependencies.Count != deletionReview.Dependencies.Count || current.Dependencies.Any(p => !deletionReview.Dependencies.TryGetValue(p.Key, out var bytes) || !bytes.AsSpan().SequenceEqual(p.Value)))
+                throw new TransactionValidationException("删除扫描范围或内容已变化，请重新预览 / Deletion scan changed; review again");
+            if (preview.DraftReview is not null && System.Text.Json.JsonSerializer.Serialize(preview.DraftReview) != System.Text.Json.JsonSerializer.Serialize(draftStore.Operations))
+                throw new TransactionValidationException("关联草稿已变化，请重新预览 / Related drafts changed; review again");
         }
         foreach(var pair in preview.PictureReadDependencies)
         {
@@ -72,7 +85,7 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
             preview.Files,
             preview.Operations,
             cancellationToken);
-        var warnings = new List<string>();
+        var warnings = preview.DeletionWarnings.ToList();
         try
         {
             await draftStore.ApplyBatchAsync([], preview.Operations.Select(o => o.Id).ToArray(), CancellationToken.None);
@@ -100,7 +113,7 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
         return new TransactionResult(
             true,
             preview.BackupId,
-            warnings.Count == 0 ? "应用完成" : "应用完成，但有收尾警告",
+            warnings.Count == 0 ? "应用完成" : preview.DeletionWarnings.Length > 0 ? "已强行删除，存在残留或未验证范围 / Force deletion completed with unresolved references or unverified scope" : "应用完成，但有收尾警告",
             preview.LogRelativePath,
             warnings);
     }
@@ -166,6 +179,10 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
         RestorePreview preview,
         CancellationToken cancellationToken = default)
     {
+        using var projectGate = ProjectWriteGate.Enter(preview.ProjectRoot);
+        SourceWorkspace.SourceTransactions.EnsureRecovered(preview.ProjectRoot, false);
+        using var drafts = new DraftStore(preview.ProjectRoot);
+        if ((await drafts.LoadAsync(cancellationToken)).IsBlocked || drafts.Operations.Any(o => o.TargetKind == DraftTargetKind.SourceFile)) throw new InvalidOperationException("请先处理源码草稿 / Resolve source drafts before restoring");
         var backupStore = new TransactionBackupStore(preview.ProjectRoot);
         var manifest = await ExecuteAsync(
             backupStore,
@@ -203,7 +220,11 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
         IReadOnlyList<DraftOperation> operations,
         CancellationToken cancellationToken)
     {
-        ValidatePlannedFiles(backupStore.ProjectRoot, changes);
+        var deletionPaths = operations.Any(Units.UnitDeletionV2.IsNew)
+            ? changes.Where(f => f.Kind == FormalTextFileKind.Ndf).Select(f => f.RelativePath).ToHashSet(StringComparer.OrdinalIgnoreCase)
+            : kind == "Restore" && sourceBackupId is not null
+                ? backupStore.Load(sourceBackupId).Files.Where(f => f.Kind == nameof(FormalTextFileKind.Ndf)).Select(f => f.RelativePath).ToHashSet(StringComparer.OrdinalIgnoreCase) : null;
+        ValidatePlannedFiles(backupStore.ProjectRoot, changes, deletionPaths);
         var manifest = await backupStore.CreateAsync(
             backupId,
             kind,
@@ -307,7 +328,7 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
         }
     }
 
-    private static void ValidatePlannedFiles(string projectRoot, IReadOnlyList<PlannedFileChange> changes)
+    private static void ValidatePlannedFiles(string projectRoot, IReadOnlyList<PlannedFileChange> changes, IReadOnlySet<string>? deletionPaths = null)
     {
         if (changes.Count == 0 || changes.Select(item => item.RelativePath).Distinct(StringComparer.OrdinalIgnoreCase).Count() != changes.Count)
         {
@@ -326,7 +347,7 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
             var allowed = change.Kind switch
             {
                 FormalTextFileKind.Binary => relative.StartsWith("GameData/Assets/2D/", StringComparison.OrdinalIgnoreCase) && relative.EndsWith(".png", StringComparison.OrdinalIgnoreCase),
-                FormalTextFileKind.Ndf => relative.StartsWith("GameData/", StringComparison.OrdinalIgnoreCase) || relative.StartsWith("CommonData/", StringComparison.OrdinalIgnoreCase),
+                FormalTextFileKind.Ndf => relative.StartsWith("GameData/", StringComparison.OrdinalIgnoreCase) || relative.StartsWith("CommonData/", StringComparison.OrdinalIgnoreCase) || deletionPaths?.Contains(relative) == true && SourceWorkspace.SourceFiles.IsNdf(relative) && !relative.StartsWith(".warno-editor/", StringComparison.OrdinalIgnoreCase),
                 FormalTextFileKind.Csv => relative.StartsWith("GameData/", StringComparison.OrdinalIgnoreCase),
                 FormalTextFileKind.Metadata => relative == Units.UnitCreationHistory.LedgerPath,
                 FormalTextFileKind.Log => relative.StartsWith("logs/", StringComparison.OrdinalIgnoreCase),
@@ -336,6 +357,7 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
             {
                 throw new TransactionValidationException($"事务文件不在允许目录：{relative}");
             }
+            if (change.Kind == FormalTextFileKind.Ndf) _ = SourceWorkspace.SourceFiles.Resolve(projectRoot, relative);
         }
     }
 

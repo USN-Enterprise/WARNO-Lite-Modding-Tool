@@ -1,0 +1,81 @@
+<Window x:Class="WarnoLiteModdingTool.App.SourceWorkspace.SourceWorkspaceWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:l="clr-namespace:WarnoLiteModdingTool.App.Localisation" xmlns:s="clr-namespace:WarnoLiteModdingTool.App.SourceWorkspace"
+ Title="{l:Loc Key='开发者工作台'}" Width="1320" Height="850" MinWidth="800" MinHeight="560"
+ Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextBrush}" WindowStartupLocation="CenterOwner">
+ <Grid Margin="14" Background="{DynamicResource BackgroundBrush}">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <StackPanel>
+   <TextBlock Text="{l:Loc Key='开发者工作台'}" FontSize="18" FontWeight="SemiBold"/>
+   <TextBlock x:Name="ProjectLabel" Foreground="{DynamicResource MutedTextBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,8"/>
+   <WrapPanel x:Name="Actions">
+    <Button Content="{l:Loc Key='刷新文件'}" Click="Refresh_Click" Style="{DynamicResource SecondaryButton}" Margin="0,0,8,6"/>
+    <Button Content="{l:Loc Key='新建 NDF'}" Click="New_Click" Style="{DynamicResource SecondaryButton}" Margin="0,0,8,6"/>
+    <Button Content="{l:Loc Key='保存草稿'}" Click="Save_Click" Style="{DynamicResource SecondaryButton}" Margin="0,0,8,6"/>
+    <Button Content="{l:Loc Key='检查'}" Click="Check_Click" Style="{DynamicResource SecondaryButton}" Margin="0,0,8,6"/>
+    <Button Content="{l:Loc Key='预览并应用源码'}" Click="Apply_Click" Style="{DynamicResource SecondaryButton}" Margin="0,0,8,6"/>
+    <Button Content="{l:Loc Key='更多操作'}" Click="More_Click" Style="{DynamicResource SecondaryButton}" Margin="0,0,8,6"/>
+   </WrapPanel>
+  </StackPanel>
+  <WrapPanel Grid.Row="1" Margin="0,0,0,8">
+   <TextBlock Text="{l:Loc Key='查找'}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+   <TextBox x:Name="Query" Width="150" ToolTip="{l:Loc Key='查找文本'}" Margin="0,0,6,0"/>
+   <TextBlock Text="{l:Loc Key='替换'}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+   <TextBox x:Name="Replacement" Width="160" ToolTip="{l:Loc Key='替换文本'}" Margin="0,0,6,0"/>
+   <CheckBox x:Name="MatchCase" Content="{l:Loc Key='区分大小写'}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+   <CheckBox x:Name="CurrentOnly" Content="{l:Loc Key='仅当前文件'}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+   <Button Content="{l:Loc Key='查找'}" Click="Search_Click" Style="{DynamicResource SecondaryButton}" Margin="0,0,6,0"/>
+   <Button Content="{l:Loc Key='替换选中命中'}" Click="Replace_Click" Style="{DynamicResource SecondaryButton}" Margin="0,0,6,0"/>
+   <Button Content="{l:Loc Key='取消搜索'}" Click="Cancel_Click" Style="{DynamicResource SecondaryButton}" Margin="0,0,6,0"/>
+   <CheckBox x:Name="Wrap" Content="{l:Loc Key='自动换行'}" Checked="Wrap_Changed" Unchecked="Wrap_Changed" VerticalAlignment="Center"/>
+  </WrapPanel>
+  <Grid Grid.Row="2" x:Name="Body">
+   <Grid.ColumnDefinitions><ColumnDefinition Width="235" MinWidth="150"/><ColumnDefinition Width="6"/><ColumnDefinition Width="*" MinWidth="280"/><ColumnDefinition Width="6"/><ColumnDefinition x:Name="DetailsColumn" Width="260" MinWidth="0"/></Grid.ColumnDefinitions>
+   <DockPanel Background="{DynamicResource SurfaceAltBrush}">
+    <TextBlock Text="{l:Loc Key='文件名或相对路径'}" DockPanel.Dock="Top" Margin="6,6,6,0" FontSize="12"/>
+    <TextBox x:Name="PathFilter" DockPanel.Dock="Top" ToolTip="{l:Loc Key='文件名或相对路径'}" TextChanged="PathFilter_Changed" Margin="6"/>
+    <TextBlock x:Name="FileCount" DockPanel.Dock="Bottom" FontSize="12" Foreground="{DynamicResource MutedTextBrush}" Margin="6" TextWrapping="Wrap"/>
+    <TreeView x:Name="FileTree" MouseDoubleClick="FileTree_Open" KeyDown="FileTree_KeyDown" BorderThickness="0" Background="Transparent" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+     <TreeView.ItemTemplate><HierarchicalDataTemplate DataType="{x:Type s:SourceTreeNode}" ItemsSource="{Binding Children}"><TextBlock Text="{Binding Name}" ToolTip="{Binding Path}"/></HierarchicalDataTemplate></TreeView.ItemTemplate>
+     <TreeView.ItemContainerStyle><Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}"><Setter Property="Visibility" Value="{Binding Visibility}"/></Style></TreeView.ItemContainerStyle>
+    </TreeView>
+   </DockPanel>
+   <GridSplitter Grid.Column="1" Style="{DynamicResource PaneSplitter}" HorizontalAlignment="Stretch"/>
+   <Grid Grid.Column="2">
+    <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="6"/><RowDefinition x:Name="OutputRow" Height="160" MinHeight="65"/></Grid.RowDefinitions>
+    <TabControl x:Name="Documents" SelectionChanged="Document_Changed"/>
+    <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" Height="6" ResizeDirection="Rows" Background="{DynamicResource BorderBrush}"/>
+    <TabControl Grid.Row="2" x:Name="Results">
+     <TabItem Header="{l:Loc Key='查找结果'}">
+      <DockPanel>
+       <WrapPanel DockPanel.Dock="Bottom">
+        <Button Content="{l:Loc Key='上一页'}" Click="PreviousPage_Click" Style="{DynamicResource SecondaryButton}"/>
+        <Button Content="{l:Loc Key='下一页'}" Click="NextPage_Click" Style="{DynamicResource SecondaryButton}"/>
+        <TextBlock x:Name="SearchPageStatus" Margin="8,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+       </WrapPanel>
+      <DataGrid x:Name="Hits" IsReadOnly="True" AutoGenerateColumns="False" CanUserAddRows="False" SelectionMode="Extended" SelectionUnit="FullRow" MouseDoubleClick="Hits_Open" EnableRowVirtualization="True">
+       <DataGrid.Columns>
+        <DataGridTextColumn Header="{l:Loc Key='源文件'}" Binding="{Binding File}" Width="2*"/>
+        <DataGridTextColumn Header="{l:Loc Key='行号'}" Binding="{Binding Line}" Width="55"/>
+        <DataGridTextColumn Header="{l:Loc Key='文本'}" Binding="{Binding Context}" Width="3*"/>
+       </DataGrid.Columns>
+      </DataGrid>
+      </DockPanel>
+     </TabItem>
+     <TabItem Header="{l:Loc Key='问题与输出'}"><TextBox x:Name="Output" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontSize="12" MouseDoubleClick="Output_Open" ToolTip="{l:Loc Key='双击可识别的文件行定位源码'}"/></TabItem>
+    </TabControl>
+   </Grid>
+   <GridSplitter Grid.Column="3" Style="{DynamicResource PaneSplitter}" HorizontalAlignment="Stretch"/>
+   <DockPanel Grid.Column="4" x:Name="Details" Margin="8,0,0,0">
+    <StackPanel DockPanel.Dock="Top">
+     <TextBlock Text="{l:Loc Key='对象与引用'}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+     <TextBlock Text="{l:Loc Key='源码直接修改共享本体；引用分析可能不完整。'}" FontSize="12" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+     <WrapPanel><Button Content="{l:Loc Key='定义'}" Click="Definition_Click" Style="{DynamicResource SecondaryButton}"/><Button Content="{l:Loc Key='引用'}" Click="References_Click" Style="{DynamicResource SecondaryButton}"/><Button Content="{l:Loc Key='返回'}" Click="Back_Click" Style="{DynamicResource SecondaryButton}"/></WrapPanel>
+     <Button Content="{l:Loc Key='返回业务对象'}" Click="Business_Click" Style="{DynamicResource SecondaryButton}" Margin="0,6,0,8"/>
+    </StackPanel>
+    <ListBox x:Name="Symbols" DisplayMemberPath="Name" MouseDoubleClick="Symbols_Open"/>
+   </DockPanel>
+  </Grid>
+  <TextBlock Grid.Row="3" x:Name="Status" FontSize="12" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+ </Grid>
+</Window>

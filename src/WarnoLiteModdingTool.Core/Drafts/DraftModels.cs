@@ -32,7 +32,8 @@ public sealed record DraftOperation(
     IReadOnlyList<string>? SelectedUnitNames = null,
     string? ContextWeaponName = null,
     int? ContextIndex = null,
-    bool InsertAmmoField = false)
+    bool InsertAmmoField = false,
+    SourceWorkspace.SourceFileDraft? Source = null)
 {
     public static string CreateId(
         DraftTargetKind kind,
@@ -71,7 +72,8 @@ public enum DraftTargetKind
     TerrainField,
     WeaponStructure,
     DamageRule,
-    DamageDistance
+    DamageDistance,
+    SourceFile
 }
 
 public enum DraftEditScope

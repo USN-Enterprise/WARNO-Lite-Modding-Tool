@@ -14,7 +14,7 @@ public sealed partial class UnitWorkspaceViewModel
     private bool SuppressedByDeletion(DraftOperation operation) => operation.TargetKind != DraftTargetKind.UnitDelete && _draftStore.Operations.Any(o => o.TargetKind == DraftTargetKind.UnitDelete && o.ObjectName == operation.ObjectName);
     public bool SelectedPendingDelete => SelectedUnit is { } selected && _draftStore.Operations.Any(o => o.TargetKind == DraftTargetKind.UnitDelete && o.ObjectName == selected.InternalName);
     public string SelectedIdentityText => SelectedUnit is not { } selected ? "" : _draftStore.Operations.FirstOrDefault(o => o.TargetKind == DraftTargetKind.UnitRename && o.ObjectName == selected.InternalName) is { } rename ? selected.InternalName + " → " + UnitIdentityEditing.Read(rename).NewName : selected.InternalName;
-    public string LifecycleState => SelectedPendingDelete ? "待删除；撤销删除后可继续编辑" : "";
+    public string LifecycleState => SelectedPendingDelete ? _draftStore.Operations.Any(o => o.TargetKind == DraftTargetKind.UnitDelete && o.ObjectName == SelectedUnit!.InternalName && UnitDeletion.Read(o).Force) ? "待强行删除；可能保留引用，撤销后可继续编辑" : "待删除；撤销删除后可继续编辑" : "";
     public bool CanEditSelectedLifecycle => SelectedUnit is not null && !SelectedPendingDelete && !IsTransactionBusy && !_draftStore.IsBlocked;
     private void RefreshLifecycle()
     {
@@ -101,40 +101,27 @@ public sealed partial class UnitWorkspaceViewModel
         var pending = _draftStore.Operations.FirstOrDefault(o => o.TargetKind == DraftTargetKind.UnitDelete && o.ObjectName == unit.Name);
         if (pending is not null) { await _draftStore.RemoveAsync(pending.Id); RefreshExternalDraftState(); return; }
         var creation = _draftStore.Operations.FirstOrDefault(o => o.TargetKind == DraftTargetKind.UnitCreate && o.ObjectName == unit.Name);
-        var graph = await Task.Run(() => new UnitProjectGraph(_draftStore.ProjectRoot));
-        var uses = creation is null ? UnitDeletion.Uses(graph, graph.RequireObject(unit.Source.RelativeSourceFile, unit.Name)) : [];
-        var provenance = creation is null ? UnitCreationHistory.Require(graph, unit.Source.RelativeSourceFile, unit.Name) : null;
-        var window = LifecycleWindow(creation is null ? "删除新建单位" : "取消创建", out var panel, out var actions, out var error); window.Owner = owner;
-        panel.Children.Add(new TextBlock { Text = unit.DisplayName + "\n" + unit.Name, FontSize = 18, TextWrapping = TextWrapping.Wrap, Margin = new(0, 0, 0, 12) });
-        panel.Children.Add(new TextBlock { Text = UiText.T(creation is null ? "删除先保存为草稿，可撤销；正式应用后通过文件级备份恢复。共享武器、弹药和能力保留。" : "取消未应用创建及必要依赖草稿，正式文件保持。"), TextWrapping = TextWrapping.Wrap });
-        if (provenance is not null) panel.Children.Add(new TextBlock { Text = UiText.T("创建来源") + " · " + provenance.Evidence + "\n" + UiText.T("母版") + " · " + provenance.Mother + "\n" + "GUID · " + provenance.Guid + "\n" + "Serializer ID · " + provenance.SerializerId, TextWrapping = TextWrapping.Wrap, Margin = new(0, 10, 0, 6) });
-        foreach (var related in _draftStore.Operations.Where(o => UnitDraftLinks.Touches(o, unit.Name))) panel.Children.Add(new TextBlock { Text = related.Summary, TextWrapping = TextWrapping.Wrap, Margin = new(0, 8, 0, 0) });
-        var replacements = new Dictionary<string, SearchPicker>();
-        foreach (var use in uses)
+        if (creation is null)
         {
-            panel.Children.Add(new TextBlock { Text = use.Description + "\n" + use.File + (use.Automatic ? " · " + UiText.T("联动清理") : ""), TextWrapping = TextWrapping.Wrap, Margin = new(0, 12, 0, 6) });
-            if (!use.Automatic && use.Field is not null)
+            var deletionGraph = await Task.Run(() => new UnitProjectGraph(_draftStore.ProjectRoot, deletionScope: true));
+            var dialog = new UnitDeletionWindow(unit, _data, deletionGraph, async operation =>
             {
-                var picker = new SearchPicker { ItemsSource = _data.Units.Where(u => u.Name != unit.Name), DisplayMemberPath = "DisplayName", SecondaryMemberPath = "Name", Placeholder = UiText.T("选择替代单位") };
-                replacements[use.Key] = picker; panel.Children.Add(picker);
-            }
+                await Task.Run(() => _transactions.PrepareApplyAsync(_draftStore.ProjectRoot, [operation]));
+                await _draftStore.UpsertAsync(operation); RefreshExternalDraftState();
+            }) { Owner = owner };
+            dialog.ShowDialog();
+            if (dialog.OpenRequested is { } location && owner is MainWindow host) await host.OpenSourceReferenceAsync(location.Path, location.Offset);
+            return;
         }
-        var save = new Button { Content = UiText.T(creation is null ? "保存删除草稿" : "取消创建"), Margin = new(8), Padding = new(12, 6, 12, 6) }; actions.Children.Add(save);
+        var window = LifecycleWindow("取消创建", out var panel, out var actions, out var error); window.Owner = owner;
+        panel.Children.Add(new TextBlock { Text = unit.DisplayName + "\n" + unit.Name, TextWrapping = TextWrapping.Wrap });
+        foreach (var related in _draftStore.Operations.Where(o => UnitDraftLinks.Touches(o, unit.Name)))
+            panel.Children.Add(new TextBlock { Text = related.Summary, TextWrapping = TextWrapping.Wrap, Margin = new(0, 8, 0, 0) });
+        var save = new Button { Content = UiText.T("取消创建"), Margin = new(8), Padding = new(12, 6, 12, 6) }; actions.Children.Add(save);
         save.Click += async (_, _) =>
         {
             save.IsEnabled = false;
-            try
-            {
-                if (creation is not null) await UnitDraftLinks.CancelCreationAsync(_draftStore, creation);
-                else
-                {
-                    var choices = replacements.ToDictionary(p => p.Key, p => p.Value.SelectedItem is UnitRecord target ? graph.ReferenceTo(uses.Single(u => u.Key == p.Key).File, graph.RequireObject(target.Source.RelativeSourceFile, target.Name)) : "");
-                    var operation = UnitDeletion.Operation(unit, choices);
-                    await Task.Run(() => _transactions.PrepareApplyAsync(_draftStore.ProjectRoot, [operation]));
-                    await _draftStore.UpsertAsync(operation);
-                }
-                RefreshExternalDraftState(); window.DialogResult = true;
-            }
+            try { await UnitDraftLinks.CancelCreationAsync(_draftStore, creation); RefreshExternalDraftState(); window.DialogResult = true; }
             catch (Exception ex) when (ex is IOException or InvalidOperationException or ArgumentException) { error.Text = UiText.T(ex.Message); }
             finally { save.IsEnabled = true; }
         };

@@ -58,7 +58,11 @@ public sealed class RuleWorkspace(string root, IReadOnlyList<RuleGroup> groups)
         var doc = new NdfSyntaxDocument(source); var cells = new List<RuleCell>(); var baseline = new List<string>();
         foreach (var field in definition.Fields.Split(';'))
         {
+            if (definition.Number == 55 && doc.FindConstructors(definition.Constructor).Count != 1)
+                throw new InvalidDataException("距离比例尺需要唯一的距离单位初始化结构");
             var span = Locate(doc, definition.Constructor, field);
+            if (definition.Number == 55 && !decimal.TryParse(doc.Raw(span), NumberStyles.Float, CultureInfo.InvariantCulture, out _))
+                throw new InvalidDataException("距离比例尺不是直接数值，无法安全修改");
             if (definition.MapKey is {} mapKey)
             {
                 var entries = doc.ReadMapEntries(span).Where(e => doc.Raw(e.Key) == mapKey).ToArray();
@@ -66,7 +70,7 @@ public sealed class RuleWorkspace(string root, IReadOnlyList<RuleGroup> groups)
                 span = entries[0].Value;
             }
             baseline.Add(doc.Raw(span));
-            Visit(span, field, definition.Fields.Contains(';') ? CellLabel(field) : "值");
+            Visit(span, field, definition.Number == 55 ? "换算系数（LBU → GRU）" : definition.Fields.Contains(';') ? CellLabel(field) : "值");
         }
         if (cells.Count == 0 || cells.Select(c=>c.Key).Distinct(StringComparer.Ordinal).Count()!=cells.Count) throw new InvalidDataException("未找到唯一可编辑数值");
         return new(definition, cells, JsonSerializer.Serialize(baseline), "");
@@ -124,6 +128,7 @@ public sealed class RuleWorkspace(string root, IReadOnlyList<RuleGroup> groups)
             if (cell.Boolean) { if (raw is not ("true" or "false")) throw new InvalidDataException("请选择是或否"); continue; }
             if (!decimal.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) || (cell.Integer && !int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out _)) || (group.Definition.Number != 16 && value < 0))
                 throw new InvalidDataException(cell.Label + "：请输入" + (cell.Integer ? "整数" : "数值") + (group.Definition.Number != 16 ? "（不小于 0）" : ""));
+            if (group.Definition.Number == 55 && value <= 0) throw new InvalidDataException("距离换算系数必须大于 0");
             if (group.Definition.Number == 33 && value > 64) throw new InvalidDataException("参战名额总数不能超过 64");
             if (group.Definition.Number == 42 && value > 1) throw new InvalidDataException("解散阈值应在 0 到 1 之间");
         }
