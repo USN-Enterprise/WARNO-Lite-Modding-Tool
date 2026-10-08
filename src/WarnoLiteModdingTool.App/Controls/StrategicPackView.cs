@@ -31,6 +31,7 @@ public sealed class StrategicPackView : UserControl
         _vm=DataContext as StrategicPackWorkspaceViewModel;
         if(_vm is not {} vm){Content=null;return;}
         var root=new DockPanel {Margin=new Thickness(16)};Content=root;
+        var sourceLink = new SourceLink(); sourceLink.SetBinding(SourceLink.TargetProperty, new Binding("Selected")); DockPanel.SetDock(sourceLink, Dock.Top); root.Children.Add(sourceLink); SourceLink.SetRowMenu(this, true);
         var toolbar=new DockPanel {Margin=new Thickness(0,0,0,10)};DockPanel.SetDock(toolbar,Dock.Top);root.Children.Add(toolbar);
         _count=new TextBlock {VerticalAlignment=VerticalAlignment.Center,Margin=new Thickness(12,0,0,0)};DockPanel.SetDock(_count,Dock.Right);toolbar.Children.Add(_count);
         if(_filter is null){_filter=new FacetFilter();_filter.SetBinding(FacetFilter.RowsProperty,new Binding("FilterRows"));var created=_filter;created.FilterChanged+=(_,_)=>{vm.Filter=created.Matches;vm.View.Refresh();};}

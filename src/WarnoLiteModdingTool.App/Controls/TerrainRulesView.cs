@@ -25,6 +25,7 @@ public static class TerrainRulesView
             UIElement CreateContent()
             {
             var content = new StackPanel { Margin = new Thickness(12, 8, 0, 0) };
+            content.Children.Add(new SourceLink { Target = terrain });
             content.Children.Add(new ParameterNote { Text = terrain.Terrain.Name });
             content.Children.Add(new Expander { Header = UiText.T("来源与作用范围"), Content = Text(terrain.Terrain.File + "\n" + terrain.Terrain.Type + "\n" + terrain.Terrain.Error), Margin = new Thickness(0, 3, 0, 8) });
             foreach (var category in fields.GroupBy(f => f.Cell.Key.StartsWith("damage/") ? "地形承伤" : "专业地形参数"))
@@ -38,7 +39,7 @@ public static class TerrainRulesView
                         item.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto, SharedSizeGroup = shared });
                     item.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
                     var damage = field.Cell.Key.StartsWith("damage/");
-                    item.Children.Add(Text(damage ? (advanced ? "承伤倍率" : "减伤（%）") : field.Cell.Label));
+                    var heading = new DockPanel(); var sourceLink = new SourceLink { Target = field, Compact = true }; DockPanel.SetDock(sourceLink, Dock.Right); heading.Children.Add(sourceLink); heading.Children.Add(Text(damage ? (advanced ? "承伤倍率" : "减伤（%）") : field.Cell.Label)); item.Children.Add(heading);
                     var parameter = new ParameterNote { Text = field.Cell.Key, ToolTip = terrain.Terrain.File };
                     Grid.SetRow(parameter, 1); item.Children.Add(parameter);
                     FrameworkElement input;

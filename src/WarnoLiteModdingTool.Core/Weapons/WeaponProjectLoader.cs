@@ -96,7 +96,7 @@ public sealed class WeaponProjectLoader
                 fields.Add(CreateValue(descriptor, source, document, definition, raw, display, values[0], choices));
             }
 
-            var record=new AmmoRecord(descriptor,fields);var nameValues=document.FindDirectAssignments(roots[0],"Name");
+            var record=new AmmoRecord(descriptor,fields) { SafetyValues = WeaponSafety.ReadValues(document, roots[0]) };var nameValues=document.FindDirectAssignments(roots[0],"Name");
             record.DisplayName=descriptor.Name;record.ChineseName=descriptor.Name;
             if(nameValues.Count==1){var span=nameValues[0];record.NameRaw=document.Raw(span);record.NameToken=NdfSyntaxDocument.Unquote(record.NameRaw);var local=units.Localisation.TryResolve(record.NameToken,out var custom);record.DisplayName=local?custom:Localisation.VanillaNames.Lookup("UNITS",record.NameToken)??descriptor.Name;record.ChineseName=local?custom:Localisation.VanillaNames.Lookup("UNITS",record.NameToken,"SC")??record.DisplayName;
                 if(string.IsNullOrWhiteSpace(record.DisplayName))record.DisplayName=descriptor.Name;if(string.IsNullOrWhiteSpace(record.ChineseName))record.ChineseName=record.DisplayName;
@@ -129,7 +129,7 @@ public sealed class WeaponProjectLoader
                     Reason = f.IsMissing && choices.Length == 0 ? "当前Mod没有可用候选，保留未声明" : f.Reason };
             }
             ammo[i] = new AmmoRecord(a.Source, a.Fields.Select(WithChoices).ToArray())
-                { NameToken = a.NameToken, NameRaw = a.NameRaw, NameLocation = a.NameLocation, CanEditName = a.CanEditName, DisplayName = a.DisplayName, ChineseName = a.ChineseName };
+                { SafetyValues = a.SafetyValues, NameToken = a.NameToken, NameRaw = a.NameRaw, NameLocation = a.NameLocation, CanEditName = a.CanEditName, DisplayName = a.DisplayName, ChineseName = a.ChineseName };
         }
         var ammoChoices = ammo.Select(item => item.Name).Order(StringComparer.Ordinal).ToArray();
         units.Localisation.AddKnownTokens(ammo.Select(a=>a.NameToken));
@@ -232,10 +232,10 @@ public sealed class WeaponProjectLoader
             if (!WeaponValueConverter.TryRead(definition, raw, out var value)) { if (definition.Professional || definition.CanInsert) fields.Add(AmmoProfessional.Unavailable(descriptor, definition, raw, "原值格式暂不支持")); continue; }
             fields.Add(CreateValue(descriptor, body, document, definition, raw, value, spans[0], data.Ammo(descriptor.Name)?.Field(definition.Key)?.Choices ?? []));
         }
-        return new(descriptor, fields.Select(f => f with { Choices = data.Ammo(descriptor.Name)?.Field(f.Key)?.Choices ?? f.Choices }).ToArray());
+        return new(descriptor, fields.Select(f => f with { Choices = data.Ammo(descriptor.Name)?.Field(f.Key)?.Choices ?? f.Choices }).ToArray()) { SafetyValues = WeaponSafety.ReadValues(document, root) };
     }
 
-    private static IReadOnlyList<NdfValueSpan> LocateAmmoField(
+    internal static IReadOnlyList<NdfValueSpan> LocateAmmoField(
         NdfSyntaxDocument document,
         NdfConstructorSpan root,
         WeaponFieldDefinition definition)

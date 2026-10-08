@@ -37,6 +37,14 @@ internal static partial class Program
                 }
                 if(fixedSlots)
                 {
+                    // This test intentionally shares a box across two ammo types. Make their salvo contract explicit.
+                    foreach (var ammoFile in Directory.GetFiles(Path.Combine(root,"GameData/Generated/Gameplay/Gfx"),"Ammunition*.ndf"))
+                    {
+                        var ammoText = File.ReadAllText(ammoFile);
+                        if (!ammoText.Contains("ShotsCountPerSalvo")) File.WriteAllText(ammoFile,
+                            System.Text.RegularExpressions.Regex.Replace(ammoText, @"(is TAmmunitionDescriptor\s*\()", "$1" + newline + "    ShotsCountPerSalvo = 1" + newline), new UTF8Encoding(false));
+                    }
+
                     var path=Path.Combine(root,"GameData/Generated/Gameplay/Gfx/WeaponDescriptor.ndf");
                     var weaponText=File.ReadAllText(path).Replace("TMountedWeaponDescriptor(Ammunition = $/GFX/Weapon/Ammo_Test_AP AmmoBoxIndex = 0),", "TMountedWeaponDescriptor(Ammunition = $/GFX/Weapon/Ammo_Test_AP AmmoBoxIndex = 0),\n                TMountedWeaponDescriptor(Ammunition = $/GFX/Weapon/Ammo_Test_AP AmmoBoxIndex = 0),");
                     File.WriteAllText(path,weaponText.Replace("\r\n","\n").Replace("\n",newline),new UTF8Encoding(false));

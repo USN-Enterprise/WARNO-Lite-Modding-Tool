@@ -315,6 +315,7 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
 
         await _draftStore.RemoveAsync(operation.Id);
         field.MarkPersisted(null, field.Field.DisplayValue, "已撤销草稿");
+        WeaponSafetyFeedback.Refresh(Fields, _data, _draftStore.Operations, SelectedUnit?.InternalName ?? "", SelectedWeapon?.Name ?? "", SelectedMount?.Mount.Index ?? -1);
         _transactions.RefreshExternalDraftState();
         _setStatus("已撤销一项 Weapon/Ammo 草稿");
     }
@@ -389,6 +390,7 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
             viewModel.MarkPersisted(operation, normalized, viewModel.Field.IsMissing ? "已保存新增字段草稿" : "草稿已保存");
         }
 
+        WeaponSafetyFeedback.Refresh(Fields, _data, _draftStore.Operations, SelectedUnit?.InternalName ?? "", SelectedWeapon?.Name ?? "", SelectedMount?.Mount.Index ?? -1);
         _transactions.RefreshExternalDraftState();
         _setStatus($"Weapon/Ammo 草稿已保存 · {_draftStore.Operations.Count} 项 · 正式 Mod 文件未改变");
     }
@@ -482,6 +484,7 @@ public sealed class WeaponWorkspaceViewModel : ObservableObject
                 old.Field.Key == current.Field.Key && old.EditContext == current.EditContext && old.StructureLocked == current.StructureLocked);
         }
         foreach (var f in Fields) f.LinkedTags = Fields.FirstOrDefault(t => t.Field.OwnerObjectName == f.Field.OwnerObjectName && t.Field.Definition.ValueKind == WeaponValueKind.Tags);
+        WeaponSafetyFeedback.Refresh(Fields, _data, _draftStore.Operations, SelectedUnit?.InternalName ?? "", SelectedWeapon?.Name ?? "", SelectedMount?.Mount.Index ?? -1);
         RebuildSections();
     }
 

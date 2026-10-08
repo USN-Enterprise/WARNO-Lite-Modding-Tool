@@ -6,7 +6,7 @@
 
 面向新手和 Mod 作者的 **Windows WARNO 图形化编辑器**。通过界面调整单位、武器、弹药、战术师、将军模式和游戏规则，无需手写代码；支持单位卡片图片和师徽编辑。
 
-当前版本：**2.11.2** · Windows x64 · 便携运行
+当前版本：**2.11.4** · Windows x64 · 便携运行
 
 发布包、更新说明和历史版本见下方 GitHub Releases。
 
@@ -60,7 +60,7 @@
 
 **A Windows graphical editor for WARNO Mods**, for beginners and Mod authors. Edit units, weapons, ammunition, divisions, Army General and game rules without writing code. Unit portraits and division emblems can also be edited.
 
-Current version: **2.11.2** · Windows x64 · Portable
+Current version: **2.11.4** · Windows x64 · Portable
 
 Portable packages, release notes and previous versions are available on GitHub Releases below.
 

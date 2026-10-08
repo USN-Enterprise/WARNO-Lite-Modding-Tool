@@ -345,6 +345,8 @@ public sealed class UnitApplyPlanner(
         {
             ValidateCandidateReferenceClosure(index, plannedFiles, weaponWorkspace);
         }
+        var weaponSafetyMessages = new List<string>();
+        var weaponSafetyDependencies = WeaponSafety.ValidateFinal(root, plannedFiles, weaponSafetyMessages, generatedClones: true);
         var validation = new List<string>
         {
             $"已重新索引并确认 {operations.Count} 项草稿基线",
@@ -353,6 +355,7 @@ public sealed class UnitApplyPlanner(
             "战术默认 Deck 不含战略 PackIndex；引用与容量已按 P5 规则校验"
         };
         validation.AddRange(weaponPlan.ValidationMessages);
+        validation.AddRange(weaponSafetyMessages);
         validation.AddRange(structureMessages);
         validation.AddRange(divisionPlan.ValidationMessages);
         if (deletionResult is not null)
@@ -387,7 +390,7 @@ public sealed class UnitApplyPlanner(
             preparedUtc,
             allOperations.ToArray(),
             plannedFiles,
-            validation.ToArray()) { DeletionReview = deletionReview, DeletionWarnings = deletionResult?.Warnings.ToArray() ?? [], ObservedFiles = readSnapshot.ObservedPaths, PictureReadDependencies = pictureDependencies, ReadDependencies = experience?.Dependencies ?? new(), ExperienceReview = experienceEdits?.Review(operations), UnitReadDependencies = unitReview, DraftReview = reviewInputs || operations.Any(o => AviationMovement.IsField(o.FieldKey) || o.GroupId?.StartsWith("aviation-speed:", StringComparison.Ordinal) == true) ? currentDrafts.Operations.ToArray() : null };
+            validation.ToArray()) { DeletionReview = deletionReview, DeletionWarnings = deletionResult?.Warnings.ToArray() ?? [], ObservedFiles = readSnapshot.ObservedPaths, PictureReadDependencies = pictureDependencies, WeaponReadDependencies = weaponSafetyDependencies, ReadDependencies = experience?.Dependencies ?? new(), ExperienceReview = experienceEdits?.Review(operations), UnitReadDependencies = unitReview, DraftReview = reviewInputs || operations.Any(o => AviationMovement.IsField(o.FieldKey) || o.GroupId?.StartsWith("aviation-speed:", StringComparison.Ordinal) == true) ? currentDrafts.Operations.ToArray() : null };
     }
 
     internal static string CreateBackupId(string prefix) =>

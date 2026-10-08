@@ -76,18 +76,18 @@ public sealed class RulesView : UserControl
     }
     private static UIElement Editor(RuleGroupViewModel group)
     {
-        var panel=new StackPanel();var status=new TextBlock{TextWrapping=TextWrapping.Wrap};var statusBinding=new MultiBinding{Converter=new LocalizedValueConverter()};statusBinding.Bindings.Add(new Binding(nameof(group.Status)){Source=group});statusBinding.Bindings.Add(new Binding(nameof(UiText.Version)){Source=UiText.Current});status.SetBinding(TextBlock.TextProperty,statusBinding);panel.Children.Add(status);
+        var panel=new StackPanel();panel.Children.Add(new SourceLink { Target = new SourceWorkspace.RuleSourceTarget(group) });var status=new TextBlock{TextWrapping=TextWrapping.Wrap};var statusBinding=new MultiBinding{Converter=new LocalizedValueConverter()};statusBinding.Bindings.Add(new Binding(nameof(group.Status)){Source=group});statusBinding.Bindings.Add(new Binding(nameof(UiText.Version)){Source=UiText.Current});status.SetBinding(TextBlock.TextProperty,statusBinding);panel.Children.Add(status);
         if (group.Group.Definition.Hint is {} hint)
         {
             var description = new TextBlock { Text = UiText.T(hint), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 8) };
             description.SetResourceReference(FrameworkElement.StyleProperty, typeof(TextBlock));
             panel.Children.Add(description);
         }
-        var cells=new WrapPanel{IsEnabled=group.CanEdit};panel.Children.Add(cells);
+        var cells=new WrapPanel();panel.Children.Add(cells);
         foreach(var cell in group.Cells)
         {
             var item=new StackPanel{Width=210,Margin=new Thickness(0,5,10,8)};cells.Children.Add(item);
-            item.Children.Add(new TextBlock{Text=UiText.T(cell.Cell.Label),TextWrapping=TextWrapping.Wrap,ToolTip=cell.Cell.Key});
+            var heading = new DockPanel(); var sourceLink = new SourceLink { Target = new SourceWorkspace.RuleSourceTarget(group, cell), Compact = true }; DockPanel.SetDock(sourceLink, Dock.Right); heading.Children.Add(sourceLink); heading.Children.Add(new TextBlock{Text=UiText.T(cell.Cell.Label),TextWrapping=TextWrapping.Wrap,ToolTip=cell.Cell.Key}); item.Children.Add(heading);
             if(group.Group.Definition.Number!=54)item.Children.Add(new ParameterNote { Text = cell.Cell.Key + (group.Group.Definition.MapKey is {} key ? "[" + key + "]" : "") });
             if(group.Group.Definition.Number==54)
             {
@@ -104,6 +104,7 @@ public sealed class RulesView : UserControl
             {
                 var input=new TextBox();input.SetBinding(TextBox.TextProperty,new Binding(nameof(cell.Value)){Source=cell,Mode=BindingMode.TwoWay,UpdateSourceTrigger=UpdateSourceTrigger.PropertyChanged});item.Children.Add(input);
             }
+            foreach (var control in item.Children.OfType<Control>().Where(c => c is not SourceLink)) control.IsEnabled = group.CanEdit;
         }
         var undo=new Button{Content=UiText.T("撤销此项"),HorizontalAlignment=HorizontalAlignment.Left};undo.Click+=async(_,_)=>await group.UndoAsync();panel.Children.Add(undo);return panel;
     }

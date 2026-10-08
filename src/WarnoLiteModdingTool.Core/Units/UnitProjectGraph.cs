@@ -32,7 +32,7 @@ public sealed class UnitProjectGraph
         }
     }
 
-    public UnitProjectGraph(string root, IReadOnlyList<PlannedFileChange>? candidates = null, bool deletionScope = false)
+    public UnitProjectGraph(string root, IReadOnlyList<PlannedFileChange>? candidates = null, bool deletionScope = false, bool tolerateUnreadable = false)
     {
         Root = Path.GetFullPath(root);
         if (deletionScope)
@@ -59,7 +59,7 @@ public sealed class UnitProjectGraph
             Files[path] = new(path, text, syntax, objects);
             _namespaces[path] = [];
           }
-          catch (Exception ex) when (deletionScope && ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
+          catch (Exception ex) when ((deletionScope || tolerateUnreadable) && ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
           {
               UnverifiedFiles.Add(path); CoverageIssues.Add(path + " · " + ex.Message);
               try { Dependencies[path] = System.IO.File.ReadAllBytes(SourceWorkspace.SourceFiles.Resolve(Root, path)); }

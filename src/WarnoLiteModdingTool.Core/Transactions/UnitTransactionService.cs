@@ -53,6 +53,15 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
             if (preview.DraftReview is not null && System.Text.Json.JsonSerializer.Serialize(preview.DraftReview) != System.Text.Json.JsonSerializer.Serialize(draftStore.Operations))
                 throw new TransactionValidationException("关联草稿已变化，请重新预览 / Related drafts changed; review again");
         }
+        if (preview.WeaponReadDependencies.Count > 0)
+        {
+            var paths = Units.UnitProjectGraph.InputFiles(preview.ProjectRoot).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (!paths.SetEquals(preview.WeaponReadDependencies.Keys))
+                throw new TransactionValidationException("武器关联文件集已变化，请重新预览 / Weapon dependency file set changed; preview again");
+            foreach (var pair in preview.WeaponReadDependencies.Where(p => !preview.Files.Any(f => f.RelativePath.Equals(p.Key, StringComparison.OrdinalIgnoreCase))))
+                if (!File.ReadAllBytes(TextFileSnapshot.ResolveInsideRoot(preview.ProjectRoot, pair.Key)).AsSpan().SequenceEqual(pair.Value))
+                    throw new TransactionValidationException("武器关联在预览后变化，请重新预览 / Weapon dependencies changed; preview again: " + pair.Key);
+        }
         foreach(var pair in preview.PictureReadDependencies)
         {
             var path=TextFileSnapshot.ResolveInsideRoot(preview.ProjectRoot,pair.Key);

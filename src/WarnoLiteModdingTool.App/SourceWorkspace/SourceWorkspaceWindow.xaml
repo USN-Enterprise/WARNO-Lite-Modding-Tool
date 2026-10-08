@@ -6,9 +6,11 @@
  <Grid Margin="14" Background="{DynamicResource BackgroundBrush}">
   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
   <StackPanel>
+   <TextBlock x:Name="NavigationNotice" Visibility="Collapsed" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,6" Foreground="{DynamicResource MutedTextBrush}"/>
    <TextBlock Text="{l:Loc Key='开发者工作台'}" FontSize="18" FontWeight="SemiBold"/>
    <TextBlock x:Name="ProjectLabel" Foreground="{DynamicResource MutedTextBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,8"/>
    <WrapPanel x:Name="Actions">
+    <Button x:Name="ReturnToBusiness" Visibility="Collapsed" Content="{l:Loc Key='返回来源页面'}" Click="ReturnToBusiness_Click" Style="{DynamicResource SecondaryButton}" Margin="0,0,8,6"/>
     <Button Content="{l:Loc Key='刷新文件'}" Click="Refresh_Click" Style="{DynamicResource SecondaryButton}" Margin="0,0,8,6"/>
     <Button Content="{l:Loc Key='新建 NDF'}" Click="New_Click" Style="{DynamicResource SecondaryButton}" Margin="0,0,8,6"/>
     <Button Content="{l:Loc Key='保存草稿'}" Click="Save_Click" Style="{DynamicResource SecondaryButton}" Margin="0,0,8,6"/>

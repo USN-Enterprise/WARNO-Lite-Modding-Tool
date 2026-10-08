@@ -169,6 +169,7 @@ public sealed partial class AmmoWorkspaceViewModel : ObservableObject
         field.MarkPersisted(null, field.Field.DisplayValue, "已撤销草稿");
         RefreshNames();
         RefreshFilter();
+        WeaponSafetyFeedback.Refresh(Fields, _data, _draftStore.Operations);
         _transactions.RefreshExternalDraftState();
         _setStatus("已撤销一项 Ammo 草稿");
     }
@@ -239,6 +240,7 @@ public sealed partial class AmmoWorkspaceViewModel : ObservableObject
         }
 
         RefreshFilter();
+        WeaponSafetyFeedback.Refresh(Fields, _data, _draftStore.Operations);
         _transactions.RefreshExternalDraftState();
         _setStatus($"Ammo 草稿已保存 · {_draftStore.Operations.Count} 项 · 正式 Mod 文件未改变");
     }
@@ -273,6 +275,7 @@ public sealed partial class AmmoWorkspaceViewModel : ObservableObject
                 old.Field.Key == current.Field.Key && old.EditContext == current.EditContext);
         }
         foreach (var f in Fields) f.LinkedTags = Fields.FirstOrDefault(t => t.Field.OwnerObjectName == f.Field.OwnerObjectName && t.Field.Definition.ValueKind == WeaponValueKind.Tags);
+        WeaponSafetyFeedback.Refresh(Fields, _data, _draftStore.Operations);
         RebuildSections();
     }
 

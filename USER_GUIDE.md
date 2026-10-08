@@ -1,6 +1,6 @@
 # WARNO Lite Modding Tool User Guide
 
-For version **2.11.2**, Windows x64. Available fields and features depend on the selected Mod's data and structure.
+For version **2.11.4**, Windows x64. Available fields and features depend on the selected Mod's data and structure.
 
 [Home](README.md#english) · [中文教程](使用教程.md) · [Release notes](RELEASE_NOTES.md#english)
 
@@ -59,7 +59,7 @@ For a first exercise, consider a dedicated test Mod. Transaction backups preserv
 3. Run `WarnoLiteModdingTool.exe`. Only one instance is allowed in the same Windows login session. If it reports that it is already running, return to the existing window.
 4. Before upgrading, close the old version normally. Extract the new version into a fresh directory. Drafts and transaction backups are stored inside the target Mod, not the editor installation.
 
-This guide describes 2.11.2. The download page may offer a later release; consult its release notes as well.
+This guide describes 2.11.4. The download page may offer a later release; consult its release notes as well.
 
 ### 2.2 Open an existing Mod
 
@@ -410,7 +410,15 @@ This release does not add/delete/reorder families or indices, edit suppression m
 
 ## 11. Professional tools and reference inspection
 
-### Developer workspace (2.11.1)
+### Locate source from business tables (2.11.3)
+
+In Professional mode, select an object and click **Show in workspace**, or right-click a business-list row. The `</>` button locates a parameter assignment. **View mount source** opens the mount block; ammunition parameters open the shared ammunition object. Batch views target the current object; aggregate or ambiguous sources require a choice.
+
+The workspace reuses an existing tab, unfolds and selects the code. **Return to source page** brings you back to the business page. Navigation uses current workspace text; it never merges or applies form drafts automatically. Shared source edits affect the shared object, unlike a weapon form scoped to the current unit.
+
+Unapplied new objects may have no source yet. Deleted, renamed or changed structures show a reason when their location cannot be confirmed. If an inline strategic group has changed beyond recognition, use the owning object entry to inspect its source.
+
+### Developer workspace (2.11.3)
 
 Enable Professional mode and open **Developer workspace**. Select the Mod root; source editing also works without recognized unit or weapon modules. The tree recursively includes every `.ndf` (case-insensitive) and accompanying CSV in the root, hidden folders and arbitrary custom subfolders. There is no GameData or known-filename whitelist.
 
@@ -584,3 +592,12 @@ Change files, backups and receipts from preview.1 through preview.5 remain reada
 Read/write limits: 256 MiB per file, 1 GiB of total before/after payloads, 100000 entries. Exceeding a limit reports an error without truncating the record. Text preview displays up to 200000 characters; full content remains in the package. Scripts and executables may be recorded but are neither restored automatically nor executed.
 
 Successful file restoration does not establish official generation or in-game success. Those remain separate workflows.
+
+
+### Two-stage ammunition and weapon safeguards (2.11.4)
+
+Scalar format, integer and established non-negative constraints are checked before saving a field. Invalid input remains visible as not saved and never overwrites a valid draft. Correct or undo it before applying. Related edits can be saved in steps; final combinations are checked at apply, including salvo counts, position-fire settings, shared ammo boxes, aircraft inventory arrays and deployment modules.
+
+Definite errors prevent application and retain drafts and original files. Partial selections are checked as their actual final combination. Basic/professional, batch, weapon structure and recognized source edits share these rules. Saving source work does not mean applying it; professional source links remain available for navigation.
+
+The 0.1 s tick, 0.001 per-shot supply threshold and missing position-salvo defaults remain unverified references and produce warnings only. Values are not rounded or repaired silently. Unit supply capacity is distinct from ammunition per-shot consumption.

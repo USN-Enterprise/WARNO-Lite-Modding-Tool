@@ -6,7 +6,7 @@
 
 ## 开发环境
 
-本文对应根目录的 **2.11.2 / .NET 8 / WPF** 工程。普通用户请下载便携包并阅读[使用教程](使用教程.md)，不需要安装开发工具。
+本文对应根目录的 **2.11.4 / .NET 8 / WPF** 工程。普通用户请下载便携包并阅读[使用教程](使用教程.md)，不需要安装开发工具。
 
 - Windows 与 Microsoft .NET 8 x64 SDK。
 - 源码编辑依赖 AvalonEdit 6.3.1.120（[MIT](licenses/AvalonEdit-MIT.txt)），组件随自包含包分发，不要求用户安装 IDE 或 WebView2。源码专项：测试程序 `--source`；实际 WPF：`--source-ui`；合成大文件：`--source-perf`；旧版拒读：`--source-old-reader <旧Core.dll>`。
@@ -62,7 +62,7 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 - 按当前实现更新两份教程，同步步骤、作用域和限制；教程描述当前能力，版本变化集中写入发布说明。
 - README 保留短流程和文档入口，不再逐版本累加操作说明。
-- 当前教程面向根目录活动工程（现为 2.11.2），不将封存 v2 等实验工程的依赖或功能写入其使用说明。
+- 当前教程面向根目录活动工程（现为 2.11.4），不将封存 v2 等实验工程的依赖或功能写入其使用说明。
 
 ---
 
@@ -70,7 +70,7 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 ## Development environment
 
-This document covers the root **2.11.2 / .NET 8 / WPF** project. End users should download the portable release and read the [user guide](USER_GUIDE.md); developer tools are not required.
+This document covers the root **2.11.4 / .NET 8 / WPF** project. End users should download the portable release and read the [user guide](USER_GUIDE.md); developer tools are not required.
 
 - Windows and the Microsoft .NET 8 x64 SDK.
 - Source editing uses AvalonEdit 6.3.1.120 ([MIT](licenses/AvalonEdit-MIT.txt)), bundled with the portable app; no external IDE or WebView2 is required. Test switches: `--source`, `--source-ui`, `--source-perf`, and `--source-old-reader <old Core.dll>`.
@@ -118,7 +118,7 @@ Public user documents live at the root and belong in version control; internal `
 
 - Update both guides together, including steps, scope and limits. Guides describe current behavior; release notes record changes by version.
 - Keep the README focused on the short workflow and navigation instead of appending version-specific instructions.
-- These guides cover the active root project (now 2.11.2); keep the archived v2 and other experimental projects' dependencies and features separate.
+- These guides cover the active root project (now 2.11.4); keep the archived v2 and other experimental projects' dependencies and features separate.
 
 
 ### 工作台优化回归 / Workspace optimization checks
@@ -131,3 +131,12 @@ Public user documents live at the root and belong in version control; internal `
 Results are written under `publish/qa-source-optimization`; existing `qa-source-workspace/performance.json` remains the first preview's historical run. Storage stays at schema6. Content fingerprints cover full bytes; modification times alone never authorize commit.
 
 - `--source-ui-large`：实际WPF的10/50MB多行样例打开、输入、草稿保存、候选与差异；取消应用后核对正式文件未改。大文件结果在 `large-ui.json`。
+
+## 2.11.3 源码导航验证 / Source navigation checks
+
+`--source-navigation` runs current-text object, field, mount, rule, CSV and inline member checks; `--source-navigation-ui` exercises real WPF links, restored tabs, edited buffers, mode/language/themes and full division/strategic fixtures. UI evidence is stored under `publish/qa-2.11.3`. Use the existing test executable with either switch.
+
+
+## 2.11.4 safeguards
+
+`--weapon-safety` covers graph contracts, historical/changed issues, partial application, combined transactions and source interception. `--weapon-safety-ui` uses synthetic WPF fixtures for invalid-input retention, recoverable combination drafts, apply refusal and bilingual mode/theme snapshots in `publish/qa-2.11.4`. The validator operates on final candidate graphs and checks dependency baselines before commit. Cached ammo projections retain only the small set of scalar relation values needed by inline feedback. Official runtime thresholds remain warnings pending independent verification.

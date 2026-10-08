@@ -59,7 +59,7 @@ public sealed class StrategicWorkspaceView : UserControl
         VirtualizingPanel.SetIsVirtualizing(list, true); VirtualizingPanel.SetVirtualizationMode(list, VirtualizationMode.Recycling);
         left.Children.Add(list); _body.Children.Add(left);
         var center = new DockPanel { Margin = new Thickness(10) }; Grid.SetColumn(center, 2); _body.Children.Add(center);
-        var toolbar = new WrapPanel(); DockPanel.SetDock(toolbar, Dock.Top); center.Children.Add(toolbar);
+        var toolbar = new WrapPanel(); var sourceLink = new SourceLink(); sourceLink.SetBinding(SourceLink.TargetProperty, new Binding("Selected")); toolbar.Children.Add(sourceLink); SourceLink.SetRowMenu(this, true); DockPanel.SetDock(toolbar, Dock.Top); center.Children.Add(toolbar);
         Button(toolbar, "Pack 与索引", () => { if (_vm?.CanEditRoster == true) new StrategicMappingWindow(_vm) { Owner = Window.GetWindow(this) }.ShowDialog(); });
         Button(toolbar, "新增连", () => _vm?.Add(null));
         Button(toolbar, "新增下级", () => _vm?.Add(_node));
@@ -76,7 +76,8 @@ public sealed class StrategicWorkspaceView : UserControl
         template.VisualTree = factory; _tree.ItemTemplate = template;
         VirtualizingPanel.SetIsVirtualizing(_tree, true); VirtualizingPanel.SetVirtualizationMode(_tree, VirtualizationMode.Recycling);
         _tree.SetBinding(ItemsControl.ItemsSourceProperty, new Binding("Roots"));
-        _tree.SelectedItemChanged += (_, args) => { _node = args.NewValue as StrategicNode; ShowNode(); };
+        var nodeSource = new SourceLink { Content = UiText.T("查看成员源码") }; toolbar.Children.Add(nodeSource);
+        _tree.SelectedItemChanged += (_, args) => { _node = args.NewValue as StrategicNode; nodeSource.Target = _node; ShowNode(); };
         var rootStyle = new Style(typeof(TreeViewItem)); var rootTrigger = new DataTrigger { Binding = new Binding("Kind"), Value = "root" }; rootTrigger.Setters.Add(new Setter(TreeViewItem.IsExpandedProperty,true)); rootStyle.Triggers.Add(rootTrigger); _tree.ItemContainerStyle=rootStyle;
         center.Children.Add(_tree);
         var tabs = new TabControl(); Grid.SetColumn(tabs, 4); _body.Children.Add(tabs);

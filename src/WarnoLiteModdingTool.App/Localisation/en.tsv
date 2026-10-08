@@ -1719,3 +1719,21 @@ AI 难度|AI difficulty
 距离比例尺需要唯一的距离单位初始化结构|Distance scale requires one unambiguous distance-unit initialization structure.
 距离比例尺不是直接数值，无法安全修改|Distance scale is not a numeric literal and cannot be edited safely.
 距离换算系数必须大于 0|The distance conversion factor must be greater than zero.
+在工作台中查看|Show in workspace
+查看当前对象或参数的源码；不自动应用草稿|View the current object or parameter source; form drafts are not applied
+在工作台中定位此参数|Locate this parameter in the workspace
+返回来源页面|Return to source page
+源码定位|Source navigation
+选择源码位置|Choose source location
+查看槽位源码|View mount source
+查看成员源码|View member source
+无直接源码位置；新建内容需先应用，或查看所属对象。|No direct source location. Apply new content first, or view the owning object.
+工作台正在处理操作，请稍后重试。|Workspace is busy; please retry shortly.
+
+需配套修改后应用|Complete related edits before applying
+请核对|Check
+关联预检未完成，请核对草稿|Dependency preview incomplete; review drafts
+未保存：{0}|Not saved: {0}
+
+短装填时间 秒|Short reload time (s)
+每发补给|Supply per shot

@@ -31,6 +31,10 @@ internal static partial class Program
     private static async Task<int> Main(string[] args)
     {
         VanillaNames.Replace(SyntheticNames());
+        if (args is ["--weapon-safety-ui"]) { await WeaponSafetyUi(); return 0; }
+        if (args is ["--weapon-safety"]) { await WeaponSafetyContracts(); await WeaponSafetyTransactions(); Console.WriteLine("PASS weapon safety contracts"); return 0; }
+        if (args is ["--source-navigation"]) { await SourceNavigationContracts(); Console.WriteLine("PASS source navigation contracts"); return 0; }
+        if (args is ["--source-navigation-ui"]) { await SourceNavigationUi(); return 0; }
         if (args is ["--distance-scale"]) { await DistanceScaleContracts(); await DistanceScaleTransactions(); Console.WriteLine("PASS distance scale contracts and transactions"); return 0; }
         if (args is ["--distance-scale-ui"]) { await DistanceScaleUi(); return 0; }
         if (args is ["--road-speed-ui"]) { await RoadSpeedUi(); return 0; }
@@ -134,6 +138,9 @@ internal static partial class Program
 
         var tests = new (string Name, Func<Task> Run)[]
         {
+            ("2.11.4 弹药与武器两层预拦截", WeaponSafetyContracts),
+            ("2.11.4 部分应用、组合事务与源码拦截", WeaponSafetyTransactions),
+            ("2.11.3 业务源码定位", SourceNavigationContracts),
             ("源码工作台 文件发现与草稿", SourceDiscoveryAndDrafts),
             ("源码工作台 整组提交与恢复", SourceCommitAndRestore),
             ("源码工作台 外部变化与并发", SourceConflicts),

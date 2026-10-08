@@ -198,7 +198,7 @@ public sealed class ProjectLoadCache
             p.EndsWith(".ndf", StringComparison.OrdinalIgnoreCase) && File.Exists(Path.Combine(_root, p)) && AmmoReferenceCatalog.HasDefinitions(ProjectReadScope.ReadAllText(Path.Combine(_root, p))))) return null;
         try
         {
-            var ammo = saved.Ammo.Select(a => new AmmoRecord(a.Source, a.Fields) { NameToken = a.Token, NameRaw = a.Raw, NameLocation = a.Location, CanEditName = a.CanEditName }).ToArray();
+            var ammo = saved.Ammo.Select(a => new AmmoRecord(a.Source, a.Fields) { SafetyValues = a.SafetyValues, NameToken = a.Token, NameRaw = a.Raw, NameLocation = a.Location, CanEditName = a.CanEditName }).ToArray();
             foreach (var a in ammo)
             {
                 var local = units.Localisation.TryResolve(a.NameToken, out var custom);
@@ -218,7 +218,7 @@ public sealed class ProjectLoadCache
     }
     internal void SetWeapons(WeaponWorkspaceData data) => _weapons = new(data.Weapons.Select(w => new WeaponRecord(w.Source, w.Fields,
         w.Mounts.Select(m => m with { Fields = m.Fields.Select(f => IsAmmoChoice(f) ? f with { Choices = [] } : f).ToArray() }).ToArray())).ToArray(),
-        data.Ammunition.Select(a => new SavedAmmo(a.Source, a.Fields, a.NameToken, a.NameRaw, a.NameLocation, a.CanEditName)).ToArray(), data.Diagnostics) { CatalogFiles = data.CatalogFiles };
+        data.Ammunition.Select(a => new SavedAmmo(a.Source, a.Fields, a.NameToken, a.NameRaw, a.NameLocation, a.CanEditName, a.SafetyValues)).ToArray(), data.Diagnostics) { CatalogFiles = data.CatalogFiles };
     private static bool IsAmmoChoice(WeaponFieldValue f) => f.Definition.Owner == WeaponFieldOwner.MountedWeapon && f.Definition.FieldName == "Ammunition";
     public bool Save(CancellationToken cancellationToken = default)
     {
@@ -269,7 +269,7 @@ public sealed class ProjectLoadCache
     public sealed record ProjectionEntry(string File, string Entry);
     public sealed record SavedField(string Key, UnitFieldAvailability Availability, string DisplayValue, string RawValue, string Reason, UnitSourceLocation? Location);
     public sealed record SavedUnit(NdfObjectInfo Source, SavedField[] Fields, bool HasTransporter, IReadOnlyList<string> Weapons, IReadOnlyList<string> Ammunition, IReadOnlyList<string> Divisions, IReadOnlyList<string> PresentationReferences, string? NameToken, bool UniqueName);
-    public sealed record SavedAmmo(NdfObjectInfo Source, IReadOnlyList<WeaponFieldValue> Fields, string Token, string Raw, WeaponFieldLocation? Location, bool CanEditName);
+    public sealed record SavedAmmo(NdfObjectInfo Source, IReadOnlyList<WeaponFieldValue> Fields, string Token, string Raw, WeaponFieldLocation? Location, bool CanEditName, IReadOnlyDictionary<string, string> SafetyValues);
     public sealed record SavedWeapons(IReadOnlyList<WeaponRecord> Records, SavedAmmo[] Ammo, IReadOnlyList<string> Diagnostics)
     { public IReadOnlyList<string> CatalogFiles { get; init; } = []; }
 }

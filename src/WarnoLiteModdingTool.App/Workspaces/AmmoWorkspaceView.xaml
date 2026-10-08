@@ -2,7 +2,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:l="clr-namespace:WarnoLiteModdingTool.App.Localisation"
-    xmlns:controls="clr-namespace:WarnoLiteModdingTool.App.Controls">
+    xmlns:controls="clr-namespace:WarnoLiteModdingTool.App.Controls" controls:SourceLink.RowMenu="True">
 <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition x:Name="AmmoListColumn" Width="320" MinWidth="300" MaxWidth="560" />
@@ -73,6 +73,7 @@
 
                             <StackPanel>
                                 <TextBlock Text="{Binding AmmoWorkspace.SelectedAmmo.DisplayName, TargetNullValue=尚未选择 Ammo}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+<controls:SourceLink Target="{Binding AmmoWorkspace.SelectedAmmo}" Tag="source-ammo"/>
                                 <TextBlock Text="{Binding AmmoWorkspace.SelectedAmmo.Name}" Visibility="{Binding AdvancedMode, Converter={StaticResource BooleanToVisibilityConverter}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10"/>
                                 <TextBlock Text="{Binding AmmoWorkspace.SourceText}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,3,0,0" />
                                 <Border Background="{DynamicResource WarningBackgroundBrush}" BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="1" CornerRadius="7" Padding="9" Margin="0,10,0,10">

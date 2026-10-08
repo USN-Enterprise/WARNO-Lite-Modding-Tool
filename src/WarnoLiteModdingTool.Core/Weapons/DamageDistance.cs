@@ -121,7 +121,7 @@ public static class DamageDistance
         }
         var ammo = weapons.Ammunition.Select(a => !targets.TryGetValue(a.Name, out var choices) ? a :
             new AmmoRecord(a.Source, a.Fields.Select(f => f.Key == ReferenceKey ? f with { Choices = f.Choices.Concat(choices).Distinct().ToArray() } : f).ToArray())
-            { NameToken = a.NameToken, NameRaw = a.NameRaw, NameLocation = a.NameLocation, CanEditName = a.CanEditName, DisplayName = a.DisplayName, ChineseName = a.ChineseName }).ToArray();
+            { SafetyValues = a.SafetyValues, NameToken = a.NameToken, NameRaw = a.NameRaw, NameLocation = a.NameLocation, CanEditName = a.CanEditName, DisplayName = a.DisplayName, ChineseName = a.ChineseName }).ToArray();
         return new(weapons with { Ammunition = ammo }, result, appends.ToDictionary(p => p.Key, p => (IReadOnlyList<string>)p.Value));
     }
     public static void Append(string root, DistanceExpansion expansion, List<PlannedFileChange> files)

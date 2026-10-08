@@ -1,6 +1,7 @@
 <Application x:Class="WarnoLiteModdingTool.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:WarnoLiteModdingTool.App.Localisation"
              xmlns:controls="clr-namespace:WarnoLiteModdingTool.App.Controls">
     <Application.Resources>
         <ResourceDictionary>
@@ -91,6 +92,14 @@
             </Style>
 
             <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}" />
+            <Style x:Key="SourceLinkButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+                <Setter Property="Padding" Value="8,5"/><Setter Property="Margin" Value="2"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+            <Style x:Key="SourceLinkCompactButton" TargetType="Button" BasedOn="{StaticResource SourceLinkButton}">
+                <Setter Property="Padding" Value="4,1"/><Setter Property="Margin" Value="6,0,0,0"/>
+                <Setter Property="VerticalAlignment" Value="Top"/>
+            </Style>
 
 
             <Style TargetType="controls:FieldRow">
@@ -98,10 +107,11 @@
                 <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="controls:FieldRow">
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="0.85*"/><ColumnDefinition Width="1.15*"/></Grid.ColumnDefinitions>
-                        <StackPanel Margin="0,3,14,0">
-                            <TextBlock Text="{TemplateBinding Header}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"/>
-                            <controls:ParameterNote Text="{TemplateBinding Parameter}"/>
-                        </StackPanel>
+                        <DockPanel Margin="0,3,14,0">
+                            <controls:SourceLink DockPanel.Dock="Right" Target="{Binding}" Compact="True" ToolTip="{l:Loc Key=在工作台中定位此参数}"/>
+                            <StackPanel><TextBlock Text="{TemplateBinding Header}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            <controls:ParameterNote Text="{TemplateBinding Parameter}"/></StackPanel>
+                        </DockPanel>
                         <ContentPresenter Grid.Column="1" Content="{TemplateBinding Content}" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
                     </Grid>
                 </ControlTemplate></Setter.Value></Setter>

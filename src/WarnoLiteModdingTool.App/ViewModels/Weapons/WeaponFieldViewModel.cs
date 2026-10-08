@@ -11,6 +11,8 @@ public sealed class WeaponFieldViewModel : ObservableObject
     private string _editValue;
     private string _persistedValue;
     private string _status = string.Empty;
+    private string _safetyText = "";
+    public string SafetyText { get => _safetyText; set { if (SetProperty(ref _safetyText, value)) OnPropertyChanged(nameof(StatusText)); } }
     private bool _locked;
     private Exception? _saveError;
     private string? _savingValue;
@@ -85,7 +87,8 @@ public sealed class WeaponFieldViewModel : ObservableObject
         }
     }
 
-    public string StatusText { get => StructureLocked ? "存在武器槽草稿，请在武器槽编辑器中继续编辑" : BatchLocked ? "存在相关批量草稿，请在草稿中心应用或移除相关批次" : !Field.CanEdit ? Field.Reason : _status.Length > 0 ? _status : Field.IsMissing ? "未显式设置；选择值后新增" : ""; private set => SetProperty(ref _status, value); }
+    private string BaseStatus => StructureLocked ? "存在武器槽草稿，请在武器槽编辑器中继续编辑" : BatchLocked ? "存在相关批量草稿，请在草稿中心应用或移除相关批次" : !Field.CanEdit ? Field.Reason : _status.Length > 0 ? _status : Field.IsMissing ? "未显式设置；选择值后新增" : "";
+    public string StatusText { get => string.Join("\n", new[] { BaseStatus, SafetyText }.Where(s => s.Length > 0)); private set { _status = value; OnPropertyChanged(); } }
 
     public async Task FlushAsync()
     {
@@ -125,7 +128,7 @@ public sealed class WeaponFieldViewModel : ObservableObject
     {
         _saveError = new InvalidOperationException(message);
         OnPropertyChanged(nameof(SelectedReference));
-        StatusText = message;
+        StatusText = "未保存：" + message;
     }
 
     public void SetLocked(bool locked)

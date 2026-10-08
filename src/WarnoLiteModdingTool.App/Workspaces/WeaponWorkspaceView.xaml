@@ -2,7 +2,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:l="clr-namespace:WarnoLiteModdingTool.App.Localisation"
-    xmlns:controls="clr-namespace:WarnoLiteModdingTool.App.Controls">
+    xmlns:controls="clr-namespace:WarnoLiteModdingTool.App.Controls" controls:SourceLink.RowMenu="True">
 <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition x:Name="WeaponUnitsColumn" Width="0.9*" MinWidth="220" MaxWidth="520" />
@@ -55,8 +55,10 @@
                                     <TextBlock Text="{Binding WeaponWorkspace.SelectedUnit.DisplayName}" FontWeight="SemiBold" TextWrapping="Wrap" />
                                     <TextBlock Text="Weapon" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,11,0,4" />
                                     <controls:SearchPicker ItemsSource="{Binding WeaponWorkspace.Weapons}" SelectedItem="{Binding WeaponWorkspace.SelectedWeapon}" DisplayMemberPath="Name" Placeholder="搜索并选择 Weapon" />
+<controls:SourceLink Target="{Binding WeaponWorkspace.SelectedWeapon}" Tag="source-weapon"/>
                                     <TextBlock Text="MountedWeapon" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="0,11,0,4" />
                                     <controls:SearchPicker ItemsSource="{Binding WeaponWorkspace.Mounts}" SelectedItem="{Binding WeaponWorkspace.SelectedMount}" DisplayMemberPath="Header" SecondaryMemberPath="AmmoName" Placeholder="搜索挂载或 Ammo" />
+<controls:SourceLink Target="{Binding WeaponWorkspace.SelectedMount}" Caption="查看槽位源码"/>
                                     <Button Content="{l:Loc Key='武器槽编辑器'}" Style="{StaticResource SecondaryButton}" Click="WeaponStructure_Click" Margin="0,10,0,0" HorizontalAlignment="Left" />
                                     <Button Content="{l:Loc Key='距离规则与伤害查询'}" Style="{StaticResource SecondaryButton}" Click="Damage_Click" Margin="0,0,0,8" HorizontalAlignment="Left"/>
                                     <TextBlock Text="{l:Loc Key='添加、删除、移植与批量；新槽参数可在编辑器中继续调整。'}" TextWrapping="Wrap" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" Margin="0,5,0,0" />

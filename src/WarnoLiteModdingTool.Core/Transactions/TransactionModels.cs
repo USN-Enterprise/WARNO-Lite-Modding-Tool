@@ -33,6 +33,7 @@ public sealed record ApplyPreview(
     public bool SourceAcknowledged { get; set; }
     public Dictionary<string,byte[]> ReadDependencies {get;init;} = new();
     public Dictionary<string,byte[]> PictureReadDependencies {get;init;} = new();
+    public Dictionary<string,byte[]> WeaponReadDependencies {get;init;} = new();
     public string? ExperienceReview { get; init; }
     public Dictionary<string,byte[]>? UnitReadDependencies {get;init;}
     public Units.UnitProjectGraph? DeletionReview { get; init; }

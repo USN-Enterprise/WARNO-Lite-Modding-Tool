@@ -54,12 +54,13 @@ public static class ExperienceRulesView
     private static UIElement Editor(ExperienceLevelViewModel level)
     {
         var panel = new StackPanel();
+        panel.Children.Add(new SourceLink { Target = level });
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap };
         var binding = new MultiBinding { Converter = new LocalizedValueConverter() };
         binding.Bindings.Add(new Binding(nameof(level.Status)) { Source = level });
         binding.Bindings.Add(new Binding(nameof(UiText.Version)) { Source = UiText.Current });
         status.SetBinding(TextBlock.TextProperty, binding); panel.Children.Add(status);
-        var cells = new StackPanel(); cells.SetBinding(UIElement.IsEnabledProperty, new Binding(nameof(level.CanEdit)) { Source = level }); panel.Children.Add(cells);
+        var cells = new StackPanel(); panel.Children.Add(cells);
         foreach (var category in level.Cells.GroupBy(c => c.Cell.Key.StartsWith("threshold.") ? "升级门槛" : "等级加成"))
         {
             cells.Children.Add(Text(category.Key));
@@ -67,11 +68,11 @@ public static class ExperienceRulesView
             foreach (var cell in category)
             {
                 var item = new StackPanel { Width = 240, Margin = new Thickness(0, 5, 12, 8) };
-                item.Children.Add(Text(cell.Cell.Label));
+                var heading = new DockPanel(); var sourceLink = new SourceLink { Target = new SourceWorkspace.ExperienceSourceTarget(level, cell), Compact = true }; DockPanel.SetDock(sourceLink, Dock.Right); heading.Children.Add(sourceLink); heading.Children.Add(Text(cell.Cell.Label)); item.Children.Add(heading);
                 item.Children.Add(new ParameterNote { Text = cell.Cell.Field, ToolTip = cell.Cell.Source + "\n" + cell.Cell.File });
                 var input = new TextBox { IsReadOnly = cell.Cell.Error.Length > 0, ToolTip = cell.Cell.Error.Length > 0 ? UiText.T(cell.Cell.Error) : cell.Cell.Source };
                 input.SetBinding(TextBox.TextProperty, new Binding(nameof(cell.Value)) { Source = cell, Mode = BindingMode.TwoWay, UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged });
-                item.Children.Add(input);
+                input.SetBinding(UIElement.IsEnabledProperty, new Binding(nameof(level.CanEdit)) { Source = level }); item.Children.Add(input);
                 if (cell.Cell.Error.Length > 0) item.Children.Add(Text(cell.Cell.Error));
                 wrap.Children.Add(item);
             }

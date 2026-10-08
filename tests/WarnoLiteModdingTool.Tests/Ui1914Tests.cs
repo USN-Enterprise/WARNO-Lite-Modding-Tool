@@ -57,7 +57,7 @@ internal static partial class Program
                     var grids = panel.Children.Cast<Grid>().ToArray();
                     if (grids.Length > 1)
                     {
-                        ((TextBlock)grids[0].Children[0]).Text += " — multiline label / 多行标签验证，检查同组输入框对齐";
+                        (grids[0].Children[0] as TextBlock ?? ((Panel)grids[0].Children[0]).Children.OfType<TextBlock>().Single()).Text += " — multiline label / 多行标签验证，检查同组输入框对齐";
                         ((ParameterNote)grids[0].Children[1]).Text += "/VeryLongSyntheticParameterName_ForWrapping_Only/SecondSegment_WithoutTruncation";
                     }
                 }

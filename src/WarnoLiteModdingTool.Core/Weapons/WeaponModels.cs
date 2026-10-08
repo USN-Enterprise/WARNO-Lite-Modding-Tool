@@ -83,6 +83,7 @@ public sealed class AmmoRecord
     public string Name => Source.Name;
     public IReadOnlyList<WeaponFieldValue> Fields { get; }
     public WeaponFieldValue? Field(string key) => _fields.GetValueOrDefault(key);
+    public IReadOnlyDictionary<string, string> SafetyValues { get; init; } = new Dictionary<string, string>();
     public string NameToken {get;internal set;}="";
     public string DisplayName {get;internal set;}="";
     public string ChineseName {get;internal set;}="";

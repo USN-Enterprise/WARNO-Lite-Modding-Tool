@@ -2,7 +2,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:l="clr-namespace:WarnoLiteModdingTool.App.Localisation"
-    xmlns:controls="clr-namespace:WarnoLiteModdingTool.App.Controls">
+    xmlns:controls="clr-namespace:WarnoLiteModdingTool.App.Controls" controls:SourceLink.RowMenu="True">
 <UserControl.Resources>
  <Style x:Key="CenteredNumber" TargetType="TextBlock"><Setter Property="TextAlignment" Value="Center"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
  <Style x:Key="CenteredNumberEditor" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}"><Setter Property="TextAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="VerticalAlignment" Value="Stretch"/><Setter Property="Padding" Value="4"/><Setter Property="Margin" Value="2"/></Style>
@@ -13,7 +13,7 @@
                             <ColumnDefinition x:Name="DivisionEditorColumn" Width="*" MinWidth="480" />
                         </Grid.ColumnDefinitions>
 
-                        <DockPanel Grid.Column="0"><WrapPanel DockPanel.Dock="Top" Margin="6"><Button Content="{l:Loc Key='新建战术师'}" Click="CreateDivision_Click" Padding="10,6"/><Button Content="{l:Loc Key='名称与徽章'}" Click="EditDivisionIdentity_Click" Padding="10,6" Margin="6,0,0,0"/></WrapPanel><TextBox DockPanel.Dock="Top" Margin="6" Text="{Binding DivisionWorkspace.Search, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Loc Key='搜索师'}"/>
+                        <DockPanel Grid.Column="0"><WrapPanel DockPanel.Dock="Top" Margin="6"><controls:SourceLink Target="{Binding DivisionWorkspace.SelectedDivision}" Tag="source-division"/><Button Content="{l:Loc Key='新建战术师'}" Click="CreateDivision_Click" Padding="10,6"/><Button Content="{l:Loc Key='名称与徽章'}" Click="EditDivisionIdentity_Click" Padding="10,6" Margin="6,0,0,0"/></WrapPanel><TextBox DockPanel.Dock="Top" Margin="6" Text="{Binding DivisionWorkspace.Search, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Loc Key='搜索师'}"/>
                         <controls:FacetFilter DockPanel.Dock="Top" Margin="6" Rows="{Binding DivisionWorkspace.DivisionFilterRows}" FilterChanged="DivisionFilter_Changed"/>
                         <DataGrid ItemsSource="{Binding DivisionWorkspace.DivisionsView}"
                                   SelectedItem="{Binding DivisionWorkspace.SelectedDivision}"

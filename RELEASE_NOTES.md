@@ -6,6 +6,19 @@
 
 仅列出功能更新和影响使用的问题修复。
 
+## 2.11.4 — 2026-10-09
+
+- 弹药与武器新增两层预拦截：非法单值不覆盖有效草稿；需要配套的组合可暂存，最终非法则禁止应用，保留草稿和正式文件。
+- 应用前统一检查同时射弹/齐射数、点地次数与关闭开关的冲突、共用弹药箱、飞机库存数组及部署模块依赖；覆盖局部隔离、共享修改、批量、武器结构与可识别源码候选。
+- 表单就地显示关联问题与每发补给。短装填0.1秒、补给0.001及点地缺省次数仍为待核实参考，仅提示，不静默修复。
+- 无新增用户运行依赖或草稿格式变化。未运行官方生成器或游戏；编译环境与结果判定不在本次范围。
+
+## 2.11.3 — 2026-10-08（本地便携版）
+
+- 专业模式新增“在工作台中查看”：从单位、武器、槽位、弹药、师、战略编制及规则进入对应源码；参数行提供紧凑定位按钮，表格行支持右键入口。
+- 复用工作台窗口和标签，在当前缓冲重新定位并选中代码；同名或多处来源列出候选，缺失目标说明原因。新增“返回来源页面”。
+- 保留未保存源码和业务页状态，区分表单草稿与共享源码，不自动应用或生成。无新增运行依赖或草稿格式变化。
+
 ## 2.11.2 — 2026-10-07
 
 - 专业模式新增“游戏规则 → 距离与比例尺”，编辑所选 Mod 的 LBU→GRU 全局换算系数；只接受正数，缺失或不明确结构不补建。沿用草稿、预览、备份及失败恢复；不自动批改速度、射程或模型。
@@ -371,6 +384,19 @@
 [中文](#chinese) | [English](#english)
 
 Feature updates and fixes that affect everyday use.
+
+## 2.11.4 — 2026-10-09
+
+- Two-stage ammunition/weapon safeguards: invalid scalar input cannot overwrite a valid draft; incomplete related edits can be saved, but invalid final combinations cannot be applied.
+- Final candidates check simultaneous/salvo counts, positive position salvos with fire disabled, shared ammo boxes, aircraft inventory arrays and weapon deployment modules, including isolated/shared edits, batches, weapon structures and recognized source edits.
+- Inline feedback includes per-shot supply. The 0.1 s tick, 0.001 supply threshold and missing position-salvo defaults remain unverified references and only produce warnings. No silent corrections.
+- No new runtime dependency or draft format. No official generator/game verification. Compiler environment/result handling is outside this release.
+
+## 2.11.3 — 2026-10-08 (local portable build)
+
+- Added **Show in workspace** in Professional mode for units, weapons, mounts, ammunition, divisions, strategic formations and rules. Parameter rows have compact source buttons, with context menus on business lists.
+- Reuses source windows and tabs, resolves locations in the current buffer and selects the code. Ambiguous sources offer a choice; missing targets are explained. Added **Return to source page**.
+- Preserves source edits and business-page state, distinguishes form drafts and shared source, and never automatically applies or generates. No new runtime dependency or draft format.
 
 ## 2.11.2 — 2026-10-07
 

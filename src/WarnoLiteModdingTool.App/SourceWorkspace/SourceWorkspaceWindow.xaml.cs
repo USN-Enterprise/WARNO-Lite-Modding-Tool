@@ -82,7 +82,7 @@ public partial class SourceWorkspaceWindow : Window
     { if (e.PropertyName == nameof(MainViewModel.ProjectPath) && !string.Equals(_root, _main.ProjectPath, StringComparison.OrdinalIgnoreCase)) { _allowClose = true; Close(); } }
     private void ProjectClosing() { SaveSession(); _main.SourceProjectClosing -= ProjectClosing; _allowClose = true; Close(); }
     private void ThemeChanged() { foreach (var document in _documents.Values) SourceEditorStyle.Apply(document.Editor); }
-    private void LanguageChanged(object? sender, PropertyChangedEventArgs e) { UpdateStatus(); BuildTree(); }
+    private void LanguageChanged(object? sender, PropertyChangedEventArgs e) { UpdateStatus(); BuildTree(); RefreshNavigationNotice(); }
     private void More_Click(object sender, RoutedEventArgs e)
     {
         var menu = new ContextMenu();
@@ -150,10 +150,11 @@ public partial class SourceWorkspaceWindow : Window
         foreach (var pair in _treeNodes) pair.Value.Draft = drafts.Contains(pair.Key);
         FileCount.Text = $"{_catalog.Files.Count} NDF / CSV · {drafts.Count} " + T("源码草稿", "source drafts");
     }
-    public async Task OpenFileAsync(string path, int offset = 0, bool remember = true)
+    public async Task OpenFileAsync(string path, int offset = 0, bool remember = true, bool restoreView = true)
     {
         double? restoredVertical = null;
         path = Path.GetRelativePath(_root, SourceFiles.Resolve(_root, path)).Replace('\\', '/');
+        if (!string.Equals(Current?.Path, path, StringComparison.OrdinalIgnoreCase)) { NavigationNotice.Visibility = Visibility.Collapsed; _navigationNoticeText = null; }
         if (!_documents.TryGetValue(path, out var session))
         {
             var source = _store.Operations.FirstOrDefault(o => o.TargetKind == DraftTargetKind.SourceFile && o.RelativeSourceFile.Equals(path, StringComparison.OrdinalIgnoreCase))?.Source;
@@ -172,7 +173,7 @@ public partial class SourceWorkspaceWindow : Window
             SearchPanel.Install(editor.TextArea);
             var tab = Documents.Items.OfType<TabItem>().FirstOrDefault(t => t.Tag is string pendingPath && pendingPath.Equals(path,StringComparison.OrdinalIgnoreCase)) ?? new TabItem { ToolTip = path };
             tab.Content = editor;
-            if (_pendingTabs.Remove(path, out var state)) { offset = state.Offset; editor.FontSize = Math.Clamp(state.FontSize,10,28); restoredVertical = Math.Max(0,state.Vertical); }
+            if (_pendingTabs.Remove(path, out var state)) { if (restoreView) { offset = state.Offset; restoredVertical = Math.Max(0,state.Vertical); } editor.FontSize = Math.Clamp(state.FontSize,10,28); }
             session = new(path, source, editor, tab); tab.Tag = session;
             var captured = session;
             editor.TextChanged += (_, _) => { captured.Revision++; captured.Dirty = true; _indexCancellation?.Cancel(); UpdateHeader(captured); _analysisTimer.Stop(); _analysisTimer.Start(); _timer.Stop(); _timer.Start(); UpdateStatus(); };

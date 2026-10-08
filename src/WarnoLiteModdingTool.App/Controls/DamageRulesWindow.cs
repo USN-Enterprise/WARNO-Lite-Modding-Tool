@@ -58,6 +58,11 @@ public sealed class DamageRulesWindow : Window
         values.Children.Add(DamageUi.Field("计算方式",_math,160));values.Children.Add(DamageUi.Field("数值",_operand,130));
         values.Children.Add(DamageUi.Field("下限（可选）",_min,140));values.Children.Add(DamageUi.Field("上限（可选）",_max,140));values.Children.Add(_zero);
         var actions=new WrapPanel();top.Children.Add(actions);
+        var sourceLink = new SourceLink { Target = new SourceWorkspace.BusinessSourceTarget(matrix.File, matrix.Name, text => Core.SourceWorkspace.SourceNavigation.Object(text, matrix.Name), true) };
+        actions.Children.Add(sourceLink);
+        _table.SelectionChanged += (_, _) => sourceLink.Target = _table.SelectedItem is CellRow row
+            ? new SourceWorkspace.BusinessSourceTarget(matrix.File, row.Cell.Key, text => Core.SourceWorkspace.SourceNavigation.Damage(text, matrix.Name, row.Cell), true)
+            : new SourceWorkspace.BusinessSourceTarget(matrix.File, matrix.Name, text => Core.SourceWorkspace.SourceNavigation.Object(text, matrix.Name), true);
         actions.Children.Add(DamageUi.Button("全选当前表格",()=>_table.SelectAll(),"damage-select-all"));
         actions.Children.Add(DamageUi.Button("计算预览",Preview,"damage-preview"));
         actions.Children.Add(DamageUi.AsyncButton("加入草稿",SaveMatrix,e=>_status.Text=UiText.T(e.Message),"damage-save"));

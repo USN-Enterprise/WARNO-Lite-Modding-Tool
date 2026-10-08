@@ -9,6 +9,7 @@ public static class SourceValidation
 {
     public static void KnownCombinations(string root, IReadOnlyList<PlannedFileChange> files, IReadOnlyList<WarnoLiteModdingTool.Core.Drafts.DraftOperation> operations, ICollection<string> messages, CancellationToken token)
     {
+        WarnoLiteModdingTool.Core.Weapons.WeaponSafety.ValidateFinal(root, files, messages);
         var final = files.Select(f => new RestoreFile(f.RelativePath, !f.Existed ? null : SourceFiles.IsNdf(f.RelativePath) ? Encoding.UTF8.GetBytes(SourceFiles.Open(root,f.RelativePath,operations.Single(o=>o.RelativeSourceFile.Equals(f.RelativePath,StringComparison.OrdinalIgnoreCase)).Source!.CodePage).Text) : f.OriginalBytes, f.CandidateBytes,"source",[])).ToList();
         var sharedHeight = files.Any(f => f.RelativePath.Equals("GameData/Gameplay/Unit/AirplaneConstantes.ndf",StringComparison.OrdinalIgnoreCase) || f.RelativePath.Equals("GameData/Gameplay/Unit/Tactic/ModulesStandard.ndf",StringComparison.OrdinalIgnoreCase));
         if (sharedHeight)
