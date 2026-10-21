@@ -205,6 +205,7 @@ public static partial class ChangeMerge
                 foreach (var e in doc.ReadMapEntries(a.Value)) Add(type, a.Name, NdfSyntaxDocument.Unquote(doc.Raw(e.Key)), e.Value);
             }
         }
+        MissileCells(doc, result);
         foreach (var key in ambiguous) result.Remove(key);
         return result;
         void Add(string type, string field, string? map, NdfValueSpan span)

@@ -77,9 +77,9 @@ public static class AmmoBatchPlanner
                 var id = DraftOperation.CreateId(DraftTargetKind.AmmoField,field.Location.RelativeSourceFile,ammo.Name,field.Key);
                 var existing = drafts.SingleOrDefault(o => o.Id == id);
                 var status = desired == current ? "不变" : existing is not null ? "更新已有共享草稿" : field.IsMissing ? "将新增字段" : "将修改";
-                if (desired != current)
+                if (desired != current || MissileMotion.IsParameter(field.Key) && MissileMotion.Guided(ammo))
                 {
-                    if (desired == field.DisplayValue)
+                    if (desired == field.DisplayValue && existing is not null)
                     {
                         if (existing is not null) { removals.Add(id); status = "恢复正式基线"; }
                         else if (drafts.Where(o => o.TargetKind == DraftTargetKind.WeaponBatch).SelectMany(WeaponBatch.ReadCells).Any(c => c.Unit.Length == 0 && c.Ammo == ammo.Name && c.Key == field.Key))
@@ -101,6 +101,16 @@ public static class AmmoBatchPlanner
                     references.Add(new(ammo.Name,weapon,unit,data.Units.FirstOrDefault(u => u.Name == unit)?.DisplayName ?? unit));
             }
         }
+        try { upserts = ApBinding.PrepareBatch(data, drafts, upserts, removals).ToList(); }
+        catch (Exception e) when (e is InvalidDataException or TransactionValidationException or InvalidOperationException) { errors.Add(e.Message); }
+        try
+        {
+            upserts = upserts.Select(o => MissileMotion.Prepare(data, drafts, o, current => Calculate(current, WeaponValueKind.Decimal, request))).ToList();
+            for (var i = 0; i < rows.Count; i++)
+                if (upserts.FirstOrDefault(o => o.ObjectName == rows[i].Name && MissileMotion.Has(o)) is { } linked)
+                    rows[i] = rows[i] with { Status = rows[i].Status + "\n" + MissileMotion.Details(linked) };
+        }
+        catch (Exception e) when (e is InvalidDataException or TransactionValidationException or InvalidOperationException or FormatException or OverflowException) { errors.Add(e.Message); }
         var updatedIds = upserts.Select(o => o.Id).Concat(removals).ToHashSet();
         var combined = drafts.Where(o => !updatedIds.Contains(o.Id)).Concat(upserts).ToArray();
         try
@@ -118,6 +128,7 @@ public static class AmmoBatchPlanner
     }
     public static void ValidateFinal(UnitWorkspaceData units,WeaponWorkspaceData data,IReadOnlyList<DraftOperation> operations,IReadOnlySet<string>? names = null)
     {
+        if (operations.Any(MissileMotion.Has)) MissileMotion.ValidateCombination(data, operations);
         names ??= operations.Where(IsShared).Select(o => o.ObjectName).ToHashSet();
         foreach (var ammo in data.Ammunition.Where(a => names.Contains(a.Name)))
         {

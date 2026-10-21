@@ -28,7 +28,7 @@ public sealed class DiffWindow : Window
         var files = new ComboBox { ItemsSource = preview.Files.Where(f => f.Kind != FormalTextFileKind.Log).ToArray(), DisplayMemberPath = "RelativePath", Margin = new Thickness(0, 0, 0, 8) };
         DockPanel.SetDock(files, Dock.Top); dock.Children.Add(files);
         var summary = new TextBox { IsReadOnly = true, Height = 120, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            Text = string.Join("\n", preview.Operations.Select(o => o.Summary)) + "\n" + string.Join("\n", preview.ValidationMessages) + "\n" + preview.BackupId };
+            Text = string.Join("\n", preview.Operations.Select(o => UiText.T(o.Summary))) + "\n" + string.Join("\n", preview.ValidationMessages.Select(UiText.T)) + "\n" + preview.BackupId };
         DockPanel.SetDock(summary, Dock.Top); dock.Children.Add(summary);
         var grid = new Grid(); grid.ColumnDefinitions.Add(new()); grid.ColumnDefinitions.Add(new() { Width = new GridLength(5) }); grid.ColumnDefinitions.Add(new()); dock.Children.Add(grid);
         var left = new GroupBox { Content = _before }; UiText.Bind(left, HeaderedContentControl.HeaderProperty, "修改前"); grid.Children.Add(left);

@@ -12,9 +12,20 @@ namespace WarnoLiteModdingTool.App.ViewModels;
 public sealed partial class MainViewModel
 {
     private ProjectWorkspaceSnapshot? _snapshot;
+    private DraftAnalysis? _draftAnalysis;
+    private async Task PrepareDraftAnalysisAsync(ProjectWorkspaceSnapshot snapshot, CancellationToken cancellation = default)
+    {
+        var store = _draftStore ?? throw new InvalidOperationException("草稿会话不可用");
+        var analysis = new DraftAnalysis(snapshot.Units, snapshot.Weapons, snapshot.Divisions, snapshot.Strategic);
+        await analysis.PrepareAsync(store.Operations, cancellation);
+        cancellation.ThrowIfCancellationRequested();
+        _draftAnalysis = analysis;
+        store.PrepareChangeAsync = analysis.PrepareAsync;
+    }
     public Task CacheSaveTask { get; private set; } = Task.CompletedTask;
     public Func<bool>? CanSaveCache { get; set; }
     public IReadOnlyDictionary<string, long> LastRefreshTimings { get; private set; } = new Dictionary<string, long>();
+    public IReadOnlyDictionary<string, long> LastPresentationTimings { get; private set; } = new Dictionary<string, long>();
     public int LastRefreshReadFiles { get; private set; }
     public long LastRefreshReadBytes { get; private set; }
     public event Action? WorkspaceRefreshing;
@@ -49,15 +60,18 @@ public sealed partial class MainViewModel
             var context = next.Context;
             var drafts = await _draftStore.LoadAsync();
             await Task.Run(() => { next.Units.Rules?.Experience.PrepareDrafts(_draftStore.Operations); if(_draftStore.Operations.Any(o=>o.TargetKind is DraftTargetKind.DamageRule or DraftTargetKind.DamageDistance))_ = next.Units.Rules?.Damage; });
+            await PrepareDraftAnalysisAsync(next);
             Diagnostics.Clear(); AddProjectDiagnostics(context);
-            ApplyIndexResult(next.Index);
+            await ApplyIndexResultAsync(next.Index);
             foreach (var message in next.Units.Diagnostics.Concat(next.Weapons?.Diagnostics ?? []).Concat(next.Divisions?.Diagnostics ?? []).Concat(next.Strategic?.Diagnostics ?? []))
                 Diagnostics.Add(new DiagnosticItemViewModel("项目数据", message));
-            InstallWorkspaces(next, drafts);
-            RefreshMode(refreshLanguage: false);
+            await InstallWorkspacesAsync(next, drafts);
+            var navigationStart = timer.ElapsedMilliseconds;
             var notice = navigation.Restore(this);
             _snapshot = next; _currentContext = context;
             var times = new Dictionary<string, long>(next.Timings) { ["total"] = timer.ElapsedMilliseconds };
+            times["navigation"] = timer.ElapsedMilliseconds - navigationStart;
+            foreach (var phase in LastPresentationTimings) times["ui-" + phase.Key] = phase.Value;
             LastRefreshTimings = times; LastRefreshReadFiles = next.Reads.ReadFiles; LastRefreshReadBytes = next.Reads.ReadBytes;
             QueueCacheSave(next);
             StatusText = notice ?? "应用完成，关联数据已更新";
@@ -71,17 +85,21 @@ public sealed partial class MainViewModel
         }
         finally { IsScanning = false; WorkspaceRefreshed?.Invoke(); }
     }
-    private void InstallWorkspaces(ProjectWorkspaceSnapshot snapshot, DraftLoadResult draftLoad)
+    private async Task InstallWorkspacesAsync(ProjectWorkspaceSnapshot snapshot, DraftLoadResult draftLoad, CancellationToken cancellation = default)
     {
+        Advanced.EditorMode.IsAdvanced = AdvancedMode;
         var store = _draftStore ?? throw new InvalidOperationException("草稿会话不可用");
         var context = snapshot.Context; var result = snapshot.Index;
         if (snapshot.PictureDiagnostic is { } pictureDiagnostic) Diagnostics.Add(new DiagnosticItemViewModel("单位图片", pictureDiagnostic));
+        var presentation = new Dictionary<string, long>(); var watch = System.Diagnostics.Stopwatch.StartNew();
         var unitData = snapshot.Units; var weaponData = snapshot.Weapons; var divisionData = snapshot.Divisions;
         var weaponCapability = result.Modules.FirstOrDefault(m => m.Key == "weapons");
         var ammoCapability = result.Modules.FirstOrDefault(m => m.Key == "ammo");
         DivisionWorkspace?.Dispose();
+        WeaponWorkspace?.Dispose(); AmmoWorkspace?.Dispose();
         WeaponWorkspace = null; AmmoWorkspace = null; DivisionWorkspace = null; StrategicWorkspace = null;
         _creationUnits=unitData;_creationWeapons=weaponData;_creationDivisions=divisionData;
+        UnitWorkspace?.Dispose();
         UnitWorkspace = new UnitWorkspaceViewModel(
             unitData,
             weaponData,
@@ -89,29 +107,34 @@ public sealed partial class MainViewModel
             store,
             draftLoad,
             SetStatusText,
-            () => OpenProjectAsync(context.Layout.RootPath), RefreshAfterApplyAsync) { PictureTextures = snapshot.PictureTextures };
+            () => OpenProjectAsync(context.Layout.RootPath), RefreshAfterApplyAsync, _draftAnalysis) { PictureTextures = snapshot.PictureTextures };
+        await PublishStep("units");
         if (weaponData is not null)
         {
             if (weaponCapability?.CanScan == true && weaponData.Weapons.Count > 0)
             {
                 WeaponWorkspace = new WeaponWorkspaceViewModel(weaponData, store, UnitWorkspace, SetStatusText);
+                await PublishStep("weapons");
             }
             if (ammoCapability?.CanScan == true && weaponData.Ammunition.Count > 0)
             {
                 AmmoWorkspace = new AmmoWorkspaceViewModel(weaponData, store, UnitWorkspace, SetStatusText);
+                await PublishStep("ammo");
             }
         }
         if (divisionData?.HasCompleteFileSet == true && divisionData.Divisions.Count > 0)
         {
-            DivisionWorkspace = new DivisionWorkspaceViewModel(divisionData, store, SetStatusText, UnitWorkspace.RefreshExternalDraftState);
+            DivisionWorkspace = new DivisionWorkspaceViewModel(divisionData, store, SetStatusText, UnitWorkspace.RefreshExternalDraftState, () => UnitWorkspace.ResolvedDrafts);
+            await PublishStep("divisions");
         }
 
         if (result.Modules.Any(m => m.Key is "strategic" or "sp" && m.CanScan))
         {
             var strategic = snapshot.Strategic!;
+            await Task.Run(() => Core.Strategic.StrategicPackEditing.PrepareUses(strategic, cancellation), cancellation);
             UnitWorkspace.StrategicData = strategic;
             StrategicWorkspace = new StrategicWorkspaceViewModel(strategic, store, UnitWorkspace.RefreshExternalDraftState, SetStatusText);
-            UnitWorkspace.RefreshExternalDraftState();
+            if (store.Operations.Any(o => o.TargetKind is DraftTargetKind.StrategicPlan or DraftTargetKind.StrategicPack)) UnitWorkspace.RefreshExternalDraftState();
             OnPropertyChanged(nameof(StrategicWorkspace));
             OnPropertyChanged(nameof(IsStrategicModule));OnPropertyChanged(nameof(IsPackModule));
             OnPropertyChanged(nameof(IsRulesModule));
@@ -125,8 +148,19 @@ public sealed partial class MainViewModel
             [],
             [])));
 
+        await PublishStep("strategic");
         RulesWorkspace = new RulesWorkspaceViewModel(unitData.Rules!, store, UnitWorkspace.RefreshExternalDraftState);
         OnPropertyChanged(nameof(RulesWorkspace)); OnPropertyChanged(nameof(IsRulesModule)); OnPropertyChanged(nameof(IsObjectModule));
-        ProjectSummary = $"2.11.4 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
+        WeaponWorkspace?.SetActive(IsWeaponModule); AmmoWorkspace?.SetActive(IsAmmoModule);
+        await PublishStep("rules");
+        LastPresentationTimings = presentation;
+        async Task PublishStep(string name)
+        {
+            presentation[name + "-prepare"] = watch.ElapsedMilliseconds; watch.Restart();
+            await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.ContextIdle);
+            cancellation.ThrowIfCancellationRequested();
+            presentation[name + "-publish"] = watch.ElapsedMilliseconds; watch.Restart();
+        }
+        ProjectSummary = $"2.11.10 · Unit {UnitWorkspace.Units.Count:N0} · Weapon {weaponData?.Weapons.Count ?? 0:N0} · Ammo {weaponData?.Ammunition.Count ?? 0:N0} · Division {divisionData?.Divisions.Count ?? 0:N0} · Army General {StrategicWorkspace?.Data.Records.Count ?? 0:N0}";
     }
 }

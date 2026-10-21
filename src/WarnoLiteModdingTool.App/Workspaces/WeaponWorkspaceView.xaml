@@ -100,7 +100,7 @@
                                                             <TextBlock Text="{l:LocalizedBinding Path=Title}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBrush}" />
                                                         </DockPanel>
                                                     </Expander.Header>
-                                                    <ItemsControl ItemsSource="{Binding Groups}" Margin="0,7,0,0">
+                                                    <ItemsControl ItemsSource="{Binding VisibleGroups}" Margin="0,7,0,0">
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate>
                                                                 <StackPanel Margin="0,0,0,7">

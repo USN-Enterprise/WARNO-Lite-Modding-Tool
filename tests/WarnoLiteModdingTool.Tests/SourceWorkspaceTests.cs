@@ -214,9 +214,9 @@ internal static partial class Program
                 watch.Restart(); await store.UpsertAsync(SourceEditing.Operation(path, data with { Text = data.Text + "// edited\n" })); results.Add(new { Operation = "save-draft-" + megabytes + "MB", Milliseconds = watch.ElapsedMilliseconds });
                 await store.ClearAsync();
             }
-            Directory.CreateDirectory("publish/qa-source-workspace");
-            File.WriteAllText("publish/qa-source-workspace/performance.json", JsonSerializer.Serialize(new { OS = Environment.OSVersion.ToString(), Cores = Environment.ProcessorCount, MemoryPeak = System.Diagnostics.Process.GetCurrentProcess().PeakWorkingSet64, Results = results }, new JsonSerializerOptions { WriteIndented = true }));
-            Console.WriteLine(File.ReadAllText("publish/qa-source-workspace/performance.json"));
+            Directory.CreateDirectory("publish/qa-2.11.9/source");
+            File.WriteAllText("publish/qa-2.11.9/source/performance.json", JsonSerializer.Serialize(new { OS = Environment.OSVersion.ToString(), Cores = Environment.ProcessorCount, MemoryPeak = System.Diagnostics.Process.GetCurrentProcess().PeakWorkingSet64, Results = results }, new JsonSerializerOptions { WriteIndented = true }));
+            Console.WriteLine(File.ReadAllText("publish/qa-2.11.9/source/performance.json"));
         }
         finally { DeleteTemporaryFixture(root); }
     }

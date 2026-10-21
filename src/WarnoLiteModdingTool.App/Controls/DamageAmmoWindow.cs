@@ -43,12 +43,25 @@ public sealed class DamageAmmoWindow : Window
     private string ScopeKey => _scope==DraftEditScope.AllReferences?"shared":string.Join(",",_units.Distinct().Order(StringComparer.Ordinal));
     private DraftOperation? Existing(AmmoRecord ammo)=>_store.Operations.SingleOrDefault(o=>o.TargetKind==DraftTargetKind.DamageDistance&&o.ObjectName==ammo.Name&&o.FieldKey=="distance/"+ScopeKey);
     private DamageStair? Original(AmmoRecord ammo)=>_data.ResolveStair(ammo.Source.RelativeSourceFile,ammo.Field(DamageDistance.ReferenceKey)?.RawValue??"");
+    private ApBindingState? Linked(AmmoRecord ammo) => ApBinding.Pending(_store.Operations, ammo.Name, _scope, _units);
+    private bool Basic(AmmoRecord ammo) => Linked(ammo) is not null || DamageDistance.Basic(ammo);
+    private static string MissingStatus(AmmoRecord ammo) => UiText.T(ammo.Field(DamageDistance.ReferenceKey)?.IsMissing == true ? "距离规则字段未声明" :
+        ammo.Field(DamageDistance.ReferenceKey)?.RawValue == "nil" ? "未启用距离变化" : "距离引用无法解析");
     private UIElement DistancePanel()
     {
         var panel=new StackPanel{Margin=new(12)};
         panel.Children.Add(DamageUi.Heading("调整所选弹药的距离阶梯"));
         panel.Children.Add(DamageUi.Text(_scope==DraftEditScope.AllReferences?"弹药本体：影响所选弹药的全部使用者；其他弹药保留原阶梯。":"单位范围：仅所列单位使用修改后的弹药和阶梯，其他单位保持原值。",true));
         panel.Children.Add(DamageUi.Text("改变间隔时保持 Arme.Index 不变，远距离结果也可能变化；此处不自动补偿最大射程穿深。",true));
+        foreach (var column in _table.Columns.OfType<DataGridTextColumn>())
+        {
+            var style = new Style(typeof(TextBlock), column.ElementStyle);
+            style.Setters.Add(new Setter(TextBlock.TextWrappingProperty, TextWrapping.Wrap));
+            style.Setters.Add(new Setter(TextBlock.TextTrimmingProperty, TextTrimming.None));
+            style.Setters.Add(new Setter(FrameworkElement.ToolTipProperty, column.Binding));
+            column.ElementStyle = style;
+            column.Header = new TextBlock { Text = column.Header?.ToString(), TextWrapping = TextWrapping.Wrap };
+        }
         _table.Height=180;panel.Children.Add(_table);
         var fields=new WrapPanel();panel.Children.Add(fields);fields.Children.Add(DamageUi.Field("距离间隔（GRU 原值）",_distance));
         fields.Children.Add(DamageUi.Field("每阶变化量（AP）",_ap));
@@ -70,6 +83,13 @@ public sealed class DamageAmmoWindow : Window
         }
         panel.Children.Add(_status);
         var actions=new WrapPanel();panel.Children.Add(actions);
+        actions.Children.Add(DamageUi.AsyncButton("补齐AP配套", async () =>
+        {
+            if (_targets.Count == 0) throw new InvalidDataException("请先选择弹药");
+            var ops = await Task.Run(() => _targets.Select(a => ApBinding.Repair(_weapons, _store.Operations, a, _scope, _units)).ToArray());
+            await _store.ApplyBatchAsync(ops, []); _changed(); _dirty = false; Load();
+            _status.Text = UiText.T("AP配套草稿已保存；保留原始Index。");
+        }, e => _status.Text = UiText.T(e.Message), "damage-ap-repair"));
         actions.Children.Add(DamageUi.Button("计算预览",Preview,"damage-distance-preview"));
         actions.Children.Add(DamageUi.AsyncButton("加入草稿",Save,e=>_status.Text=UiText.T(e.Message),"damage-distance-save"));
         actions.Children.Add(DamageUi.AsyncButton("撤销此范围距离草稿",async()=>
@@ -95,18 +115,18 @@ public sealed class DamageAmmoWindow : Window
             var rows=new List<DistanceRow>();var distances=new List<string>();var aps=new List<string>();
             foreach(var a in _targets)
             {
-                var stair=Original(a);var existing=Existing(a);var d=stair?.Distance??"";var ap=stair?.AP??"";
+                var stair=Original(a);var existing=Existing(a);var linked=Linked(a);var d=linked?.Distance.Distance??stair?.Distance??"";var ap=linked?.Distance.AP??stair?.AP??"";
                 if(existing is not null)
                 {
                     DamageDistance.Validate(_data,_weapons,existing);var state=DamageDistance.Read(existing);d=state.Distance;ap=state.AP;
-                    if(_targets.Count==1 && state.ChangeReference && EditorMode.IsAdvanced)
+                    if(_targets.Count==1 && state.ChangeReference && !state.CreateRule && EditorMode.IsAdvanced)
                         _reference.SelectedItem=_reference.Items.OfType<StairChoice>().FirstOrDefault(c=>c.Stair?.Source.Name==state.StairName);
                 }
-                distances.Add(d);aps.Add(ap);rows.Add(new(a.DisplayName,stair?.Source.Name??a.Field(DamageDistance.ReferenceKey)?.RawValue??"—",
-                    stair is null?UiText.T("无法识别现有阶梯"):stair.Distance+" / "+stair.AP,d+" / "+ap,(_scope==DraftEditScope.AllReferences?_weapons.References.AmmoUnits.GetValueOrDefault(a.Name,[]).Count:_units.Count).ToString()));
+                distances.Add(d);aps.Add(ap);rows.Add(new(a.DisplayName,stair?.Source.Name??(a.Field(DamageDistance.ReferenceKey)?.IsMissing == true ? UiText.T("未声明") : a.Field(DamageDistance.ReferenceKey)?.RawValue??"—"),
+                    stair is null?MissingStatus(a):stair.Distance+" / "+stair.AP,(linked is null ? "" : UiText.T("AP联动（待应用）") + " · ")+d+" / "+ap,(_scope==DraftEditScope.AllReferences?_weapons.References.AmmoUnits.GetValueOrDefault(a.Name,[]).Count:_units.Count).ToString()));
             }
             _distance.Text=distances.Distinct().Count()==1?distances.First():"";_ap.Text=aps.Distinct().Count()==1?aps.First():"";_table.ItemsSource=rows;
-            _status.Text=_targets.Count==0?UiText.T("请先选择弹药"):!EditorMode.IsAdvanced && _targets.Any(a=>!DamageDistance.Basic(a)||Original(a) is null)?UiText.T("所选范围含普通模式不支持的弹药；请缩小选择或使用专业模式。"):"";
+            _status.Text=_targets.Count==0?UiText.T("请先选择弹药"):!EditorMode.IsAdvanced && _targets.Any(a=>!Basic(a)||Original(a) is null && Linked(a) is null)?UiText.T("AP缺少距离配置时可先补齐AP配套；其他家族请使用专业模式。"):"";
         }
         catch(Exception e){_conflict=true;_status.Text=UiText.T(e.Message);}
         finally{_loading=false;}
@@ -121,12 +141,25 @@ public sealed class DamageAmmoWindow : Window
             var ops=new List<DraftOperation>();
             foreach(var a in _targets)
             {
-                if(!EditorMode.IsAdvanced && !DamageDistance.Basic(a))throw new InvalidDataException(UiText.T("普通模式不支持此弹药")+": "+a.Name);
-                var stair=reference??Original(a)??throw new InvalidDataException(UiText.T("无法识别现有阶梯")+": "+a.Name);
-                var existing=Existing(a);var prior=existing is null?null:DamageDistance.Read(existing);
-                if(!EditorMode.IsAdvanced && prior?.ChangeReference==true)throw new InvalidDataException("此范围已有专业引用草稿，请先应用、撤销或在专业模式处理。");
-                var ap=reference?.AP??(EditorMode.IsAdvanced && _ap.Text.Trim().Length>0?_ap.Text.Trim():prior?.AP??stair.AP);
-                var op=DamageDistance.Operation(_data,a,stair,reference?.Distance??_distance.Text.Trim(),ap,_scope,_units,reference is not null);
+                if(!EditorMode.IsAdvanced && !Basic(a))throw new InvalidDataException(UiText.T("普通模式不支持此弹药")+": "+a.Name);
+                var linked=Linked(a);var existing=Existing(a);var prior=existing is null?null:DamageDistance.Read(existing);
+                if(!EditorMode.IsAdvanced && prior?.ChangeReference==true && !prior.CreateRule && linked is null)throw new InvalidDataException("此范围已有专业引用草稿，请先应用、撤销或在专业模式处理。");
+                var stair=reference??Original(a);
+                DraftOperation op;
+                if (reference is null && linked is not null)
+                {
+                    var state = prior ?? linked.Distance;
+                    var distance = _distance.Text.Trim(); var amount = EditorMode.IsAdvanced && _ap.Text.Trim().Length > 0 ? _ap.Text.Trim() : state.AP;
+                    state = state with { Distance = distance, AP = amount, ChangeReference = state.CreateRule, SelectedRule = !state.CreateRule,
+                        StairBody = state.CreateRule ? DamageDistance.NewRuleBody(state.StairName, distance, amount) : state.StairBody };
+                    op = ApBinding.DistanceOp(linked with { Distance = state }, DraftOperation.CreateId(DraftTargetKind.DamageDistance, a.Source.RelativeSourceFile, a.Name, "distance/"+ScopeKey));
+                }
+                else
+                {
+                    if (stair is null) throw new InvalidDataException(MissingStatus(a)+": "+a.Name);
+                    var ap=reference?.AP??(EditorMode.IsAdvanced && _ap.Text.Trim().Length>0?_ap.Text.Trim():prior?.AP??stair.AP);
+                    op=DamageDistance.Operation(_data,a,stair,reference?.Distance??_distance.Text.Trim(),ap,_scope,_units,reference is not null);
+                }
                 DamageDistance.Validate(_data,_weapons,op);ops.Add(op);
             }
             _preview=ops.ToArray();_dirty=true;

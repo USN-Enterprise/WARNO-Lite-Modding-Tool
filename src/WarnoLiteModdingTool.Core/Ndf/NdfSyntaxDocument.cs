@@ -4,7 +4,31 @@ public sealed class NdfSyntaxDocument
 {
     private readonly string _source;
     private readonly List<NdfToken> _tokens;
+    private readonly object _cacheGate = new();
+    private readonly Dictionary<(string Type, int Start, int End), IReadOnlyList<NdfConstructorSpan>> _constructors = new();
+    private readonly Dictionary<NdfConstructorSpan, IReadOnlyList<NdfAssignmentSpan>> _assignments = new();
+    private readonly Dictionary<(int Index, string Open, string Close), int> _matching = new();
+    private Dictionary<string, List<int>>? _constructorStarts;
     public IReadOnlyList<NdfToken> Tokens => _tokens;
+
+    private NdfSyntaxDocument(string source, List<NdfToken> tokens) { _source = source; _tokens = tokens; }
+
+    /// <summary>Object view over immutable, already tokenized source. Offsets stay file-relative.</summary>
+    public NdfSyntaxDocument Slice(int startOffset, int length)
+    {
+        if (startOffset < 0 || length < 0 || startOffset > _source.Length - length) throw new ArgumentOutOfRangeException(nameof(startOffset));
+        var first = TokenIndexAtOrAfter(startOffset);
+        var last = TokenIndexAtOrAfter(startOffset + length);
+        if (last > first && _tokens[last - 1].End > startOffset + length) throw new ArgumentException("Slice splits a token.");
+        return new(_source, _tokens.GetRange(first, last - first));
+    }
+
+    public int TokenIndexAtOrAfter(int offset)
+    {
+        var low = 0; var high = _tokens.Count;
+        while (low < high) { var mid = low + (high - low) / 2; if (_tokens[mid].Start < offset) low = mid + 1; else high = mid; }
+        return low;
+    }
 
     public NdfSyntaxDocument(string source, int startOffset = 0, int? length = null, CancellationToken cancellationToken = default)
     {
@@ -21,6 +45,7 @@ public sealed class NdfSyntaxDocument
         }
 
         _source = source;
+        Projects.AnalysisMetrics.Current?.Syntax(actualLength);
         _tokens = Tokenize(source, startOffset, actualLength, cancellationToken);
     }
 
@@ -37,6 +62,17 @@ public sealed class NdfSyntaxDocument
         int startTokenIndex,
         int endTokenIndex)
     {
+        lock (_cacheGate)
+        {
+            var key = (typeName, startTokenIndex, endTokenIndex);
+            if (!_constructors.TryGetValue(key, out var result))
+                _constructors[key] = result = FindConstructorsCore(typeName, startTokenIndex, endTokenIndex);
+            return result;
+        }
+    }
+
+    private IReadOnlyList<NdfConstructorSpan> FindConstructorsCore(string typeName, int startTokenIndex, int endTokenIndex)
+    {
         var result = new List<NdfConstructorSpan>();
         if (_tokens.Count == 0 || startTokenIndex > endTokenIndex)
         {
@@ -45,19 +81,30 @@ public sealed class NdfSyntaxDocument
 
         var start = Math.Max(0, startTokenIndex);
         var end = Math.Min(_tokens.Count - 1, endTokenIndex);
-        for (var index = start; index < end; index++)
+        if (_constructorStarts is null)
         {
-            if (!string.Equals(_tokens[index].Text, typeName, StringComparison.Ordinal) ||
-                _tokens[index + 1].Text != "(")
+            var starts = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+            for (var i = 0; i + 1 < _tokens.Count; i++)
             {
-                continue;
+                if ((i & 1023) == 0) Projects.ProjectReadScope.Current?.Cancellation.ThrowIfCancellationRequested();
+                if (_tokens[i + 1].Text != "(") continue;
+                if (!starts.TryGetValue(_tokens[i].Text, out var positions)) starts[_tokens[i].Text] = positions = [];
+                positions.Add(i);
             }
-
+            _constructorStarts = starts;
+        }
+        // Preserve the original outermost-of-the-requested-type behavior, including
+        // bounded queries and malformed/unclosed candidates.
+        var next = start;
+        foreach (var index in _constructorStarts.GetValueOrDefault(typeName) ?? [])
+        {
+            if (index < next) continue;
+            if (index >= end) break;
             var closing = FindMatching(index + 1, "(", ")", end);
             if (closing >= 0)
             {
                 result.Add(new NdfConstructorSpan(typeName, index, index + 1, closing));
-                index = closing;
+                next = closing + 1;
             }
         }
 
@@ -336,6 +383,16 @@ public sealed class NdfSyntaxDocument
 
     public IReadOnlyList<NdfAssignmentSpan> EnumerateDirectAssignments(NdfConstructorSpan constructor)
     {
+        lock (_cacheGate)
+        {
+            if (!_assignments.TryGetValue(constructor, out var result))
+                _assignments[constructor] = result = EnumerateDirectAssignmentsCore(constructor);
+            return result;
+        }
+    }
+
+    private IReadOnlyList<NdfAssignmentSpan> EnumerateDirectAssignmentsCore(NdfConstructorSpan constructor)
+    {
         var starts = new List<(string Name, int NameToken, int ValueStart)>();
         var parentheses = 0;
         var brackets = 0;
@@ -431,8 +488,19 @@ public sealed class NdfSyntaxDocument
 
     private int FindMatching(int openingIndex, string opening, string closing, int maximumIndex)
     {
+        lock (_cacheGate)
+        {
+            var key = (openingIndex, opening, closing);
+            if (!_matching.TryGetValue(key, out var result))
+                _matching[key] = result = FindMatchingCore(openingIndex, opening, closing);
+            return result <= maximumIndex ? result : -1;
+        }
+    }
+
+    private int FindMatchingCore(int openingIndex, string opening, string closing)
+    {
         var depth = 0;
-        for (var index = openingIndex; index <= Math.Min(maximumIndex, _tokens.Count - 1); index++)
+        for (var index = openingIndex; index < _tokens.Count; index++)
         {
             if (_tokens[index].Text == opening)
             {

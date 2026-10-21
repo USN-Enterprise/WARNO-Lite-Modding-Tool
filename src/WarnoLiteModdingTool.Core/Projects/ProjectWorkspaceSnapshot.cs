@@ -20,7 +20,7 @@ public sealed record ProjectWorkspaceSnapshot(ModProjectContext Context, Project
     public static async Task<ProjectWorkspaceSnapshot> LoadRootAsync(string root, ProjectLoadCache cache,
         CancellationToken cancellation = default, ProjectWorkspaceSnapshot? previous = null, IReadOnlyList<PlannedFileChange>? committed = null)
     {
-        var reads = new ProjectReadScope(previous?.Reads);
+        var reads = new ProjectReadScope(previous?.Reads, cancellation);
         foreach (var change in committed ?? []) if (change.Kind != FormalTextFileKind.Log) reads.Invalidate(change.FullPath);
         using var scope = reads.Enter();
         var context = new ModProjectDetector().Detect(root);
@@ -33,7 +33,7 @@ public sealed record ProjectWorkspaceSnapshot(ModProjectContext Context, Project
         var timings = new Dictionary<string, long>(); var timer = Stopwatch.StartNew(); long last = 0;
         using var cacheReads = cache.BeginReadSession();
         void Mark(string name) { var now = timer.ElapsedMilliseconds; timings[name] = now - last; last = now; }
-        var reads = sourceReads ?? new ProjectReadScope(previous?.Reads);
+        var reads = sourceReads ?? new ProjectReadScope(previous?.Reads, cancellation);
         reads.DiskCache = cache;
         if (cache.FileSetChanged) reads.InvalidateDiscovery();
         using var scope = reads.Enter();
@@ -62,6 +62,14 @@ public sealed record ProjectWorkspaceSnapshot(ModProjectContext Context, Project
         if (index.Modules.Any(m => m.Key is "weapons" or "ammo" && m.CanScan))
             weapons = await new WeaponProjectLoader().LoadAsync(context, index, units, cancellation, cache);
         Mark("weapons");
+        if (weapons is not null)
+        {
+            try { await Task.Run(() => cache.SetMotionDisplay(MissileMotion.PrepareDisplay(weapons, cache.RestoreMotionDisplay(), cancellation)), cancellation); }
+            // Optional detail preparation must not block unrelated modules. On failure
+            // the page performs its normal check and displays the actual diagnostic.
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or TransactionValidationException or InvalidOperationException) { }
+        }
+        Mark("weapon-feedback");
         void TrackNames()
         {
             foreach (var file in context.LocalisationDictionaries.Concat(units.Localisation.UnitsCsvPaths)) ProjectReadScope.Track(file);
@@ -95,8 +103,14 @@ public sealed record ProjectWorkspaceSnapshot(ModProjectContext Context, Project
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         { pictureDiagnostic = ex.Message; }
         Mark("textures");
-        cancellation.ThrowIfCancellationRequested();
-        if (!reads.IsStable() || !cache.SourcesUnchanged()) throw new IOException("读取期间项目文件发生变化，请重新读取。");
+        await Task.Run(() =>
+        {
+            cancellation.ThrowIfCancellationRequested();
+            if (!reads.IsStable() || !cache.SourcesUnchanged()) throw new IOException("读取期间项目文件发生变化，请重新读取。");
+            reads.FinishLoad();
+            cache.FinishLoad();
+        }, cancellation);
+        Mark("source-stability");
         return new(context, index, units, weapons, divisions, strategic, reads, cache, timings) { PictureTextures = textures, PictureDiagnostic = pictureDiagnostic };
     }
 }

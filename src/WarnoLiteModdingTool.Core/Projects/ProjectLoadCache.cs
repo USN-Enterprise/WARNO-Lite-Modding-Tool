@@ -10,7 +10,7 @@ namespace WarnoLiteModdingTool.Core.Projects;
 // Explicitly supplied for UI reads only. Formal transaction planners never receive this cache.
 public sealed class ProjectLoadCache
 {
-    private const int Format = 5;
+    private const int Format = 7;
     private static readonly object PublishGate = new();
     private static long _version;
     private static readonly Dictionary<string, long> Publications = new(StringComparer.OrdinalIgnoreCase);
@@ -32,6 +32,10 @@ public sealed class ProjectLoadCache
     private Dictionary<string, SavedUnit[]> _units = new(StringComparer.OrdinalIgnoreCase);
     private SavedWeapons? _oldWeapons;
     private SavedWeapons? _weapons;
+    private MissileMotion.SavedDisplay[]? _motionDisplay;
+    internal MissileMotion.SavedDisplay[]? RestoreMotionDisplay() => IsHit && ChangedPaths.Count == 0
+        ? _motionDisplay ??= Read<MissileMotion.SavedDisplay[]>("motion-display.json") : null;
+    internal void SetMotionDisplay(MissileMotion.SavedDisplay[] display) => _motionDisplay = display;
     private Dictionary<string, (string File, object Value)> _oldProjections = new(StringComparer.Ordinal);
     private readonly Dictionary<string, (string File, object Value)> _projections = new(StringComparer.Ordinal);
     public static string DefaultPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WarnoLiteModdingTool", "project-cache", "last-project.json.gz");
@@ -61,6 +65,7 @@ public sealed class ProjectLoadCache
             _oldUnits = new(_units, StringComparer.OrdinalIgnoreCase), _oldWeapons = _weapons ?? _oldWeapons,
             _previous = new(_current, StringComparer.OrdinalIgnoreCase), _oldProjections = new(_projections, StringComparer.Ordinal) };
         next.IsHit = next._stamps.SequenceEqual(_stamps); next.MissReason = next.IsHit ? "none" : "source-changed";
+        if (next.IsHit) next._motionDisplay = _motionDisplay;
         return next;
     }
     public static ProjectLoadCache? Open(string root, bool enabled = true, string? path = null)
@@ -141,6 +146,7 @@ public sealed class ProjectLoadCache
         foreach (var file in files)
             if (_previous.TryGetValue(Relative(file), out var stamp)) _previous[Relative(file)] = stamp with { Modified = long.MinValue };
         IsHit = false;
+        _motionDisplay = null;
     }
     private string Relative(string path) => Path.GetRelativePath(_root, Path.GetFullPath(path)).Replace('\\', '/');
     private bool Unchanged(string relative) => _current.TryGetValue(relative, out var now) && _previous.TryGetValue(relative, out var old) && now == old;
@@ -153,6 +159,16 @@ public sealed class ProjectLoadCache
         return entry?.File == relative ? Read<T>(entry.Entry) : null;
     }
     internal void SetProjection(string key, string file, object value) => _projections[key] = (Relative(file), value);
+    // Restoration DTOs and the compressed input generation are no longer needed
+    // once every current partition has been prepared. Next() carries current data.
+    internal void FinishLoad()
+    {
+        _oldIndex = _index;
+        _oldWeapons = _weapons;
+        _oldUnits.Clear();
+        _oldProjections.Clear();
+        _archive = null; _header = null;
+    }
     public bool RestoreIndexFile(string file, string module, out NdfObjectInfo[] objects, out NdfDiagnostic[] diagnostics)
     {
         objects = []; diagnostics = [];
@@ -198,7 +214,11 @@ public sealed class ProjectLoadCache
             p.EndsWith(".ndf", StringComparison.OrdinalIgnoreCase) && File.Exists(Path.Combine(_root, p)) && AmmoReferenceCatalog.HasDefinitions(ProjectReadScope.ReadAllText(Path.Combine(_root, p))))) return null;
         try
         {
-            var ammo = saved.Ammo.Select(a => new AmmoRecord(a.Source, a.Fields) { SafetyValues = a.SafetyValues, NameToken = a.Token, NameRaw = a.Raw, NameLocation = a.Location, CanEditName = a.CanEditName }).ToArray();
+            var definitions = WeaponFieldDefinitions.Ammo.ToDictionary(f => f.Key, StringComparer.Ordinal);
+            var ammo = saved.Ammo.Select(a => new AmmoRecord(a.Source, a.Fields.Select(f =>
+                new WeaponFieldValue(definitions[f.Key], a.Source.Name, a.Source.TypeName, f.DisplayValue, f.RawValue, f.Location,
+                    saved.Choices[f.Choices], f.State, f.Reason, f.InsertPrefix, f.InsertSuffix)).ToArray())
+                { SafetyValues = a.SafetyValues, NameToken = a.Token, NameRaw = a.Raw, NameLocation = a.Location, CanEditName = a.CanEditName }).ToArray();
             foreach (var a in ammo)
             {
                 var local = units.Localisation.TryResolve(a.NameToken, out var custom);
@@ -212,13 +232,20 @@ public sealed class ProjectLoadCache
             var weapons = saved.Records.Select(w => new WeaponRecord(w.Source, w.Fields, w.Mounts.Select(m => m with
             { Fields = m.Fields.Select(f => IsAmmoChoice(f) ? f with { Choices = choices } : f).ToArray() }).ToArray())).ToArray();
             RestoredWeapons = weapons.Length;
-            return new WeaponWorkspaceData(weapons, ammo, units.Units, WeaponProjectLoader.BuildReferences(weapons, ammo, units.Units), saved.Diagnostics) { CatalogFiles = saved.CatalogFiles };
+            return new WeaponWorkspaceData(weapons, ammo, units.Units, WeaponProjectLoader.BuildReferences(weapons, ammo, units.Units), saved.Diagnostics) { CatalogFiles = saved.CatalogFiles, DamageSource = () => units.Rules!.Damage, MotionSource = MissileMotion.Source(units.Localisation.ProjectRoot) };
         }
-        catch (Exception ex) when (ex is ArgumentException or NullReferenceException) { IsHit = false; return null; }
+        catch (Exception ex) when (ex is ArgumentException or NullReferenceException or KeyNotFoundException or IndexOutOfRangeException) { IsHit = false; return null; }
     }
-    internal void SetWeapons(WeaponWorkspaceData data) => _weapons = new(data.Weapons.Select(w => new WeaponRecord(w.Source, w.Fields,
-        w.Mounts.Select(m => m with { Fields = m.Fields.Select(f => IsAmmoChoice(f) ? f with { Choices = [] } : f).ToArray() }).ToArray())).ToArray(),
-        data.Ammunition.Select(a => new SavedAmmo(a.Source, a.Fields, a.NameToken, a.NameRaw, a.NameLocation, a.CanEditName, a.SafetyValues)).ToArray(), data.Diagnostics) { CatalogFiles = data.CatalogFiles };
+    internal void SetWeapons(WeaponWorkspaceData data)
+    {
+        var choices = new ChoicePool();
+        var ammo = data.Ammunition.Select(a => new SavedAmmo(a.Source, a.Fields.Select(f =>
+            new SavedAmmoField(f.Key, f.DisplayValue, f.RawValue, f.Location, choices.Add(f.Choices), f.State, f.Reason, f.InsertPrefix, f.InsertSuffix)).ToArray(),
+            a.NameToken, a.NameRaw, a.NameLocation, a.CanEditName, a.SafetyValues)).ToArray();
+        _weapons = new(data.Weapons.Select(w => new WeaponRecord(w.Source, w.Fields,
+            w.Mounts.Select(m => m with { Fields = m.Fields.Select(f => IsAmmoChoice(f) ? f with { Choices = [] } : f).ToArray() }).ToArray())).ToArray(),
+            ammo, data.Diagnostics) { CatalogFiles = data.CatalogFiles, Choices = choices.Values.ToArray() };
+    }
     private static bool IsAmmoChoice(WeaponFieldValue f) => f.Definition.Owner == WeaponFieldOwner.MountedWeapon && f.Definition.FieldName == "Ammunition";
     public bool Save(CancellationToken cancellationToken = default)
     {
@@ -240,6 +267,7 @@ public sealed class ProjectLoadCache
                 foreach (var pair in _units)
                 { cancellationToken.ThrowIfCancellationRequested(); using var stream = zip.CreateEntry(entries[pair.Key], CompressionLevel.Fastest).Open(); using var buffered = new BufferedStream(stream, 64 * 1024); UnitCacheCodec.Write(buffered, pair.Value); }
                 if (_weapons is not null) Write("weapons.json", _weapons);
+                if (_motionDisplay is not null) Write("motion-display.json", _motionDisplay);
             }
             if (!Inspect(_root).SequenceEqual(_stamps)) return false;
             lock (PublishGate) { if (_version != _openedVersion || Publications.GetValueOrDefault(_path) != _publication) return false; File.Move(temp, _path, true); }
@@ -269,7 +297,12 @@ public sealed class ProjectLoadCache
     public sealed record ProjectionEntry(string File, string Entry);
     public sealed record SavedField(string Key, UnitFieldAvailability Availability, string DisplayValue, string RawValue, string Reason, UnitSourceLocation? Location);
     public sealed record SavedUnit(NdfObjectInfo Source, SavedField[] Fields, bool HasTransporter, IReadOnlyList<string> Weapons, IReadOnlyList<string> Ammunition, IReadOnlyList<string> Divisions, IReadOnlyList<string> PresentationReferences, string? NameToken, bool UniqueName);
-    public sealed record SavedAmmo(NdfObjectInfo Source, IReadOnlyList<WeaponFieldValue> Fields, string Token, string Raw, WeaponFieldLocation? Location, bool CanEditName, IReadOnlyDictionary<string, string> SafetyValues);
+    public sealed record SavedAmmoField(string Key, string DisplayValue, string RawValue, WeaponFieldLocation Location, int Choices,
+        WeaponFieldState State, string Reason, string InsertPrefix, string InsertSuffix);
+    public sealed record SavedAmmo(NdfObjectInfo Source, IReadOnlyList<SavedAmmoField> Fields, string Token, string Raw, WeaponFieldLocation? Location, bool CanEditName, IReadOnlyDictionary<string, string> SafetyValues);
     public sealed record SavedWeapons(IReadOnlyList<WeaponRecord> Records, SavedAmmo[] Ammo, IReadOnlyList<string> Diagnostics)
-    { public IReadOnlyList<string> CatalogFiles { get; init; } = []; }
+    {
+        public IReadOnlyList<string> CatalogFiles { get; init; } = [];
+        public IReadOnlyList<string>[] Choices { get; init; } = [];
+    }
 }

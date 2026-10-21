@@ -183,6 +183,16 @@ internal static partial class Program
     private static string AddStructure(WeaponStructureState state, string? box = null, bool turret = false) => WeaponStructure.Add(state, state.Weapon, "t:0/m:0", U1911, "t:0", "t:0/m:0", "$/GFX/Weapon/" + A1911, 7, box, turret);
     private static async Task WeaponStructureSyntaxTest()
     {
+        foreach (var ending in new[] { "", ",", " // retain\n", " // retain\r\n" })
+        {
+            var inline = "export W is TWeaponManagerModuleDescriptor(Salves = [4" + ending + "] TurretDescriptorList = [TTurretUnitDescriptor(MountedWeaponDescriptorList = [TMountedWeaponDescriptor(AmmoBoxIndex = 0 Ammunition = $/Ammo)])])";
+            var parsed = new WeaponStructureSyntax(inline);
+            var appended = WeaponStructureSyntax.EditList(inline, parsed.Salves, new HashSet<int>(), new Dictionary<int, string>(), ["7"]);
+            var check = new WeaponStructureSyntax(appended);
+            Assert(check.Boxes.Select(check.Document.Raw).SequenceEqual(new[] { "4", "7" }), "行内无尾逗号库存追加保留元素分隔");
+            Assert(check.Turrets.Single().Body == parsed.Turrets.Single().Body, "行内库存追加保留未改炮塔原文");
+            if (ending.Contains("retain")) Assert(appended.Contains("// retain"), "追加保留原注释");
+        }
         foreach (var nl in new[] { "\n", "\r\n" })
         {
             var root = StructureFixture(nl);

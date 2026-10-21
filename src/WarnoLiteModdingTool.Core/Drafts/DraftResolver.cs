@@ -22,12 +22,36 @@ public static class DraftResolver
         WeaponWorkspaceData? weapons,
         DivisionWorkspaceData? divisions,
         IEnumerable<DraftOperation> operations,
-        StrategicWorkspace? strategic = null)
+        StrategicWorkspace? strategic = null,
+        CancellationToken cancellation = default,
+        IReadOnlyDictionary<string, ResolvedDraftOperation>? previousDisplay = null)
     {
+        Projects.AnalysisMetrics.Current?.DraftPass();
         var units = workspace.Units.ToDictionary(item => item.Name, StringComparer.Ordinal);
         var result = new List<ResolvedDraftOperation>();
+        var repairAnalysis = new Lazy<MissileDebugRepair.Analysis>(() => MissileDebugRepair.Analyze(workspace.Localisation.ProjectRoot));
         foreach (var operation in operations)
         {
+            cancellation.ThrowIfCancellationRequested();
+            // Display reuse is confined to one workspace generation. Structure
+            // resolution also consumes sibling operations and must run each revision.
+            // Formal planners never supply previousDisplay.
+            if (previousDisplay?.TryGetValue(operation.Id, out var prior) == true && ReferenceEquals(prior.Operation, operation) &&
+                operation.TargetKind != DraftTargetKind.WeaponStructure)
+            { result.Add(prior); continue; }
+            if (MissileDebugRepair.IsRepair(operation)) { result.Add(MissileDebugRepair.Resolve(repairAnalysis.Value, operation)); continue; }
+            if (MissileMotion.Has(operation))
+            {
+                try { MissileMotion.Validate(weapons ?? throw new InvalidDataException("武器模块未加载"), operation); }
+                catch (Exception e) when (e is InvalidDataException or InvalidOperationException or ArgumentException or Transactions.TransactionValidationException)
+                { result.Add(Conflict(operation, e.Message)); continue; }
+            }
+            if (ApBinding.Has(operation))
+            {
+                try { ApBinding.Validate(weapons ?? throw new InvalidDataException("武器模块未加载"), workspace.Rules!.Damage, operation); }
+                catch (Exception e) when (e is InvalidDataException or InvalidOperationException or ArgumentException or Transactions.TransactionValidationException)
+                { result.Add(Conflict(operation, e.Message)); continue; }
+            }
             if (operation.TargetKind == DraftTargetKind.SourceFile) { result.Add(SourceWorkspace.SourceEditing.Resolve(workspace.Localisation.ProjectRoot, operation)); continue; }
             if (operation.TargetKind == DraftTargetKind.DamageRule) { result.Add(workspace.Rules?.Damage.Resolve(operation) ?? new(operation, DraftResolutionStatus.Conflict, "伤害规则未加载")); continue; }
             if (operation.TargetKind == DraftTargetKind.DamageDistance) { result.Add(workspace.Rules is null ? new(operation, DraftResolutionStatus.Conflict, "伤害规则未加载") : DamageDistance.Resolve(workspace.Rules.Damage, weapons, operation)); continue; }

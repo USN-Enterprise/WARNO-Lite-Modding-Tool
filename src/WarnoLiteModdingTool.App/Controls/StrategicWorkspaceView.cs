@@ -91,6 +91,7 @@ public sealed class StrategicWorkspaceView : UserControl
             if (_vm is not null) _vm.SelectionRestored -= ShowPawn;
             _vm = DataContext as StrategicWorkspaceViewModel;
             if (_vm is not null) _vm.SelectionRestored += ShowPawn;
+            nodeSource.Target = null;
             ShowPawn();
         };
     }
@@ -146,6 +147,9 @@ public sealed class StrategicWorkspaceView : UserControl
     private void ShowPawn()
     {
         _node = null; _editor.Children.Clear(); _pawn.Children.Clear();
+        _editor.DataContext = null;
+        BindingOperations.ClearBinding(_editor, IsEnabledProperty);
+        BindingOperations.ClearBinding(_pawn, IsEnabledProperty);
         if (_vm?.Selected is not { } record) return;
         _pawn.SetBinding(IsEnabledProperty, new Binding("CanEdit") { Source = _vm });
         if (record.Pawn is null) { Label(_pawn, "目标没有关联战略棋子"); return; }

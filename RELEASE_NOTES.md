@@ -6,6 +6,50 @@
 
 仅列出功能更新和影响使用的问题修复。
 
+2.11.10公开版汇总2.11.5–2.11.10，包含AP配套、导弹联动与副本修复、性能优化及创建修复。下列中间版本“本地交付”保留其首次交付状态。新AP/导弹运动/修复草稿使用schema8/9/10，2.11.4不支持；请保留旧草稿和备份。
+
+## 2.11.10 — 2026-10-21
+
+- 修复新增单位原样继承母版的未解析模块引用时，被误当成新增问题拦截的情况；默认名、自定义名和旧创建草稿均使用经过校验的明确母版来源。
+- 保留未验证提示；新增/改变/额外重复的引用、同批声明变化、部署条件变化及已知非法组合继续拦截。纯模块问题明确指出引用或结构无法确认，预览消息接入现有翻译。
+- 复用现有前后图与检查结果，不增加全量构图或解析；约3,000单位对照计数一致，50个创建候选的验证分配量下降约19MiB。单单位耗时测量有波动，拟定5%时间门槛未全部通过，不宣称全面性能达标。
+- 相对2.11.9无新增运行依赖或草稿格式变化，保留旧2.11.9。未修改真实Mod、运行官方生成器或游戏。本次公开包含上述六个本地版本的成果。
+
+## 2.11.9 — 2026-10-21（本地便携版）
+
+- 优化单位、武器、弹药、师、将军模式、战略Pack及规则的公共打开、草稿分析、预览与刷新；共享语法和候选数据，隐藏页按需建立，模式切换不再触发全界面语言刷新。
+- 修复访问弹药页后旧工作区被表格列宽缓存持有的问题；连续切页、编辑、应用、重开十轮均可释放旧工作区。普通预览增加取消入口，正式应用继续完整校验、备份和失败恢复。
+- 武器缓存去重，旧性能缓存自动重建；草稿和备份格式保持。修复行内库存列表追加项的分隔符顺序、英文顶部按钮裁切及部分翻译分隔符。
+- 完整回归218/218通过，覆盖实际WPF、3,000/10,000单位合成规模和真实项目隔离副本。相同实际副本冷打开从63.4秒降至27.8秒，热打开从约30秒降至三轮中位6.31秒；不同项目与机器负载会影响时长。
+- 已知限制：性能目标未全部通过，首次布局和复杂项目仍有超过250ms的心跳间隔；实际大项目私有内存仍可超过2GiB。源码50MB测试为多行注释样本，不代表任意密集50MB文件。未运行官方生成器或游戏，未上传公开发布。
+
+## 2.11.8 — 2026-10-19（本地便携版）
+
+- 导弹副本修复改为单轮身份/引用分析与批量校验复用，纯debug修复不再加载无关单位/武器数据；最终检查只解析变更文件，保留完整提交依赖核对。
+- 扫描和预览增加阶段进度、取消与安全关闭，加入草稿复核已有预览；显示必要关联运动草稿、前后值及影响文件，保留无关草稿。
+- 共享导弹弹速/加速度规划按实际依赖加载数据，复用既有运动、数值及最终引用检查；已唯一新副本保持，未引用旧重名副本仍可修复。
+- 使用真实规模临时副本验证13项纯修复、15项必要组合和显式17项组合的应用/恢复；沿用schema9/10，无新增运行依赖。原包未改，未运行官方生成器/游戏或上传GitHub。
+
+## 2.11.7 — 2026-10-18（本地便携版）
+
+- 修复导弹隔离副本沿用原ClassNameForDebug导致的“Duplicate weapon debug name”错误；新副本独立分配对象名、GUID及debug名，并校验最终候选。
+- Mod工具新增“修复导弹副本”：扫描、勾选、预览并保存为草稿，经统一备份流程应用；仅修正可确认的重名工具副本debug身份，原实体、引用与运动数值保留，重复扫描幂等。
+- 两模式及中英文支持；修复草稿schema10保留升级前副本，旧版拒读。无新增运行依赖，未运行官方生成器或游戏，未上传GitHub。
+
+## 2.11.6 — 2026-10-17（本地便携版）
+
+- 导弹弹速、最大加速度联动Ammo与实体的默认/失控配置，支持两模式及单项、批量编辑。固定值同步，比例和运算分别使用独立原值，打开不扫改，撤销保留原差异。
+- 补齐导弹实体隔离，沿武器单位范围或弹药共享范围处理，其他Ammo保持；预览列出实体和配置前后值，专业源码入口可定位实体。
+- 联动纳入完整依赖、备份/失败恢复及修改记录；两组同名速度字段按完整路径还原。新草稿schema9保留升级前副本，旧版拒读；无法解析结构不退回半套修改。
+- 无新增运行依赖。本地交付，未上传GitHub、运行官方生成器或游戏。
+
+## 2.11.5 — 2026-10-16（本地便携版）
+
+- 将伤害族设为AP时自动配套穿甲标记与距离规则；单项、批量、基础/专业模式共用。有效既有阶梯保留，nil或缺失字段补齐默认175 GRU/1 AP，必要时在当前Mod内创建专用规则。
+- 家族与自动配套一起保存、应用及撤销，沿武器单位范围隔离或弹药全部引用范围处理；原始Index保持不变，不自动补偿远距穿深。已有AP可在距离窗口补齐配置，打开项目不扫改历史数据。
+- 距离窗口支持继续调整未应用的联动草稿，区分未启用/缺失/无法解析，长状态换行显示。新草稿schema8保留升级前副本，旧版明确拒读；无新增运行依赖。
+- 本地交付，未上传GitHub、运行官方生成器或游戏。
+
 ## 2.11.4 — 2026-10-09
 
 - 弹药与武器新增两层预拦截：非法单值不覆盖有效草稿；需要配套的组合可暂存，最终非法则禁止应用，保留草稿和正式文件。
@@ -384,6 +428,50 @@
 [中文](#chinese) | [English](#english)
 
 Feature updates and fixes that affect everyday use.
+
+The public 2.11.10 release combines 2.11.5–2.11.10: AP integration, missile motion and duplicate-identity repair, performance improvements and unit-creation fixes. Local-delivery labels below retain the intermediate versions' original status. New AP/motion/repair drafts use schema8/9/10, unsupported by 2.11.4; retain existing drafts and backups.
+
+## 2.11.10 — 2026-10-21
+
+- Fixes unit creation rejecting unchanged, unresolved module references inherited from its template. Default names, custom names and existing creation drafts use explicitly validated template provenance.
+- Retains unverified notices. New, changed or extra repeated references, edited declarations, changed deployment requirements and known invalid combinations remain blocked. Module-only failures now identify the relevant problem; preview messages use the existing translation system.
+- Reuses the existing graphs and checks without extra full-project parsing. Counts match on the approximately 3,000-unit sample; validation allocations for 50 creation candidates drop by about 19MiB. Single-creation timings vary and the proposed 5% timing gate was not fully met; this is not a claim of comprehensive performance acceptance.
+- No new runtime dependency or draft format compared with 2.11.9. Keeps 2.11.9; no real Mod writes, official generation or game testing. This public release includes the six local versions described above.
+
+## 2.11.9 — 2026-10-21 (local portable build)
+
+- Improves shared loading, draft analysis, previews and refresh across units, weapons, ammunition, divisions, Army General, Strategic Packs and rules. Syntax and choices are shared; hidden views initialize on demand; mode changes no longer broadcast a language refresh.
+- Releases old workspaces previously retained by ammunition table sizing. Ten rounds of cross-module editing, applying and reopening passed retention checks. Ordinary previews support cancellation; formal application retains complete validation, backup and recovery.
+- Deduplicates weapon caches and rebuilds older performance caches without changing draft or backup formats. Fixes inline inventory-list append separators, clipped English header buttons and translation separators.
+- Full regression: 218/218, plus actual WPF and 3,000/10,000-unit synthetic scale checks. On the same isolated real-project copy, cold opening improved from 63.4s to 27.8s; warm opening improved from about 30s to a three-run median of 6.31s. Results vary by project and machine load.
+- Remaining limits: performance targets are not all met. Initial layout and complex projects can exceed the 250ms heartbeat target, and private memory on large real projects can exceed 2GiB. The 50MB source test used multiline comments, not arbitrary dense objects. Official generation and in-game behavior were not tested; no public upload.
+
+## 2.11.8 — 2026-10-19 (local portable build)
+
+- Reuses one identity/reference analysis across missile repair validation. Debug-only repairs avoid unrelated Unit/Weapon workspaces; final identity checks parse changed files while keeping complete commit-time input checks.
+- Adds stage progress, cancellation and safe closing during scan/preview. Saving rechecks the preview; details show required related movement drafts, before/after values and affected files, preserving unrelated drafts.
+- Shared missile speed/acceleration planning loads the data it actually needs and retains existing motion, numeric and final-reference checks. Unique new clones remain unchanged; unreferenced old duplicate clones can still be repaired.
+- Full-size temporary copies verified 13 repairs, a 15-operation dependency group and an explicit 17-operation group through apply/restore. Schema9/10 and runtime dependencies are unchanged. Supplied Mod files were preserved; no official generation, game run or GitHub upload.
+
+## 2.11.7 — 2026-10-18 (local portable build)
+
+- Fixes missile clones retaining the original ClassNameForDebug and causing "Duplicate weapon debug name". New clones receive independent declaration names, GUIDs and debug names, with final candidate checks.
+- Adds Mod tools → Repair missile clones: scan, select, preview and save repair drafts for the normal backed-up apply flow. Only confirmed duplicate tool clones change; original entities, references and movement values remain. Rescanning is idempotent.
+- Available in both modes and languages. Repair drafts use schema10, preserve pre-upgrade copies and are rejected by older readers. No new runtime dependency; no official generation, game run or GitHub upload.
+
+## 2.11.6 — 2026-10-17 (local portable build)
+
+- Missile speed and acceleration now link Ammo with the entity's default and uncontrollable configurations for single and batch edits in both modes. Fixed values synchronize; arithmetic uses independent current values. Opening preserves differences and undo restores them.
+- Entity isolation respects weapon Unit scope and shared Ammo scope, preserving other Ammo users. Previews show entity/config changes; professional source links also locate the entity.
+- Linked drafts participate in dependency groups, backups, failure recovery and change records. Full config paths distinguish matching speed field names during numeric restoration. Schema9 preserves pre-upgrade drafts and is rejected by older versions; unsupported structures cannot silently save partial edits.
+- No new runtime dependency. Local delivery only; no GitHub upload, official generation or game run.
+
+## 2.11.5 — 2026-10-16 (local portable build)
+
+- Setting the damage family to AP also prepares PiercingWeapon and a valid range rule in single edits, batches and both modes. Valid existing steps remain; nil or omitted fields use 175 GRU/1 AP by default, with a dedicated rule created inside the current Mod when needed.
+- Automatic values belong to the family draft for save/apply/undo, retaining unit isolation or shared-ammunition scope. Raw Index stays unchanged; long-range penetration is not automatically preserved. Existing AP can use Complete AP setup; opening projects does not rewrite historical configurations.
+- Pending AP drafts can be adjusted in the distance window. Disabled, omitted and unresolved references have distinct states; long cells wrap. New schema8 drafts preserve upgrade copies and are rejected by earlier releases. No new runtime dependency.
+- Local delivery; no GitHub upload, official generator or game run.
 
 ## 2.11.4 — 2026-10-09
 

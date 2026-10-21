@@ -14,9 +14,16 @@ public sealed record RuleGroup(RuleDefinition Definition, IReadOnlyList<RuleCell
 public sealed class RuleWorkspace(string root, IReadOnlyList<RuleGroup> groups)
 {
     public string Root { get; } = root;
-    private DamageWorkspace? _damage;
+    private WeakReference<DamageWorkspace>? _damage;
     private readonly object _damageGate=new();
-    public DamageWorkspace Damage { get { lock(_damageGate)return _damage ??= new(Root); } }
+    public DamageWorkspace Damage => Projects.ProjectReadScope.Memo("damage-workspace:" + Root, () =>
+    {
+        lock (_damageGate)
+        {
+            if (_damage?.TryGetTarget(out var saved) == true) return saved;
+            var workspace = new DamageWorkspace(Root); _damage = new(workspace); return workspace;
+        }
+    });
     // Rules are memoized, while this graph is loaded later outside that memo's dependency scope.
     // Keep its lifetime within a single workspace generation so an apply cannot reuse stale damage data.
     internal RuleWorkspace NewSession()

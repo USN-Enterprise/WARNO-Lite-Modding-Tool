@@ -114,7 +114,7 @@ public static class UnitDeletionV2
                 throw new TransactionValidationException("请先处理以此单位为母版的创建草稿 / Resolve dependent creation first");
             if (UnitCreationHistory.Load(root).DeletedUnits?.Any(d => d.Source == op.RelativeSourceFile && d.Name == op.ObjectName && d.DraftUtc == op.UpdatedUtc) == true)
                 throw new TransactionValidationException("该删除草稿已提交，请清理旧草稿 / This deletion was already committed; clear the old draft");
-            var state = UnitDeletion.Read(op); var original = new UnitProjectGraph(root, deletionScope: true);
+            var state = UnitDeletion.Read(op); var original = UnitProjectGraph.Read(root, deletionScope: true);
             var originalUnit = original.RequireObject(op.RelativeSourceFile, op.ObjectName);
             if (original.Body(originalUnit) != op.BaselineRaw) throw new TransactionValidationException("删除基线已变化 / Deletion baseline changed");
             var originalAnalysis = Analyze(original, originalUnit);

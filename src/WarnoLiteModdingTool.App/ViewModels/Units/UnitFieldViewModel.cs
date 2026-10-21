@@ -67,11 +67,11 @@ public sealed class UnitFieldViewModel : ObservableObject
         _statusText = conflictReason is null ? activeDraft is null ? string.Empty : "草稿已恢复" : $"草稿冲突：{conflictReason}";
         _changed = changed;
         _trackPending = trackPending;
-        ChoiceToggles = new ObservableCollection<UnitChoiceToggleViewModel>();
+        _choiceToggles = new ObservableCollection<UnitChoiceToggleViewModel>();
         if (field is not null && (field.Definition.ValueKind is UnitValueKind.PathList or UnitValueKind.StringList || field.Definition.Key == "structure.role"))
         {
             var selected = SplitDisplay(_editValue).ToHashSet(StringComparer.CurrentCultureIgnoreCase);
-            foreach (var choice in choices.Concat(SplitDisplay(_editValue)).Distinct(StringComparer.CurrentCultureIgnoreCase))
+            foreach (var choice in SplitDisplay(_editValue).Distinct(StringComparer.CurrentCultureIgnoreCase))
             {
                 var toggle = new UnitChoiceToggleViewModel(
                     choice,
@@ -79,7 +79,7 @@ public sealed class UnitFieldViewModel : ObservableObject
                     field.Definition.Key == "structure.tags" && choice.StartsWith("UNITE_", StringComparison.OrdinalIgnoreCase));
                 toggle.Kind = field.Definition.Key;
                 toggle.SelectionChanged += ChoiceToggle_SelectionChanged;
-                ChoiceToggles.Add(toggle);
+                _choiceToggles.Add(toggle);
             }
         }
     }
@@ -120,7 +120,7 @@ public sealed class UnitFieldViewModel : ObservableObject
     public string ReadOnlyReason { get; }
 
     public bool IsEditable => _baseEditable && !_transactionLocked && Advanced.EditorMode.CanEdit(Key);
-    public void RefreshMode() { OnPropertyChanged(nameof(IsEditable));OnPropertyChanged(nameof(IsVisible));OnPropertyChanged(nameof(DisplayLabel));OnPropertyChanged(nameof(OriginalParameter));ChoicesView.Refresh();OnPropertyChanged(nameof(ShowMixedArmor));OnPropertyChanged(nameof(ChoiceValue));OnPropertyChanged(nameof(ExperienceDetails)); }
+    public void RefreshMode() { OnPropertyChanged(nameof(IsEditable));OnPropertyChanged(nameof(IsVisible));OnPropertyChanged(nameof(DisplayLabel));OnPropertyChanged(nameof(OriginalParameter));_choicesView?.Refresh();OnPropertyChanged(nameof(ShowMixedArmor));OnPropertyChanged(nameof(ChoiceValue));OnPropertyChanged(nameof(ExperienceDetails)); }
 
     public bool IsChoiceEditor { get; }
 
@@ -132,7 +132,30 @@ public sealed class UnitFieldViewModel : ObservableObject
 
     public IReadOnlyList<DeploymentPresetViewModel> DeploymentPresets { get; }
 
-    public ObservableCollection<UnitChoiceToggleViewModel> ChoiceToggles { get; }
+    private readonly ObservableCollection<UnitChoiceToggleViewModel> _choiceToggles;
+    private bool _choicesPrepared;
+    public ObservableCollection<UnitChoiceToggleViewModel> ChoiceToggles
+    {
+        get
+        {
+            if (!_choicesPrepared && IsPillEditor)
+            {
+                _choicesPrepared = true;
+                var existing = _choiceToggles.ToDictionary(c => c.Display, StringComparer.CurrentCultureIgnoreCase);
+                _choiceToggles.Clear();
+                foreach (var value in Choices.Concat(SplitDisplay(EditValue)).Distinct(StringComparer.CurrentCultureIgnoreCase))
+                {
+                    if (!existing.TryGetValue(value, out var toggle))
+                    {
+                        toggle = new UnitChoiceToggleViewModel(value, false, Key == "structure.tags" && value.StartsWith("UNITE_", StringComparison.OrdinalIgnoreCase)) { Kind = Key };
+                        toggle.SelectionChanged += ChoiceToggle_SelectionChanged;
+                    }
+                    _choiceToggles.Add(toggle);
+                }
+            }
+            return _choiceToggles;
+        }
+    }
     private System.ComponentModel.ICollectionView? _choicesView;
     private string _choiceSearch="";
     public string ChoiceSearch {get=>_choiceSearch;set{if(SetProperty(ref _choiceSearch,value))ChoicesView.Refresh();}}
@@ -146,11 +169,11 @@ public sealed class UnitFieldViewModel : ObservableObject
 
     public bool IsTagEditor => Field?.Definition.ValueKind == UnitValueKind.StringList;
 
-    public int SelectedChoiceCount => ChoiceToggles.Count(c=>c.IsSelected);
-    public IEnumerable<UnitChoiceToggleViewModel> SelectedChoices => ChoiceToggles.Where(c=>c.IsSelected);
-    public string ChoiceSummary => ChoiceToggles.Count(item => item.IsSelected) == 0
+    public int SelectedChoiceCount => _choiceToggles.Count(c=>c.IsSelected);
+    public IEnumerable<UnitChoiceToggleViewModel> SelectedChoices => _choiceToggles.Where(c=>c.IsSelected);
+    public string ChoiceSummary => _choiceToggles.Count(item => item.IsSelected) == 0
         ? "尚未选择"
-        : string.Join(" · ", ChoiceToggles.Where(item => item.IsSelected).Select(item => item.Display));
+        : string.Join(" · ", _choiceToggles.Where(item => item.IsSelected).Select(item => item.Display));
 
     public bool IsOptionalMissing => Field is { Definition.CanInsertWhenMissing: true, Availability: UnitFieldAvailability.Missing };
 
@@ -405,15 +428,15 @@ public sealed class UnitFieldViewModel : ObservableObject
 
         if (Field?.Definition.Key == "structure.role" && sender is UnitChoiceToggleViewModel { IsSelected: true } selected)
         {
-            foreach (var choice in ChoiceToggles.Where(item => !ReferenceEquals(item, selected)))
+            foreach (var choice in _choiceToggles.Where(item => !ReferenceEquals(item, selected)))
             {
                 choice.SetSilently(false);
             }
         }
 
         EditValue = Field?.Definition.Key == "structure.role"
-            ? ChoiceToggles.FirstOrDefault(item => item.IsSelected)?.Display ?? string.Empty
-            : string.Join(", ", SplitDisplay(EditValue).Where(v => ChoiceToggles.Any(c=>c.IsSelected && c.Display == v)).Concat(ChoiceToggles.Where(c=>c.IsSelected).Select(c=>c.Display)).Distinct(StringComparer.Ordinal));
+            ? _choiceToggles.FirstOrDefault(item => item.IsSelected)?.Display ?? string.Empty
+            : string.Join(", ", SplitDisplay(EditValue).Where(v => _choiceToggles.Any(c=>c.IsSelected && c.Display == v)).Concat(_choiceToggles.Where(c=>c.IsSelected).Select(c=>c.Display)).Distinct(StringComparer.Ordinal));
         OnPropertyChanged(nameof(ChoiceSummary));
         OnPropertyChanged(nameof(SelectedChoices)); OnPropertyChanged(nameof(SelectedChoiceCount));
     }
@@ -421,12 +444,12 @@ public sealed class UnitFieldViewModel : ObservableObject
     private void SyncChoiceToggles(string value)
     {
         var selected = SplitDisplay(value).ToHashSet(StringComparer.CurrentCultureIgnoreCase);
-        if (Field?.Definition.Key == "structure.specialties") foreach(var v in selected.Where(v=>!ChoiceToggles.Any(c=>c.Display==v)))
-        {var toggle=new UnitChoiceToggleViewModel(v,true,false){Kind=Key};toggle.SelectionChanged+=ChoiceToggle_SelectionChanged;ChoiceToggles.Add(toggle);}
+        if (IsPillEditor) foreach(var v in selected.Where(v=>!_choiceToggles.Any(c=>c.Display==v)))
+        {var toggle=new UnitChoiceToggleViewModel(v,true,false){Kind=Key};toggle.SelectionChanged+=ChoiceToggle_SelectionChanged;_choiceToggles.Add(toggle);}
         _suppressChoiceSync = true;
         try
         {
-            foreach (var choice in ChoiceToggles)
+            foreach (var choice in _choiceToggles)
             {
                 choice.SetSilently(selected.Contains(choice.Display));
             }

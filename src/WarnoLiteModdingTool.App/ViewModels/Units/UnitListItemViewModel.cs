@@ -20,7 +20,14 @@ public sealed class UnitListItemViewModel(UnitRecord unit, Action? batchSelectio
     private bool _pendingDelete;
     private bool _forceDelete;
     public string PendingName => _pendingName ?? InternalName;
-    public void UpdateLifecycle(string? name,bool deleted,bool force=false){_pendingName=name;_pendingDelete=deleted;_forceDelete=force;OnPropertyChanged(nameof(PendingName));OnPropertyChanged(nameof(DraftStatus));}
+    public void UpdateLifecycle(string? name,bool deleted,bool force=false)
+    {
+        if (_pendingName == name && _pendingDelete == deleted && _forceDelete == force) return;
+        var renamed = _pendingName != name;
+        _pendingName=name;_pendingDelete=deleted;_forceDelete=force;
+        if (renamed) OnPropertyChanged(nameof(PendingName));
+        OnPropertyChanged(nameof(DraftStatus));
+    }
 
     public string Coalition => Unit.Coalition;
 
@@ -86,9 +93,6 @@ public sealed class UnitListItemViewModel(UnitRecord unit, Action? batchSelectio
     {
         HasDraft = hasDraft;
         HasConflict = hasConflict;
-        if (SetProperty(ref _draftDisplayName, draftDisplayName, nameof(DisplayName)))
-        {
-            OnPropertyChanged(nameof(DisplayName));
-        }
+        SetProperty(ref _draftDisplayName, draftDisplayName, nameof(DisplayName));
     }
 }

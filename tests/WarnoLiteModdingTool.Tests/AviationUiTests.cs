@@ -59,10 +59,10 @@ internal static partial class Program
                     window.UpdateLayout(); DrainDispatcher(dispatcher);
                     var scroller = FindVisualChildren<ScrollViewer>(window).FirstOrDefault(v => FindVisualChildren<TextBox>(v).Any(t => ReferenceEquals(t.DataContext, field)));
                     if (scroller is not null && !professional) { input.BringIntoView(); DrainDispatcher(dispatcher); scroller.ScrollToVerticalOffset(scroller.VerticalOffset + 180); DrainDispatcher(dispatcher); }
-                    Directory.CreateDirectory("publish/qa-2.10.1");
+                    Directory.CreateDirectory("publish/qa-2.11.9/aviation");
                     var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render((FrameworkElement)window.Content);
                     var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
-                    using (var stream = File.Create($"publish/qa-2.10.1/aviation-{language}-{professional}-{helicopter}.png")) encoder.Save(stream);
+                    using (var stream = File.Create($"publish/qa-2.11.9/aviation/aviation-{language}-{professional}-{helicopter}.png")) encoder.Save(stream);
                     RunWithDispatcher(units.UndoFieldAsync(field), dispatcher);
                     var speed = units.Fields.Single(f => f.Key == AviationMovement.Speed);
                     speed.EditValue = helicopter ? "260" : "600"; RunWithDispatcher(speed.FlushAsync(), dispatcher);

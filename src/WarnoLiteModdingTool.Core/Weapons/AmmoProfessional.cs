@@ -74,7 +74,7 @@ public static class AmmoProfessional
         var projectile = Raw("ProjectileType");
         var missile = projectile == "EProjectileType/GuidedMissile";
         var fired = projectile is "EProjectileType/Obus" or "EProjectileType/Bombe" or "EProjectileType/Grenade" or "EProjectileType/Artillerie" || missile;
-        if (!fired) return Unavailable(obj, def, "", "当前弹道类型不支持补建此参数");
+        if (!fired && !(projectile.Length == 0 && def.FieldName is ("DamageTypeEvolutionOverRangeDescriptor" or "PiercingWeapon"))) return Unavailable(obj, def, "", "当前弹道类型不支持补建此参数");
         if (def.FieldName is "IsFireAndForget" or "MaxAccelerationGRU" or "MissileDescriptor" or "MissileTimeBetweenCorrections" or "ReflexShotDisabledIfPriorityTarget" && !missile)
             return Unavailable(obj, def, "", "仅适用于已有导弹结构");
         if (def.FieldName is "CorrectedShotDispersionMultiplier" or "PitchForParabolic" && projectile is not ("EProjectileType/Artillerie" or "EProjectileType/Obus"))

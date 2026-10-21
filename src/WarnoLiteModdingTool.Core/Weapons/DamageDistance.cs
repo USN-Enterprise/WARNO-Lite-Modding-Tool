@@ -8,7 +8,8 @@ using WarnoLiteModdingTool.Core.Units;
 namespace WarnoLiteModdingTool.Core.Weapons;
 
 public sealed record DamageDistanceState(int Version, string AmmoBody, string BeforeReference,
-    string StairName, string StairFile, string StairBody, string Distance, string AP, bool ChangeReference);
+    string StairName, string StairFile, string StairBody, string Distance, string AP, bool ChangeReference,
+    bool MissingReference = false, bool CreateRule = false, bool SelectedRule = false);
 public sealed record DistanceExpansion(WeaponWorkspaceData Workspace, IReadOnlyList<DraftOperation> Operations,
     IReadOnlyDictionary<string, IReadOnlyList<string>> AppendedBlocks);
 
@@ -17,14 +18,14 @@ public static class DamageDistance
 {
     public const string ReferenceKey = "ammo.damage.evolution.internal";
     public static WeaponFieldDefinition ReferenceDefinition { get; } = new(ReferenceKey, "伤害", "距离规则引用", "由距离规则编辑器维护",
-        WeaponFieldOwner.Ammo, "DamageTypeEvolutionOverRangeDescriptor", WeaponValueKind.CatalogChoice, Professional: true);
+        WeaponFieldOwner.Ammo, "DamageTypeEvolutionOverRangeDescriptor", WeaponValueKind.CatalogChoice, Professional: true, CanInsert: true);
     public static DamageDistanceState Read(DraftOperation op)
     {
         try
         {
             var value = JsonSerializer.Deserialize<DamageDistanceState>(op.TargetRaw);
-            if (value is null || value.Version != 1 || string.IsNullOrEmpty(value.AmmoBody) || string.IsNullOrEmpty(value.StairBody) ||
-                string.IsNullOrEmpty(value.BeforeReference) || string.IsNullOrEmpty(value.StairName) || string.IsNullOrEmpty(value.StairFile) ||
+            if (value is null || value.Version is not (1 or 2) || value.Version == 1 && (value.MissingReference || value.CreateRule || value.SelectedRule) || string.IsNullOrEmpty(value.AmmoBody) || string.IsNullOrEmpty(value.StairBody) ||
+                !value.MissingReference && string.IsNullOrEmpty(value.BeforeReference) || value.MissingReference && value.BeforeReference != "" || string.IsNullOrEmpty(value.StairName) || string.IsNullOrEmpty(value.StairFile) ||
                 string.IsNullOrEmpty(value.Distance) || string.IsNullOrEmpty(value.AP)) throw new JsonException();
             return value;
         }
@@ -37,9 +38,9 @@ public static class DamageDistance
     {
         DamageWorkspace.Positive(distance); DamageWorkspace.Positive(ap);
         var reference = ammo.Field(ReferenceKey) ?? throw new InvalidDataException("弹药缺少唯一距离规则字段");
-        if (!reference.CanEdit || reference.IsMissing) throw new InvalidDataException("弹药距离规则字段不可编辑");
-        var state = new DamageDistanceState(1, data.Graph.Body(data.Graph.RequireObject(ammo.Source.RelativeSourceFile, ammo.Name)),
-            reference.RawValue, stair.Source.Name, stair.Source.RelativeSourceFile, stair.Body, distance, ap, changeReference);
+        if (!reference.CanEdit) throw new InvalidDataException("弹药距离规则字段不可编辑");
+        var state = new DamageDistanceState(reference.IsMissing ? 2 : 1, data.Graph.Body(data.Graph.RequireObject(ammo.Source.RelativeSourceFile, ammo.Name)),
+            reference.RawValue, stair.Source.Name, stair.Source.RelativeSourceFile, stair.Body, distance, ap, changeReference, reference.IsMissing);
         _ = data.Reference(ammo.Source.RelativeSourceFile, stair);
         var identity = scope == DraftEditScope.AllReferences ? "shared" : string.Join(",", units.Distinct().Order(StringComparer.Ordinal));
         if (identity.Length == 0) throw new InvalidDataException("距离修改缺少单位作用域");
@@ -62,15 +63,28 @@ public static class DamageDistance
         var ammo = weapons?.Ammo(op.ObjectName) ?? throw new InvalidDataException("距离草稿对应弹药不存在");
         if (ammo.Source.RelativeSourceFile != op.RelativeSourceFile || ammo.Source.TypeName != op.ObjectType ||
             data.Graph.Body(data.Graph.RequireObject(op.RelativeSourceFile, op.ObjectName)) != state.AmmoBody ||
-            ammo.Field(ReferenceKey)?.RawValue != state.BeforeReference || state.BeforeReference != op.BaselineRaw)
+            ammo.Field(ReferenceKey)?.RawValue != state.BeforeReference || ammo.Field(ReferenceKey)?.IsMissing != state.MissingReference || state.BeforeReference != op.BaselineRaw)
             throw new InvalidDataException("弹药距离规则基线已变化");
-        var stair = data.Stairs.Single(s => s.Source.Name == state.StairName && s.Source.RelativeSourceFile == state.StairFile);
-        if (stair.Body != state.StairBody) throw new InvalidDataException("引用的距离规则基线已变化");
-        if (!state.ChangeReference && data.ResolveStair(op.RelativeSourceFile, state.BeforeReference) != stair)
-            throw new InvalidDataException("弹药原距离规则不能唯一解析");
-        _ = data.Reference(op.RelativeSourceFile, stair);
-        if (state.ChangeReference && (state.Distance != stair.Distance || state.AP != stair.AP))
-            throw new InvalidDataException("更换引用和修改共享规则须分别处理");
+        if (state.CreateRule)
+        {
+            if (state.Version != 2 || !state.ChangeReference || state.StairFile != op.RelativeSourceFile ||
+                data.Graph.FindObjects(state.StairName).Count != 0 || !System.Text.RegularExpressions.Regex.IsMatch(state.StairName, @"^WLMT_AP_[A-Za-z0-9_]+$"))
+                throw new InvalidDataException("新增距离规则身份无效或已占用");
+            var syntax = new NdfSyntaxDocument(state.StairBody); var owner = syntax.FindConstructors("TStairsDamageTypeEvolutionOverRangeDescriptor").Single();
+            if (syntax.Raw(DamageWorkspace.Required(syntax, owner, "DistanceGRU")) != state.Distance || syntax.Raw(DamageWorkspace.Required(syntax, owner, "AP")) != state.AP ||
+                state.StairBody != NewRuleBody(state.StairName, state.Distance, state.AP)) throw new InvalidDataException("新增距离规则内容无效");
+        }
+        else
+        {
+            var stair = data.Stairs.SingleOrDefault(s => s.Source.Name == state.StairName && s.Source.RelativeSourceFile == state.StairFile)
+                ?? throw new InvalidDataException("引用的距离规则已不存在");
+            if (stair.Body != state.StairBody) throw new InvalidDataException("引用的距离规则基线已变化");
+            if (!state.ChangeReference && !state.SelectedRule && data.ResolveStair(op.RelativeSourceFile, state.BeforeReference) != stair)
+                throw new InvalidDataException("弹药原距离规则不能唯一解析");
+            _ = data.Reference(op.RelativeSourceFile, stair);
+            if (state.ChangeReference && (state.Distance != stair.Distance || state.AP != stair.AP))
+                throw new InvalidDataException("更换引用和修改共享规则须分别处理");
+        }
         if (op.EditScope is not (DraftEditScope.AllReferences or DraftEditScope.CurrentUnit or DraftEditScope.SelectedUnits))
             throw new InvalidDataException("距离修改作用域无效");
         if (op.EditScope != DraftEditScope.AllReferences && (op.SelectedUnitNames is not { Count: > 0 } ||
@@ -89,9 +103,14 @@ public static class DamageDistance
         foreach (var op in operations.Where(o => o.TargetKind == DraftTargetKind.DamageDistance))
         {
             Validate(data, weapons, op); var state = Read(op);
-            var stair = data.Stairs.Single(s => s.Source.Name == state.StairName && s.Source.RelativeSourceFile == state.StairFile);
-            var raw = data.Reference(op.RelativeSourceFile, stair);
-            if (!state.ChangeReference && (state.Distance != stair.Distance || state.AP != stair.AP))
+            var stair = state.CreateRule ? null : data.Stairs.Single(s => s.Source.Name == state.StairName && s.Source.RelativeSourceFile == state.StairFile);
+            var raw = state.CreateRule ? "~/" + state.StairName : data.Reference(op.RelativeSourceFile, stair!);
+            if (state.CreateRule)
+            {
+                if (!appends.TryGetValue(state.StairFile, out var created)) appends[state.StairFile] = created = [];
+                if (!created.Contains(state.StairBody)) created.Add(state.StairBody);
+            }
+            if (!state.ChangeReference && (state.Distance != stair!.Distance || state.AP != stair.AP))
             {
                 // A scoped edit always owns its resulting rule; it must never change unselected Ammo.
                 var signature = JsonSerializer.Serialize(new { state.StairFile, state.StairName, state.Distance, state.AP });
@@ -117,10 +136,10 @@ public static class DamageDistance
             choices.Add(raw);
             result.Add(op with { TargetKind = DraftTargetKind.AmmoField, FieldKey = ReferenceKey,
                 FieldPath = "TAmmunitionDescriptor.DamageTypeEvolutionOverRangeDescriptor", TargetRaw = raw, TargetValue = raw,
-                BaselineRaw = state.BeforeReference, BaselineValue = state.BeforeReference });
+                BaselineRaw = state.BeforeReference, BaselineValue = state.BeforeReference, InsertAmmoField = state.MissingReference });
         }
         var ammo = weapons.Ammunition.Select(a => !targets.TryGetValue(a.Name, out var choices) ? a :
-            new AmmoRecord(a.Source, a.Fields.Select(f => f.Key == ReferenceKey ? f with { Choices = f.Choices.Concat(choices).Distinct().ToArray() } : f).ToArray())
+            new AmmoRecord(a.Source, a.Fields.Select(f => f.Key == ReferenceKey ? f with { Choices = f.Choices.Concat(choices).Distinct().ToArray(), State = f.IsMissing ? WeaponFieldState.Missing : f.State } : f).ToArray())
             { SafetyValues = a.SafetyValues, NameToken = a.NameToken, NameRaw = a.NameRaw, NameLocation = a.NameLocation, CanEditName = a.CanEditName, DisplayName = a.DisplayName, ChineseName = a.ChineseName }).ToArray();
         return new(weapons with { Ammunition = ammo }, result, appends.ToDictionary(p => p.Key, p => (IReadOnlyList<string>)p.Value));
     }
@@ -130,10 +149,12 @@ public static class DamageDistance
         foreach (var (path, blocks) in expansion.AppendedBlocks)
         {
             var text = candidate.Get(path); var nl = candidate.NewLine(path);
-            candidate.Set(path, text + (text.EndsWith(nl, StringComparison.Ordinal) ? nl : nl + nl) + string.Join(nl + nl, blocks) + nl);
+            candidate.Set(path, text + (text.EndsWith(nl, StringComparison.Ordinal) ? nl : nl + nl) + string.Join(nl + nl, blocks.Select(b => b.Replace("\r\n", "\n").Replace("\n", nl))) + nl);
         }
         candidate.Complete("独立距离规则；未选弹药保留原共享配置");
     }
+    public static string NewRuleBody(string name, string distance, string ap) =>
+        $"export {name} is TStairsDamageTypeEvolutionOverRangeDescriptor\n(\n    DistanceGRU = {distance}\n    AP = {ap}\n)";
     public static void ValidateFinal(DamageWorkspace final, IReadOnlyList<DraftOperation> original, DistanceExpansion? expansion)
     {
         if (expansion is null) return;

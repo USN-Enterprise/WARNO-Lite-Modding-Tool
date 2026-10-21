@@ -33,7 +33,9 @@ public sealed record DraftOperation(
     string? ContextWeaponName = null,
     int? ContextIndex = null,
     bool InsertAmmoField = false,
-    SourceWorkspace.SourceFileDraft? Source = null)
+    SourceWorkspace.SourceFileDraft? Source = null,
+    IReadOnlyList<Weapons.ApBindingState>? ApBindings = null,
+    IReadOnlyList<Weapons.MissileMotionBinding>? MissileMotion = null)
 {
     public static string CreateId(
         DraftTargetKind kind,
@@ -73,7 +75,8 @@ public enum DraftTargetKind
     WeaponStructure,
     DamageRule,
     DamageDistance,
-    SourceFile
+    SourceFile,
+    MissileDebugRepair
 }
 
 public enum DraftEditScope

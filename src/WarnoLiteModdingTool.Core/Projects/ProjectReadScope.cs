@@ -9,6 +9,8 @@ public sealed class ProjectReadScope
     private readonly Dictionary<string, Source> _sources = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Projection> _projections = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ObjectProjection> _objects = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _usedObjects = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _usedProjections = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Stamp> _observed = new(StringComparer.OrdinalIgnoreCase);
     private HashSet<string>? _dependencies;
     private readonly object _gate = new();
@@ -18,9 +20,11 @@ public sealed class ProjectReadScope
     public string[] ObservedPaths => _observed.Keys.ToArray();
     public int ReusedProjections { get; private set; }
     public ProjectLoadCache? DiskCache { get; set; }
+    public CancellationToken Cancellation { get; }
     public HashSet<string> ChangedFiles { get; } = new(StringComparer.OrdinalIgnoreCase);
-    public ProjectReadScope(ProjectReadScope? previous = null)
+    public ProjectReadScope(ProjectReadScope? previous = null, CancellationToken cancellation = default)
     {
+        Cancellation = cancellation;
         if (previous is null) return;
         foreach (var pair in previous._sources)
         {
@@ -63,6 +67,7 @@ public sealed class ProjectReadScope
     public static T ObjectValue<T>(string key, string source, int offset, int length, Func<T> create) where T : class
     {
         if (Current is not { } scope) return create();
+        scope._usedObjects.Add(key);
         if (scope._objects.TryGetValue(key, out var old) && old.Value is T value &&
             source.AsSpan(offset, length).SequenceEqual(old.Source.AsSpan(old.Offset, old.Length)))
         {
@@ -74,6 +79,7 @@ public sealed class ProjectReadScope
     {
         lock (_gate)
         {
+            _usedProjections.Add(key);
             if (_projections.TryGetValue(key, out var saved) && saved.Value is T value &&
                 saved.Inputs.All(p => !ChangedFiles.Contains(p.Key) && Observe(p.Key) == p.Value))
             {
@@ -95,6 +101,12 @@ public sealed class ProjectReadScope
     }
     // Call once after discovery, before reusing projections. A newly added file may introduce a new dependency.
     public void InvalidateDiscovery() => _projections.Clear();
+    // A refreshed workspace must not retain projections for removed objects/modules.
+    public void FinishLoad()
+    {
+        foreach (var key in _objects.Keys.Where(k => !_usedObjects.Contains(k)).ToArray()) _objects.Remove(key);
+        foreach (var key in _projections.Keys.Where(k => !_usedProjections.Contains(k)).ToArray()) _projections.Remove(key);
+    }
     public bool IsStable() => _observed.All(p => Inspect(p.Key) == p.Value);
     private Stamp Observe(string path)
     {
@@ -103,6 +115,7 @@ public sealed class ProjectReadScope
     }
     private Source Read(string path)
     {
+        Cancellation.ThrowIfCancellationRequested();
         lock (_gate)
         {
             path = Path.GetFullPath(path);

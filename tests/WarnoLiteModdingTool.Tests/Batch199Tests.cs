@@ -200,7 +200,7 @@ internal static partial class Program
                     }
                 }
                 finally { window.Close(); }
-                var wizard = new UnitCreationWindow(units, weapons, null, []) { Owner = owner };
+                var wizard = new UnitCreationWindow(units, weapons, null, [], new UnitProjectGraph(root)) { Owner = owner };
                 try
                 {
                     wizard.Show(); Descendants198(wizard).OfType<TabControl>().Single().SelectedIndex = 1; wizard.UpdateLayout(); DrainDispatcher(wizard.Dispatcher);
@@ -215,7 +215,9 @@ internal static partial class Program
             var pendingAbility = UnitCapabilities.Operation(unit, UnitCapabilities.FromBody(UnitCreation.Source(unit)));
             RunWithDispatcher(store.UpsertAsync(pendingAbility), owner.Dispatcher);
             RunWithDispatcher(store.UpsertAsync(UnitDeletion.Operation(unit)), owner.Dispatcher);
-            var vm = new WarnoLiteModdingTool.App.ViewModels.Units.UnitWorkspaceViewModel(units, weapons, null, store, load.Result, _ => { }, () => Task.CompletedTask);
+            var analysis = new DraftAnalysis(units, weapons, null, null);
+            RunWithDispatcher(analysis.PrepareAsync(store.Operations), owner.Dispatcher);
+            var vm = new WarnoLiteModdingTool.App.ViewModels.Units.UnitWorkspaceViewModel(units, weapons, null, store, load.Result, _ => { }, () => Task.CompletedTask, analysis: analysis);
             vm.SelectedUnit = vm.Units.Single(u => u.InternalName == unit.Name);
             TestAssert.True(vm.SelectedPendingDelete && !vm.CanEditSelectedLifecycle, "待删除单位编辑锁定");
             RunWithDispatcher(vm.DeleteNewUnitAsync(owner), owner.Dispatcher);

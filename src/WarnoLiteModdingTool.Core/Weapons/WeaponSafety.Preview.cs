@@ -5,8 +5,37 @@ namespace WarnoLiteModdingTool.Core.Weapons;
 
 public static partial class WeaponSafety
 {
+    // This caller is restricted to shared speed/acceleration fields plus debug
+    // repairs. Mounts, salvo/supply/deployment fields and unit modules cannot change.
+    // Validate the final touched numeric contracts; missile references and identity
+    // are separately checked by the ordinary movement planner and final analysis.
+    internal static Dictionary<string, byte[]> ValidateSharedMotion(string root, WeaponWorkspaceData data,
+        IReadOnlyList<DraftOperation> operations, IReadOnlyList<Transactions.PlannedFileChange> files, ICollection<string> messages)
+    {
+        foreach (var group in operations.Where(o => o.TargetKind == DraftTargetKind.AmmoField).GroupBy(o => o.ObjectName))
+        {
+            var ammo = data.Ammo(group.Key)!;
+            var file = files.Single(f => f.Kind == Transactions.FormalTextFileKind.Ndf && f.RelativePath.Equals(ammo.Source.RelativeSourceFile.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase));
+            var text = System.Text.Encoding.UTF8.GetString(file.CandidateBytes);
+            var found = new NdfTopLevelScanner().Scan(text, Path.Combine(root, file.RelativePath), "ammo", root).Objects.Where(o => o.Name == ammo.Name).ToArray();
+            if (found.Length != 1) throw new Transactions.TransactionValidationException("弹药候选不唯一 / Ambiguous final ammunition: " + ammo.Name);
+            var doc = new NdfSyntaxDocument(text, found[0].CharacterOffset, found[0].CharacterLength);
+            var owner = doc.FindConstructors("TAmmunitionDescriptor").Single(); var values = new Dictionary<string, string>();
+            foreach (var op in group)
+            {
+                var field = ammo.Field(op.FieldKey)!; var spans = doc.FindDirectAssignments(owner, field.Definition.FieldName);
+                if (spans.Count != 1 || doc.Raw(spans[0]) != op.TargetRaw) throw new Transactions.TransactionValidationException("弹药最终运动字段不同 / Final ammunition motion differs: " + ammo.Name);
+                values[field.Definition.FieldName] = doc.Raw(spans[0]);
+            }
+            var issues = InspectAmmo(file.RelativePath, ammo.Name, values);
+            if (issues.Any(i => i.Level is WeaponSafetyLevel.Error or WeaponSafetyLevel.Unverified))
+                throw new Transactions.TransactionValidationException(string.Join("\n", issues), "weapon.safety");
+        }
+        messages.Add("已核对最终弹速与加速度、导弹实体及引用；所选Ammo全部使用者受影响 / Final speed, acceleration, missile entities and references checked; all users of selected Ammo are affected");
+        return new(StringComparer.OrdinalIgnoreCase);
+    }
     public static IReadOnlyDictionary<string, string> ReadValues(NdfSyntaxDocument doc, NdfConstructorSpan root) => doc.EnumerateDirectAssignments(root)
-        .Where(a => AmmoRelations.Contains(a.Name)).GroupBy(a => a.Name).ToDictionary(g => g.Key, g => g.Count() == 1 ? doc.Raw(g.Single().Value) : "?");
+        .Where(a => a.Name == "ProjectileType" || AmmoRelations.Contains(a.Name)).GroupBy(a => a.Name).ToDictionary(g => g.Key, g => g.Count() == 1 ? doc.Raw(g.Single().Value) : "?");
 
     // Lightweight feedback only; the final candidate graph remains the authority at apply.
     public static IReadOnlyList<WeaponSafetyIssue> Preview(WeaponWorkspaceData data, IReadOnlyList<DraftOperation> operations, string ammoName, string unit = "", string weapon = "", int mount = -1)

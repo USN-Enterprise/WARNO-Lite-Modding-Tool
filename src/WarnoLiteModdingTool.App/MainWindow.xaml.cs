@@ -67,6 +67,19 @@ public partial class MainWindow : Window
 
     private void Window_SourceInitialized(object? sender, EventArgs e) => UpdateNativeTitleBar();
 
+    private void HeaderText_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (!e.WidthChanged) return;
+        // A translated label can grow while its content presenter retains the
+        // previous desired width. Re-measure only this header's ancestor chain.
+        for (var parent = System.Windows.Media.VisualTreeHelper.GetParent((DependencyObject)sender);
+             parent is UIElement element; parent = System.Windows.Media.VisualTreeHelper.GetParent(parent))
+        {
+            element.InvalidateMeasure();
+            if (ReferenceEquals(parent, HeaderBar)) break;
+        }
+    }
+
     private SourceWorkspace.SourceWorkspaceWindow? _sourceWindow;
     internal async Task OpenSourceReferenceAsync(string path, int offset)
     {
@@ -474,6 +487,7 @@ public partial class MainWindow : Window
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "删除草稿失败"); }
     }
 
+    private void CancelPreview_Click(object sender, RoutedEventArgs e) => _viewModel.UnitWorkspace?.CancelPreview();
     internal async void PreviewApply_Click(object sender, RoutedEventArgs e)
     {
         var selectionBeforeSave = sender is FrameworkElement { Tag: "selected" } ? _viewModel.UnitWorkspace?.DraftItems.Where(i=>i.IsSelected).Select(i=>i.Resolved.Operation.Id).ToHashSet() : null;
@@ -523,6 +537,15 @@ public partial class MainWindow : Window
             _viewModel.WeaponWorkspace?.SetTransactionLocked(true);
             _viewModel.AmmoWorkspace?.SetTransactionLocked(true);
             _viewModel.DivisionWorkspace?.SetTransactionLocked(true);
+        }
+        catch (OperationCanceledException)
+        {
+            workspace.CancelPreparedTransaction();
+            _viewModel.StrategicWorkspace?.SetTransactionLocked(false);
+            _viewModel.WeaponWorkspace?.SetTransactionLocked(false);
+            _viewModel.AmmoWorkspace?.SetTransactionLocked(false);
+            _viewModel.DivisionWorkspace?.SetTransactionLocked(false);
+            return;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
         {

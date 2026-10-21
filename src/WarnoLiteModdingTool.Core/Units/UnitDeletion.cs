@@ -71,7 +71,7 @@ public static class UnitDeletion
         foreach (var op in operations.Where(o => o.TargetKind == DraftTargetKind.UnitDelete && Read(o).Version == 1))
         {
             if (operations.Where(o => o.TargetKind == DraftTargetKind.UnitCreate).Any(o => UnitCreation.Read(o).Mother == op.ObjectName)) throw new TransactionValidationException("请先完成或调整以此单位为母版的创建草稿");
-            var originalGraph = new UnitProjectGraph(root);
+            var originalGraph = UnitProjectGraph.Read(root);
             var provenance = UnitCreationHistory.Require(originalGraph, op.RelativeSourceFile, op.ObjectName);
             var state = Read(op); var graph = new UnitProjectGraph(root, files); var unit = graph.RequireObject(op.RelativeSourceFile, op.ObjectName);
             if (UnitIdentityEditing.GuidOf(graph.Body(unit)) != state.Guid) throw new TransactionValidationException("删除身份变化");

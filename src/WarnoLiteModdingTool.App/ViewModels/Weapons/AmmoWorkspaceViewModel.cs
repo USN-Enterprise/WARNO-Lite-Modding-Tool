@@ -10,6 +10,10 @@ namespace WarnoLiteModdingTool.App.ViewModels.Weapons;
 
 public sealed partial class AmmoWorkspaceViewModel : ObservableObject
 {
+    private readonly WeaponSafetyFeedback _feedback = new();
+    public Task FeedbackTask => _feedback.Completion;
+    public void SetActive(bool active) { _feedback.Active = active; if (!active) _feedback.Dispose(); }
+    public void Dispose() => _feedback.Dispose();
     private readonly WeaponWorkspaceData _data;
     private readonly DraftStore _draftStore;
     private readonly PendingFieldEdits<WeaponFieldViewModel> _fieldEdits;
@@ -169,7 +173,7 @@ public sealed partial class AmmoWorkspaceViewModel : ObservableObject
         field.MarkPersisted(null, field.Field.DisplayValue, "已撤销草稿");
         RefreshNames();
         RefreshFilter();
-        WeaponSafetyFeedback.Refresh(Fields, _data, _draftStore.Operations);
+        _feedback.Refresh(Fields, _data, _draftStore.Operations);
         _transactions.RefreshExternalDraftState();
         _setStatus("已撤销一项 Ammo 草稿");
     }
@@ -224,7 +228,11 @@ public sealed partial class AmmoWorkspaceViewModel : ObservableObject
             EditScope: DraftEditScope.AllReferences,
             SelectedUnitNames: [], InsertAmmoField: field.IsMissing);
 
-        if (normalized == field.DisplayValue)
+        operation = await Task.Run(() => ApBinding.Prepare(_data, _draftStore.Operations, operation));
+        // Restoring an existing draft to its Ammo baseline removes the complete owned group.
+        var restoringMotion = MissileMotion.IsParameter(operation.FieldKey) && operation.TargetRaw == operation.BaselineRaw && _draftStore.Operations.Any(o => o.Id == operation.Id);
+        if (!restoringMotion) operation = await Task.Run(() => MissileMotion.Prepare(_data, _draftStore.Operations, operation));
+        if (normalized == field.DisplayValue && !ApBinding.Has(operation) && !MissileMotion.Has(operation))
         {
             if (_draftStore.Operations.Any(item => item.Id == operation.Id))
             {
@@ -240,7 +248,7 @@ public sealed partial class AmmoWorkspaceViewModel : ObservableObject
         }
 
         RefreshFilter();
-        WeaponSafetyFeedback.Refresh(Fields, _data, _draftStore.Operations);
+        _feedback.Refresh(Fields, _data, _draftStore.Operations);
         _transactions.RefreshExternalDraftState();
         _setStatus($"Ammo 草稿已保存 · {_draftStore.Operations.Count} 项 · 正式 Mod 文件未改变");
     }
@@ -254,7 +262,7 @@ public sealed partial class AmmoWorkspaceViewModel : ObservableObject
             return;
         }
 
-        var resolved = DraftResolver.Resolve(_transactions.Data, _data, _draftStore.Operations)
+        var resolved = _transactions.ResolvedDrafts
             .Where(item => item.Status == DraftResolutionStatus.Active)
             .ToDictionary(item => item.Operation.Id, item => item.Operation, StringComparer.Ordinal);
         var nameAmmo=SelectedAmmo.Ammo;
@@ -275,7 +283,7 @@ public sealed partial class AmmoWorkspaceViewModel : ObservableObject
                 old.Field.Key == current.Field.Key && old.EditContext == current.EditContext);
         }
         foreach (var f in Fields) f.LinkedTags = Fields.FirstOrDefault(t => t.Field.OwnerObjectName == f.Field.OwnerObjectName && t.Field.Definition.ValueKind == WeaponValueKind.Tags);
-        WeaponSafetyFeedback.Refresh(Fields, _data, _draftStore.Operations);
+        _feedback.Refresh(Fields, _data, _draftStore.Operations);
         RebuildSections();
     }
 

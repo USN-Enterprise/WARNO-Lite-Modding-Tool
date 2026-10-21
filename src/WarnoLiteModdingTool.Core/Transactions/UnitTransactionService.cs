@@ -38,8 +38,12 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
 
         if (preview.UnitReadDependencies is { } unitDependencies)
         {
-            var paths=Units.UnitProjectGraph.InputFiles(preview.ProjectRoot).Append(Units.UnitCreationHistory.LedgerPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            if(!paths.SetEquals(unitDependencies.Keys) || unitDependencies.Any(p=>!(File.Exists(Path.Combine(preview.ProjectRoot,p.Key))?File.ReadAllBytes(Path.Combine(preview.ProjectRoot,p.Key)):Array.Empty<byte>()).AsSpan().SequenceEqual(p.Value)))
+            if (preview.FullNdfReview) MissileRepairPlanner.VerifyInputs(preview, cancellationToken);
+            var inputs = preview.FullNdfReview
+                ? SourceWorkspace.SourceFiles.Discover(preview.ProjectRoot).Files.Select(f => f.Path).Where(p => SourceWorkspace.SourceFiles.IsNdf(p) && !p.StartsWith(".warno-editor/", StringComparison.OrdinalIgnoreCase) && !p.StartsWith(".git/", StringComparison.OrdinalIgnoreCase))
+                : Units.UnitProjectGraph.InputFiles(preview.ProjectRoot);
+            var paths=inputs.Append(Units.UnitCreationHistory.LedgerPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if(!paths.SetEquals(unitDependencies.Keys) || !preview.FullNdfReview && unitDependencies.Any(p=>!(File.Exists(Path.Combine(preview.ProjectRoot,p.Key))?File.ReadAllBytes(Path.Combine(preview.ProjectRoot,p.Key)):Array.Empty<byte>()).AsSpan().SequenceEqual(p.Value)))
                 throw new TransactionValidationException("单位或能力引用在预览后变化，请重新预览");
             if(preview.DraftReview is not null && System.Text.Json.JsonSerializer.Serialize(preview.DraftReview) != System.Text.Json.JsonSerializer.Serialize(draftStore.Operations))
                 throw new TransactionValidationException("关联草稿在预览后变化，请重新预览");
@@ -233,6 +237,13 @@ public sealed class UnitTransactionService(UnitApplyPlanner? planner = null)
             ? changes.Where(f => f.Kind == FormalTextFileKind.Ndf).Select(f => f.RelativePath).ToHashSet(StringComparer.OrdinalIgnoreCase)
             : kind == "Restore" && sourceBackupId is not null
                 ? backupStore.Load(sourceBackupId).Files.Where(f => f.Kind == nameof(FormalTextFileKind.Ndf)).Select(f => f.RelativePath).ToHashSet(StringComparer.OrdinalIgnoreCase) : null;
+        var missilePaths = operations.Where(Weapons.MissileDebugRepair.IsRepair).Select(o => Normalize(o.RelativeSourceFile))
+            .Concat(operations.SelectMany(o => o.MissileMotion ?? []).Select(b => Normalize(b.EntityFile))).ToArray();
+        if (missilePaths.Length > 0)
+        {
+            deletionPaths ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            deletionPaths.UnionWith(missilePaths);
+        }
         ValidatePlannedFiles(backupStore.ProjectRoot, changes, deletionPaths);
         var manifest = await backupStore.CreateAsync(
             backupId,

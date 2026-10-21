@@ -13,17 +13,26 @@ public sealed class UnitProjectLoader(
     private readonly UnitLocalisationLoader _localisationLoader = localisationLoader ?? new UnitLocalisationLoader();
     private readonly NdfFieldLocator _locator = new();
 
+    // Operations on independent rules or shared motion need no unit field rows.
+    internal UnitWorkspaceData LoadWithoutUnitFields(ModProjectContext context, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        return new([], new(new Dictionary<string, IReadOnlyList<string>>(), new Dictionary<string, IReadOnlyList<string>>(), new Dictionary<string, IReadOnlyList<string>>()),
+            _localisationLoader.Load(context), DamageResistanceCatalog.Load(context), [])
+            { Rules = ProjectReadScope.Memo("rules", () => Rules.RuleWorkspace.Load(context.Layout.RootPath)).NewSession() };
+    }
+
     public Task<UnitWorkspaceData> LoadAsync(
         ModProjectContext context,
         ProjectIndexResult index,
         CancellationToken cancellationToken = default,
-        ProjectLoadCache? cache = null) =>
-        Task.Run(() => Load(context, index, cancellationToken, cache), cancellationToken);
+        ProjectLoadCache? cache = null, bool referencesOnly = false) =>
+        Task.Run(() => Load(context, index, cancellationToken, referencesOnly ? null : cache, referencesOnly), cancellationToken);
 
     private UnitWorkspaceData Load(
         ModProjectContext context,
         ProjectIndexResult index,
-        CancellationToken cancellationToken, ProjectLoadCache? cache)
+        CancellationToken cancellationToken, ProjectLoadCache? cache, bool referencesOnly)
     {
         var diagnostics = new List<string>();
         var sources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -49,7 +58,7 @@ public sealed class UnitProjectLoader(
                 unit.Source.CharacterOffset, unit.Source.CharacterLength, () => new UnitLinks(unit.Weapons, unit.PresentationReferences));
         }
         var restoredBySource = restored.ToDictionary(u => (u.Source.SourceFile, u.Source.CharacterOffset));
-        var rebuilt = _catalogBuilder.Build(unitObjects.Where(o => !restoredBySource.ContainsKey((o.SourceFile, o.CharacterOffset))).ToArray(), sources, cancellationToken, applyChoices: false);
+        var rebuilt = _catalogBuilder.Build(unitObjects.Where(o => !restoredBySource.ContainsKey((o.SourceFile, o.CharacterOffset))).ToArray(), sources, cancellationToken, applyChoices: false, referencesOnly: referencesOnly);
         foreach (var unit in rebuilt) restoredBySource.Add((unit.Source.SourceFile, unit.Source.CharacterOffset), unit);
         var units = unitObjects.Where(o => restoredBySource.ContainsKey((o.SourceFile, o.CharacterOffset))).Select(o => restoredBySource[(o.SourceFile, o.CharacterOffset)]).ToArray();
         var damageResistance = ProjectReadScope.Memo("damage-resistance", () => DamageResistanceCatalog.Load(context));
@@ -57,8 +66,11 @@ public sealed class UnitProjectLoader(
         var localisation = _localisationLoader.Load(context);
         diagnostics.AddRange(localisation.Diagnostics);
         ReadNames(units, sources, localisation);
-        UnitCatalogBuilder.ApplyChoices(units, damageResistance);
-        ProjectReadScope.Memo("experience-catalog", () => ExperienceCatalog.Load(context.Layout.RootPath)).Apply(units);
+        if (!referencesOnly)
+        {
+            UnitCatalogBuilder.ApplyChoices(units, damageResistance);
+            ProjectReadScope.Memo("experience-catalog", () => ExperienceCatalog.Load(context.Layout.RootPath)).Apply(units);
+        }
 
         if (restored.Length == units.Length && cache?.RelationshipsUnchanged == true && units.Select(u => u.Name).Distinct(StringComparer.Ordinal).Count() == units.Length)
         {

@@ -13,6 +13,7 @@ public partial class SearchPicker : UserControl
     private readonly ObservableCollection<SearchPickerEntry> _visible = [];
     private IReadOnlyList<SearchPickerEntry> _cache = [];
     private bool _updating;
+    private bool _cacheDirty = true;
     private INotifyCollectionChanged? _observableSource;
 
     public SearchPicker()
@@ -55,6 +56,15 @@ public partial class SearchPicker : UserControl
 
     private void RebuildCache()
     {
+        _cacheDirty = true;
+        UpdateSelectedText();
+        if (PickerPopup?.IsOpen == true) RefreshResults();
+    }
+
+    private void EnsureCache()
+    {
+        if (!_cacheDirty) return;
+        _cacheDirty = false;
         if (MiniFilter is not null) { MiniFilter.Visibility = EnableUnitFilters ? Visibility.Visible : Visibility.Collapsed; MiniFilter.ItemsSource = EnableUnitFilters ? ItemsSource : null; }
         _cache = ItemsSource?.Cast<object>().Select(item =>
         {
@@ -62,21 +72,19 @@ public partial class SearchPicker : UserControl
             var secondary = Read(item, SecondaryMemberPath);
             return new SearchPickerEntry(item, primary, secondary, $"{primary}\n{secondary}\n{item}".ToUpperInvariant());
         }).ToArray() ?? [];
-        UpdateSelectedText();
-        RefreshResults();
     }
 
     private void OnItemsSourceChanged(IEnumerable? oldValue, IEnumerable? newValue)
     {
         if (_observableSource is not null)
         {
-            _observableSource.CollectionChanged -= Source_CollectionChanged;
+            CollectionChangedEventManager.RemoveHandler(_observableSource, Source_CollectionChanged);
         }
 
         _observableSource = newValue as INotifyCollectionChanged;
         if (_observableSource is not null)
         {
-            _observableSource.CollectionChanged += Source_CollectionChanged;
+            CollectionChangedEventManager.AddHandler(_observableSource, Source_CollectionChanged);
         }
         RebuildCache();
     }
@@ -85,6 +93,8 @@ public partial class SearchPicker : UserControl
 
     private void RefreshResults()
     {
+        if (PickerPopup?.IsOpen != true) return;
+        EnsureCache();
         var query = SearchBox.Text.Trim().ToUpperInvariant();
         var matches = (query.Length == 0 ? _cache : _cache.Where(item => item.SearchKey.Contains(query, StringComparison.Ordinal)))
             .Where(item => !EnableUnitFilters || MiniFilter.Matches(item.Item))

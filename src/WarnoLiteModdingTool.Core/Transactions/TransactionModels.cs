@@ -36,6 +36,7 @@ public sealed record ApplyPreview(
     public Dictionary<string,byte[]> WeaponReadDependencies {get;init;} = new();
     public string? ExperienceReview { get; init; }
     public Dictionary<string,byte[]>? UnitReadDependencies {get;init;}
+    public bool FullNdfReview { get; init; }
     public Units.UnitProjectGraph? DeletionReview { get; init; }
     public string[] DeletionWarnings { get; init; } = [];
     public IReadOnlyList<DraftOperation>? DraftReview {get;init;}

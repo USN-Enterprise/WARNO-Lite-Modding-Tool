@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
@@ -102,10 +102,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (obj.ModuleKey == "ammo" && AmmoWorkspace is not null) AmmoWorkspace.SelectedAmmo = AmmoWorkspace.Ammunition.FirstOrDefault(a => a.Name == obj.Name);
         if (obj.ModuleKey == "strategic" && StrategicWorkspace is not null) StrategicWorkspace.Selected = StrategicWorkspace.Data.Records.FirstOrDefault(r => r.Id == obj.Name || r.Deck.Info.Name == obj.Name) ?? StrategicWorkspace.Selected;
     }
-    private void RefreshMode(bool refreshLanguage = true)
+    private void RefreshMode()
     {
         Advanced.EditorMode.IsAdvanced = AdvancedMode;
-        if (refreshLanguage) Localisation.UiText.Current.SetLanguage(Localisation.UiText.Current.Language);
         UnitWorkspace?.RefreshMode();
         RulesWorkspace?.Refresh();
         WeaponWorkspace?.RefreshMode();
@@ -124,7 +123,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if(_draftStore is null || _creationUnits is null || _creationWeapons is null)throw new InvalidOperationException("请先打开完整的单位与武器模块");
         var existing=edit?_draftStore.Operations.FirstOrDefault(o=>o.TargetKind==DraftTargetKind.UnitCreate&&o.ObjectName==UnitWorkspace?.SelectedUnit?.InternalName):null;
         if(edit&&existing is null)throw new InvalidOperationException("请选择待创建单位");
-        var window=new Controls.UnitCreationWindow(_creationUnits,_creationWeapons,_creationDivisions,_draftStore.Operations,existing){Owner=owner};
+        var creationUnits = _creationUnits; var creationWeapons = _creationWeapons; var creationDivisions = _creationDivisions;
+        var cancellation = UnitWorkspace?.LifetimeToken ?? default;
+        StatusText = "正在准备新单位…";
+        var graph = await Task.Run(() => new Core.Units.UnitProjectGraph(creationUnits.Localisation.ProjectRoot, cancellationToken: cancellation), cancellation);
+        cancellation.ThrowIfCancellationRequested();
+        if (!ReferenceEquals(creationUnits, _creationUnits)) return;
+        var window=new Controls.UnitCreationWindow(creationUnits,creationWeapons,creationDivisions,_draftStore.Operations,graph,existing){Owner=owner};
         if(window.ShowDialog()!=true||window.Result is not {} operation)return;
         StatusText="正在校验新单位…";
         var root=_creationUnits.Localisation.ProjectRoot;
@@ -185,6 +190,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 OnPropertyChanged(nameof(IsDraftModule));
                 OnPropertyChanged(nameof(IsProblemModule));
                 OnPropertyChanged(nameof(IsObjectModule));
+                WeaponWorkspace?.SetActive(IsWeaponModule);
+                AmmoWorkspace?.SetActive(IsAmmoModule);
                 if (IsWeaponModule)
                 {
                     WeaponWorkspace?.RefreshFromDrafts();
@@ -509,16 +516,25 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         CancelScan();
         SourceProjectClosing?.Invoke();
         ResetProjectResults();
-        var sourceReads = new ProjectReadScope();
-        using var sourceScope = sourceReads.Enter();
-
-        ModProjectContext context;
+        Mark("previous-session-release");
+        var scanCancellation = new CancellationTokenSource();
+        _scanCancellation = scanCancellation;
+        IsScanning = true;
+        ScanPercent = 0;
+        StatusText = "正在识别项目…";
+        ModProjectContext? context = null;
         try
         {
-            context = _detector.Detect(selectedRoot);
+        var sourceReads = new ProjectReadScope(cancellation: scanCancellation.Token);
+        using var sourceScope = sourceReads.Enter();
+        try
+        {
+            context = await Task.Run(() => _detector.Detect(selectedRoot), scanCancellation.Token);
+            scanCancellation.Token.ThrowIfCancellationRequested();
         }
         catch (Exception exception) when (exception is ArgumentException or IOException or UnauthorizedAccessException)
         {
+            if (_scanCancellation != scanCancellation || scanCancellation.IsCancellationRequested) return;
             ProjectName = "无法打开项目";
             ProjectPath = selectedRoot;
             ProjectSummary = exception.Message;
@@ -567,15 +583,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             RecordToolProblem("无法保存最近项目", exception, context.Layout.RootPath);
         }
 
-        var scanCancellation = new CancellationTokenSource();
-        _scanCancellation = scanCancellation;
-        IsScanning = true;
-        ScanPercent = 0;
-        StatusText = "准备扫描只读数据";
-
-
-        try
-        {
             if (PrepareNamesAsync is not null)
             {
                 StatusText = "正在加载原版名称…";
@@ -605,7 +612,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             }
 
             _snapshot = snapshot;
-            ApplyIndexResult(result);
+            await ApplyIndexResultAsync(result, scanCancellation.Token);
             Mark("core-load-and-index-view");
             var unitCapability = result.Modules.FirstOrDefault(module => module.Key == "units");
             var weaponCapability = result.Modules.FirstOrDefault(module => module.Key == "weapons");
@@ -627,6 +634,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
                 var draftLoad = await _draftStore.LoadAsync(scanCancellation.Token);
                 await Task.Run(() => { snapshot.Units.Rules?.Experience.PrepareDrafts(_draftStore.Operations); if(_draftStore.Operations.Any(o=>o.TargetKind is DraftTargetKind.DamageRule or DraftTargetKind.DamageDistance))_ = snapshot.Units.Rules?.Damage; }, scanCancellation.Token);
+                await PrepareDraftAnalysisAsync(snapshot, scanCancellation.Token);
                 scanCancellation.Token.ThrowIfCancellationRequested();
                 if (draftLoad.Error is not null)
                 {
@@ -658,11 +666,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                     }
                 }
 
-                InstallWorkspaces(snapshot, draftLoad);
+                await InstallWorkspacesAsync(snapshot, draftLoad, scanCancellation.Token);
             }
 
-            RefreshMode(refreshLanguage: false);
             Mark("presentation");
+            foreach (var phase in LastPresentationTimings) timings["ui-" + phase.Key] = phase.Value;
             if (loadCache is not null && !result.Diagnostics.Any(d => d.Severity == NdfDiagnosticSeverity.Error))
                 QueueCacheSave(snapshot);
             Mark("cache-save");
@@ -685,8 +693,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
         catch (Exception exception)
         {
+            if (_scanCancellation != scanCancellation) return;
             StatusText = "Mod 扫描失败；详情已记录到问题中心";
-            RecordModProblem("Mod 扫描失败", exception.Message, exception, context.Layout.RootPath);
+            RecordModProblem("Mod 扫描失败", exception.Message, exception, context?.Layout.RootPath ?? selectedRoot);
         }
         finally
         {
@@ -807,7 +816,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _scanCancellation?.Cancel();
+        UnitWorkspace?.Dispose();
         DivisionWorkspace?.Dispose();
+        WeaponWorkspace?.Dispose(); AmmoWorkspace?.Dispose();
         _draftStore?.Dispose();
         _problemLog.Reported -= ProblemLog_Reported;
     }
@@ -816,7 +827,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         ProjectLoadCache.CancelPendingSave();
         _snapshot = null;
+        _draftAnalysis = null;
+        UnitWorkspace?.Dispose();
         DivisionWorkspace?.Dispose();
+        WeaponWorkspace?.Dispose(); AmmoWorkspace?.Dispose();
         _draftStore?.Dispose();
         _draftStore = null;_creationUnits=null;_creationWeapons=null;_creationDivisions=null;
         _currentContext = null;
@@ -971,8 +985,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ProblemButtonText));
     }
 
-    private void ApplyIndexResult(ProjectIndexResult result)
+    private async Task ApplyIndexResultAsync(ProjectIndexResult result, CancellationToken cancellation = default)
     {
+        var ordered = await Task.Run(() => result.Objects.OrderBy(o => o.RelativeSourceFile, StringComparer.CurrentCulture)
+            .ThenBy(o => o.LineNumber).ThenBy(o => o.CharacterOffset).ToList(), cancellation);
+        cancellation.ThrowIfCancellationRequested();
         foreach (var capability in result.Modules)
         {
             Modules.First(item => item.Key == capability.Key).Update(capability);
@@ -991,13 +1008,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 severity: diagnostic.Severity == NdfDiagnosticSeverity.Error ? ProblemSeverity.Error : ProblemSeverity.Warning);
         }
 
-        var view = new ListCollectionView(result.Objects.ToList());
-        using (view.DeferRefresh())
-        {
-        view.SortDescriptions.Add(new SortDescription(nameof(NdfObjectInfo.RelativeSourceFile), ListSortDirection.Ascending));
-        view.SortDescriptions.Add(new SortDescription(nameof(NdfObjectInfo.LineNumber), ListSortDirection.Ascending));
-        view.SortDescriptions.Add(new SortDescription(nameof(NdfObjectInfo.CharacterOffset), ListSortDirection.Ascending));
-        }
+        var view = new ListCollectionView(ordered);
         ObjectsView = view;
         SelectedModule = Modules.FirstOrDefault(module => module.Key is "units" or "weapons" or "ammo" && module.CanBrowse)
             ?? Modules.FirstOrDefault(module => module.Key != "problems" && module.CanBrowse) ?? _problemModule;

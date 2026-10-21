@@ -217,7 +217,7 @@ internal static partial class Program
     {
         DrainDispatcher(window.Dispatcher); window.UpdateLayout(); var surface = (FrameworkElement)window.Content;
         var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(surface);
-        var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); Directory.CreateDirectory("publish/qa-2.10-preview.6");
-        using var output = File.Create("publish/qa-2.10-preview.6/changes-" + name + ".png"); encoder.Save(output);
+        var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); Directory.CreateDirectory("publish/qa-2.11.9/changes");
+        using var output = File.Create("publish/qa-2.11.9/changes/changes-" + name + ".png"); encoder.Save(output);
     }
 }

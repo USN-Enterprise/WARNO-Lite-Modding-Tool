@@ -9,7 +9,7 @@ public sealed class UnitCatalogBuilder(NdfFieldLocator? locator = null)
     public IReadOnlyList<UnitRecord> Build(
         IReadOnlyList<NdfObjectInfo> unitObjects,
         IReadOnlyDictionary<string, string> sources,
-        CancellationToken cancellationToken = default, bool applyChoices = true)
+        CancellationToken cancellationToken = default, bool applyChoices = true, bool referencesOnly = false)
     {
         var units = new List<UnitRecord>(unitObjects.Count);
         foreach (var objectInfo in unitObjects)
@@ -20,11 +20,11 @@ public sealed class UnitCatalogBuilder(NdfFieldLocator? locator = null)
                 continue;
             }
 
-            var parsed = Projects.ProjectReadScope.ObjectValue("unit:" + objectInfo.SourceFile + ":" + objectInfo.Name, source,
+            var parsed = Projects.ProjectReadScope.ObjectValue((referencesOnly ? "unit-references:" : "unit:") + objectInfo.SourceFile + ":" + objectInfo.Name, source,
                 objectInfo.CharacterOffset, objectInfo.CharacterLength, () =>
                 {
                     var document = new NdfSyntaxDocument(source, objectInfo.CharacterOffset, objectInfo.CharacterLength);
-                    var fields = UnitFieldDefinitions.All.Select(definition => ReadField(definition, document, objectInfo, source)).ToArray();
+                    var fields = referencesOnly ? [] : UnitFieldDefinitions.All.Select(definition => ReadField(definition, document, objectInfo, source)).ToArray();
                     var name = _locator.Locate(document, new NdfFieldSelector("TUnitUIModuleDescriptor", "NameToken"));
                     return new ParsedUnit(objectInfo.CharacterOffset, objectInfo.LineNumber, fields,
                         document.FindConstructors("TTransporterModuleDescriptor").Count == 1,
@@ -191,16 +191,5 @@ public sealed class UnitCatalogBuilder(NdfFieldLocator? locator = null)
     }
 
     private static int CountNewLines(string source, int start, int end)
-    {
-        var count = 0;
-        for (var index = start; index < end && index < source.Length; index++)
-        {
-            if (source[index] == '\n')
-            {
-                count++;
-            }
-        }
-
-        return count;
-    }
+        => source.AsSpan(start, Math.Min(end, source.Length) - start).Count('\n');
 }

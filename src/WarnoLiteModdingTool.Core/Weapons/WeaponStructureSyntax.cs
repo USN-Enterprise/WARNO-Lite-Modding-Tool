@@ -115,12 +115,19 @@ public sealed class WeaponStructureSyntax
         {
             var nl = body.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
             var last = Enumerable.Range(0, elements.Count).Where(i => !removed.Contains(i)).DefaultIfEmpty(-1).Last();
-            if (last >= 0 && doc.Tokens[elements[last].EndTokenIndex + 1].Text != ",")
-                edits.Add(new(doc.Tokens[elements[last].EndTokenIndex].End, 0, "", ",", "补分隔符"));
             var at = doc.Tokens[span.EndTokenIndex].Start;
+            var separator = "";
+            if (last >= 0 && doc.Tokens[elements[last].EndTokenIndex + 1].Text != ",")
+            {
+                var end = doc.Tokens[elements[last].EndTokenIndex].End;
+                // In an inline list such as [4], both insertions have the same
+                // offset. Keep their order explicit in one insertion.
+                if (end == at) separator = ",";
+                else edits.Add(new(end, 0, "", ",", "补分隔符"));
+            }
             var indent = Indent(body, elements.Count > 0 ? doc.StartOffset(elements[0]) : at) + (elements.Count == 0 ? "    " : "");
             var blocks = appended.Select(b => IndentBlock(b, indent, nl));
-            edits.Add(new(at, 0, "", nl + string.Join("," + nl, blocks) + "," + nl + Indent(body, at), "追加列表元素"));
+            edits.Add(new(at, 0, "", separator + nl + string.Join("," + nl, blocks) + "," + nl + Indent(body, at), "追加列表元素"));
         }
         return UnitProjectGraph.Patch(body, edits);
     }

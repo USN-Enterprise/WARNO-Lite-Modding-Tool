@@ -31,6 +31,27 @@ internal static partial class Program
     private static async Task<int> Main(string[] args)
     {
         VanillaNames.Replace(SyntheticNames());
+        if (args is ["--creation-safety-ui"]) { await UnitCreationSafetyUi(); return 0; }
+        if (args is ["--overall-performance-core"]) { await OverallPerformanceCore(); Console.WriteLine("PASS overall performance core"); return 0; }
+        if (args is ["--overall-performance-ui", var perfUiRoot, var perfUiOutput, var perfUiRounds])
+        {
+            try { await OverallPerformanceUi(perfUiRoot, perfUiOutput, int.Parse(perfUiRounds)); return 0; }
+            catch (Exception exception) { Console.Error.WriteLine(exception); return 1; }
+        }
+        if (args is ["--overall-performance-sample", var perfRoot2119, var perfCount2119]) { OverallPerformanceSample(perfRoot2119, int.Parse(perfCount2119)); return 0; }
+        if (args is ["--overall-performance-transactions", var perfRoot2119t, var perfOutput2119])
+        {
+            try { await OverallPerformanceTransactions(perfRoot2119t, perfOutput2119); return 0; }
+            catch (Exception exception) { Console.Error.WriteLine(exception); return 1; }
+        }
+        if (args is ["--overall-performance-drafts", var perfDraftRoot, var perfDraftCount]) { await OverallPerformanceDrafts(perfDraftRoot, int.Parse(perfDraftCount)); return 0; }
+        if (args is ["--motion-old-reader", var oldMotionCore]) { await MissileMotionOldReader(oldMotionCore); return 0; }
+        if (args is ["--missile-repair-old-reader", var oldRepairCore]) { await MissileDebugOldReader(oldRepairCore); return 0; }
+        if (args is ["--missile-repair-ui"]) { await MissileDebugRepairUi(); return 0; }
+        if (args is ["--missile-repair-real-ui", var realRepairRoot, var realRepairOutput]) { await MissileRepairRealUi(realRepairRoot, realRepairOutput); return 0; }
+        if (args is ["--motion-ui"]) { await MissileMotionUi(); return 0; }
+        if (args is ["--ap-ui"]) { await ApBindingUi(); return 0; }
+        if (args is ["--ap-old-reader", var oldApCore]) { await ApBindingOldReader(oldApCore); return 0; }
         if (args is ["--weapon-safety-ui"]) { await WeaponSafetyUi(); return 0; }
         if (args is ["--weapon-safety"]) { await WeaponSafetyContracts(); await WeaponSafetyTransactions(); Console.WriteLine("PASS weapon safety contracts"); return 0; }
         if (args is ["--source-navigation"]) { await SourceNavigationContracts(); Console.WriteLine("PASS source navigation contracts"); return 0; }
@@ -138,6 +159,9 @@ internal static partial class Program
 
         var tests = new (string Name, Func<Task> Run)[]
         {
+            ("2.11.10 创建单位引用基线与关联边界", UnitCreationSafetyContracts),
+            ("2.11.10 创建来源事务与失败恢复", UnitCreationSafetyTransactions),
+            ("2.11.9 共享解析、候选代际与紧凑缓存", OverallPerformanceCore),
             ("2.11.4 弹药与武器两层预拦截", WeaponSafetyContracts),
             ("2.11.4 部分应用、组合事务与源码拦截", WeaponSafetyTransactions),
             ("2.11.3 业务源码定位", SourceNavigationContracts),
@@ -192,6 +216,21 @@ internal static partial class Program
             ("1.9.21 矩阵批改与独立规则", DamageMathAndStandalone),
             ("1.9.21 应用后伤害缓存与连续编辑", DamageRefresh),
             ("1.9.21 专业已有阶梯引用与组合", DamageReferenceSelection),
+            ("2.11.6 导弹运动隔离事务与恢复", MissileMotionTransactions),
+            ("2.11.7 导弹新副本三种身份唯一", MissileDebugNewClones),
+            ("2.11.7 导弹旧副本修复事务与恢复", MissileDebugRepairTransactions),
+            ("2.11.7 导弹修复范围、冲突与失败保护", MissileDebugRepairGuards),
+            ("2.11.8 导弹修复规模与分析复用", MissileRepairScale),
+            ("2.11.8 导弹修复与运动草稿组合", MissileRepairMixedDrafts),
+            ("2.11.8 导弹扫描和预览取消", MissileRepairCancellation),
+            ("2.11.6 导弹运动批量独立比例", MissileMotionBatches),
+            ("2.11.6 导弹运动边界与失败恢复", MissileMotionGuards),
+            ("2.11.6 导弹运动嵌套数值还原", MissileMotionChangeMerge),
+            ("2.11.6 导弹运动共享组合与引用切换", MissileMotionCombinations),
+            ("2.11.5 AP联动隔离、补建与恢复", ApBindingTransactions),
+            ("2.11.5 AP联动所有权与冲突", ApBindingGuards),
+            ("2.11.5 AP联动两种批量入口", ApBindingBatches),
+            ("2.11.5 AP联动失败恢复及旧配置", ApBindingRecovery),
             ("距离比例尺定位与边界", DistanceScaleContracts),
             ("距离比例尺提交与恢复", DistanceScaleTransactions),
             ("公路倍率字段、批量与边界", RoadSpeedContracts),
@@ -1925,9 +1964,16 @@ internal static partial class Program
                         ?? throw new InvalidOperationException("大列表选择器缺少搜索框。");
                     var pickerResults = picker.FindName("ResultList") as ListBox
                         ?? throw new InvalidOperationException("大列表选择器缺少结果列表。");
-                    TestAssert.Equal(160, pickerResults.Items.Count, "空搜索应限制首批结果数量");
+                    TestAssert.Equal(0, pickerResults.Items.Count, "未打开候选时不构建结果列表");
+                    var pickerHost = new System.Windows.Window { Owner = window, Content = picker, Width = 460, Height = 100, ShowActivated = false };
+                    pickerHost.Show();
+                    ((System.Windows.Controls.Primitives.ToggleButton)picker.FindName("OpenButton")).IsChecked = true;
+                    DrainDispatcher(window.Dispatcher);
+                    TestAssert.Equal(160, pickerResults.Items.Count, "打开空搜索应限制首批结果数量");
                     pickerSearch.Text = "krug";
                     TestAssert.Equal(1, pickerResults.Items.Count, "搜索应支持不区分大小写的任意位置匹配");
+                    ((System.Windows.Controls.Primitives.ToggleButton)picker.FindName("OpenButton")).IsChecked = false;
+                    pickerHost.Close();
                     var themeSelector = FindWorkspaceName(window, "ThemeSelector") as ComboBox
                         ?? throw new InvalidOperationException("主窗口缺少主题选择器。");
                     var headerBar = FindWorkspaceName(window, "HeaderBar") as Border

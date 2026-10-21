@@ -347,8 +347,11 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
         DivisionWorkspaceData data,
         DraftStore draftStore,
         Action<string> setStatus,
-        Action draftsChanged)
+        Action draftsChanged,
+        Func<IReadOnlyList<ResolvedDraftOperation>>? resolvedDrafts = null)
     {
+        _resolvedDrafts = resolvedDrafts ?? (() => DraftResolver.Resolve(data.Units, null, data,
+            draftStore.Operations.Where(o => o.TargetKind is DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity or DraftTargetKind.DivisionText)));
         _data = data;
         _draftStore = draftStore;
         _setStatus = setStatus;
@@ -797,9 +800,8 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
 
             SelectedRule = Rules.FirstOrDefault();
             SelectedPack = Packs.FirstOrDefault();
-            var resolved = _draftStore.Operations
-                .Where(item => item.TargetKind == DraftTargetKind.DivisionPlan && item.ObjectName == SelectedDivision.InternalName)
-                .Select(item => DraftResolver.Resolve(_data.Units, null, _data, [item]).Single())
+            var resolved = _resolvedDrafts()
+                .Where(item => item.Operation.TargetKind == DraftTargetKind.DivisionPlan && item.Operation.ObjectName == SelectedDivision.InternalName)
                 .FirstOrDefault();
             ValidationText = !SelectedDivision.CanEdit
                 ? SelectedDivision.EditReason
@@ -1001,7 +1003,7 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
 
     private void RefreshDraftStatuses()
     {
-        var resolved = DraftResolver.Resolve(_data.Units, null, _data, _draftStore.Operations)
+        var resolved = _resolvedDrafts()
             .Where(item => item.Operation.TargetKind is DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity or DraftTargetKind.DivisionText)
             .ToArray();
         foreach (var item in Divisions)
@@ -1015,6 +1017,7 @@ public sealed class DivisionWorkspaceViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(DivisionFilterRows));
         DivisionsView.Refresh();
     }
+    private readonly Func<IReadOnlyList<ResolvedDraftOperation>> _resolvedDrafts;
 
     private void NotifyRuleOptionsChanged()
     {

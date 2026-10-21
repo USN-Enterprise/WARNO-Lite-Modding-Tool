@@ -36,13 +36,15 @@ public sealed class ResponsiveColumns : DependencyObject
         private bool _layingOut;
         private bool _queued;
         private string _contentSignature = "";
-        private readonly Dictionary<object, double[]> _measurements = new();
-        private readonly HashSet<INotifyPropertyChanged> _observed = [];
+        private readonly Dictionary<object, double[]> _measurements = new(ReferenceEqualityComparer.Instance);
+        private readonly HashSet<INotifyPropertyChanged> _observed = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<DataGridColumn, double> _weights = [];
         public void Loaded(object sender, RoutedEventArgs e)
         {
             grid.LayoutUpdated -= Updated;
             grid.LayoutUpdated += Updated;
+            grid.IsVisibleChanged -= VisibilityChanged;
+            grid.IsVisibleChanged += VisibilityChanged;
             ((INotifyCollectionChanged)grid.Items).CollectionChanged -= ItemsChanged;
             ((INotifyCollectionChanged)grid.Items).CollectionChanged += ItemsChanged;
             _last = "";
@@ -50,12 +52,28 @@ public sealed class ResponsiveColumns : DependencyObject
         public void Unloaded(object sender, RoutedEventArgs e)
         {
             grid.LayoutUpdated -= Updated;
+            grid.IsVisibleChanged -= VisibilityChanged;
             ((INotifyCollectionChanged)grid.Items).CollectionChanged -= ItemsChanged;
+            ClearMeasurements();
+        }
+        private void ClearMeasurements()
+        {
             foreach (var item in _observed) item.PropertyChanged -= ItemChanged;
             _observed.Clear(); _measurements.Clear();
+            _last = "";
         }
-
-        private void ItemsChanged(object? sender, NotifyCollectionChangedEventArgs e) { _last = ""; Queue(); }
+        private void VisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (!grid.IsVisible) ClearMeasurements();
+            else Queue();
+        }
+        private void ItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            // Hidden pages do not run Layout. Drop their old row subscriptions
+            // here instead of keeping an entire previous workspace until revisit.
+            if (!grid.IsVisible || grid.Items.Count == 0) ClearMeasurements();
+            _last = ""; Queue();
+        }
         private void ItemChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (sender is not null) _measurements.Remove(sender);
@@ -89,6 +107,8 @@ public sealed class ResponsiveColumns : DependencyObject
             if (_last == signature) return;
             _last = signature;
             _layingOut = true;
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+            var incomplete = false;
             try
             {
                 var minima = new double[columns.Length];
@@ -117,7 +137,7 @@ public sealed class ResponsiveColumns : DependencyObject
                     column.MinWidth = minima[i];
                 }
                 var items = grid.Items.Cast<object>().Where(item => item != CollectionView.NewItemPlaceholder).ToArray();
-                var current = items.ToHashSet();
+                var current = items.ToHashSet(ReferenceEqualityComparer.Instance);
                 foreach (var old in _observed.Where(item => !current.Contains(item)).ToArray()) { old.PropertyChanged -= ItemChanged; _observed.Remove(old); }
                 foreach (var old in _measurements.Keys.Where(item => !current.Contains(item)).ToArray()) _measurements.Remove(old);
                 foreach (var item in items.OfType<INotifyPropertyChanged>()) if (_observed.Add(item)) item.PropertyChanged += ItemChanged;
@@ -140,8 +160,18 @@ public sealed class ResponsiveColumns : DependencyObject
                         row[i] = Math.Ceiling(probe.DesiredSize.Width + 18);
                     }
                     _measurements[item] = row;
+                    // WPF text measurement stays on the dispatcher, but never owns a
+                    // whole large table's worth of one uninterrupted UI turn.
+                    if (timer.ElapsedMilliseconds >= 12) { incomplete = true; break; }
                 }
                 foreach (var probe in probes) if (probe is not null) { probe.DataContext = null; BindingOperations.ClearAllBindings(probe); }
+                incomplete = incomplete && items.Any(item => !_measurements.ContainsKey(item));
+                if (incomplete)
+                {
+                    _last = "";
+                    Queue();
+                    return;
+                }
                 preferred = ContentTargets(items.Select(item => _measurements[item]).ToArray(), preferred);
                 var sizes = Allocate(available, minima, preferred, weights);
                 for (var i = 0; i < columns.Length; i++) columns[i].Width = new DataGridLength(sizes[i]);

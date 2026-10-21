@@ -193,7 +193,7 @@ internal static partial class Program
         timer.Restart(); var preview = ChangeRestore.Prepare(ChangePackageStore.Load(pathOut), f.Target); var previewMs = timer.ElapsedMilliseconds;
         Assert(preview.CanApply, string.Join("\n", preview.Errors));
         var evidence = new { Files = package.Manifest.Inventory.Count, PayloadBytes = package.Payloads.Values.Sum(b => (long)b.Length), CaptureMs = captureMs, ExportAndVerifyMs = exportMs, ReadAndPreviewMs = previewMs, PeakWorkingSet = System.Diagnostics.Process.GetCurrentProcess().PeakWorkingSet64 };
-        Directory.CreateDirectory("publish/qa-2.10-preview.6"); File.WriteAllText("publish/qa-2.10-preview.6/performance.json", JsonSerializer.Serialize(evidence, ChangeJson.Options)); Console.WriteLine(JsonSerializer.Serialize(evidence)); return Task.CompletedTask;
+        Directory.CreateDirectory("publish/qa-2.11.9/changes"); File.WriteAllText("publish/qa-2.11.9/changes/performance.json", JsonSerializer.Serialize(evidence, ChangeJson.Options)); Console.WriteLine(JsonSerializer.Serialize(evidence)); return Task.CompletedTask;
     }
     private static async Task ChangeFocusedTests()
     {

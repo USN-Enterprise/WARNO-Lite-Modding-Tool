@@ -38,11 +38,11 @@ internal static partial class Program
                 var shot = ammo.Fields.Single(f=>f.Field.Key=="ammo.shotsPerSalvo");
                 ammo.FieldSearch="ShotsCountPerSalvo";
                 shot.EditValue = "-1";
-                try { RunWithDispatcher(ammo.FlushAsync(), dispatcher); throw new Exception("Invalid value was accepted"); }
+                try { RunWithDispatcher(ammo.FlushAsync(), dispatcher); RunWithDispatcher(ammo.FeedbackTask, dispatcher); throw new Exception("Invalid value was accepted"); }
                 catch (InvalidOperationException) { }
                 Assert(shot.EditValue == "-1" && shot.Draft is null && shot.StatusText.Contains("未保存"), "invalid text retained without overwriting draft");
                 DrainDispatcher(dispatcher); foreach(var e in FindVisualChildren<Expander>(window)) e.IsExpanded=true; DrainDispatcher(dispatcher); Snapshot(window,"invalid-input.png");
-                shot.EditValue = "1"; RunWithDispatcher(ammo.FlushAsync(), dispatcher);
+                shot.EditValue = "1"; RunWithDispatcher(ammo.FlushAsync(), dispatcher); RunWithDispatcher(ammo.FeedbackTask, dispatcher);
                 Assert(shot.Draft is not null && shot.StatusText.Contains("配套"), "combination-invalid draft persists with immediate feedback");
                 DrainDispatcher(dispatcher); Snapshot(window,"pending-combination.png");
                 using (var store = new DraftStore(root))
@@ -52,8 +52,8 @@ internal static partial class Program
                     catch (TransactionValidationException ex) { Assert(ex.Code=="weapon.safety", "final combination refused"); }
                     Assert(store.Operations.Count>0 && File.ReadAllText(path)==original, "refusal retains draft and source bytes");
                 }
-                shot.EditValue = "2"; RunWithDispatcher(ammo.FlushAsync(), dispatcher);
-                var time = ammo.Fields.Single(f=>f.Field.Key=="ammo.time.shot"); time.EditValue="0.163"; RunWithDispatcher(ammo.FlushAsync(), dispatcher);
+                shot.EditValue = "2"; RunWithDispatcher(ammo.FlushAsync(), dispatcher); RunWithDispatcher(ammo.FeedbackTask, dispatcher);
+                var time = ammo.Fields.Single(f=>f.Field.Key=="ammo.time.shot"); time.EditValue="0.163"; RunWithDispatcher(ammo.FlushAsync(), dispatcher); RunWithDispatcher(ammo.FeedbackTask, dispatcher);
                 Assert(time.Draft is not null && time.SafetyText.Contains("0.1"), "uncertain time threshold remains warning");
                 foreach (var language in new[]{"zh-CN","en"}) foreach (var advanced in new[]{false,true})
                 {
@@ -65,7 +65,7 @@ internal static partial class Program
                     window.Width=advanced?1200:1480; window.Height=950;
                     DrainDispatcher(dispatcher);
                     foreach(var expander in FindVisualChildren<Expander>(window)) expander.IsExpanded=true;
-                    DrainDispatcher(dispatcher); Snapshot(window,$"ammo-{language}-{advanced}.png");
+                    RunWithDispatcher(ammo.FeedbackTask, dispatcher); DrainDispatcher(dispatcher); Snapshot(window,$"ammo-{language}-{advanced}.png");
                     Assert(ammo.Fields.Single(f=>f.Field.Key=="ammo.time.shot").SafetyText.Length>0,"feedback preserved across modes");
                 }
                 window.Close(); app.Shutdown(); completion.SetResult();
@@ -78,7 +78,7 @@ internal static partial class Program
         static void Snapshot(Window window,string name)
         {
             window.UpdateLayout();var bitmap=new RenderTargetBitmap((int)window.ActualWidth,(int)window.ActualHeight,96,96,PixelFormats.Pbgra32);bitmap.Render(window);
-            var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));using var stream=File.Create(Path.Combine("publish/qa-2.11.4",name));encoder.Save(stream);
+            Directory.CreateDirectory("publish/qa-2.11.9/safety"); var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));using var stream=File.Create(Path.Combine("publish/qa-2.11.9/safety",name));encoder.Save(stream);
         }
     }
 }

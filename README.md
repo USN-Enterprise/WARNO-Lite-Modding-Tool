@@ -6,9 +6,9 @@
 
 面向新手和 Mod 作者的 **Windows WARNO 图形化编辑器**。通过界面调整单位、武器、弹药、战术师、将军模式和游戏规则，无需手写代码；支持单位卡片图片和师徽编辑。
 
-当前版本：**2.11.4** · Windows x64 · 便携运行
+当前版本：**2.11.10** · Windows x64 · 便携运行
 
-发布包、更新说明和历史版本见下方 GitHub Releases。
+2.11.10修复创建单位时，原样继承母版的未验证模块引用被误当成新增问题拦截的情况；新增或改变的关联仍须通过检查。复用已有校验结果，不增加全项目构图或解析轮次。沿用2.11.9的性能改进及限制，见[发布说明](RELEASE_NOTES.md#chinese)。本次公开版同时汇总2.11.5起的AP配套、导弹联动与副本修复。新AP/导弹运动/修复草稿使用schema8/9/10，2.11.4无法管理；请保留旧草稿和备份，并使用兼容新版处理。完整便携包和历史版本见下方 GitHub Releases。
 
 **[下载发布包](https://github.com/USN-Enterprise/WARNO-Lite-Modding-Tool/releases/latest)** · **[中文使用教程](使用教程.md)** · [版本更新](RELEASE_NOTES.md#chinese)
 
@@ -60,9 +60,9 @@
 
 **A Windows graphical editor for WARNO Mods**, for beginners and Mod authors. Edit units, weapons, ammunition, divisions, Army General and game rules without writing code. Unit portraits and division emblems can also be edited.
 
-Current version: **2.11.4** · Windows x64 · Portable
+Current version: **2.11.10** · Windows x64 · Portable
 
-Portable packages, release notes and previous versions are available on GitHub Releases below.
+2.11.10 fixes unit creation rejecting unchanged, unverified module references inherited from the template. New or changed dependencies still require validation. It reuses existing validation results without extra full-project graph or parsing passes. The performance improvements and limitations of 2.11.9 remain. This public release also includes AP integration, missile motion and duplicate-identity repair added since 2.11.5. New AP/motion/repair drafts use schema8/9/10 and cannot be managed by 2.11.4; retain existing drafts and backups and use a compatible newer version. Complete portable packages and previous releases are available on GitHub Releases below.
 
 **[Download a release](https://github.com/USN-Enterprise/WARNO-Lite-Modding-Tool/releases/latest)** · **[English user guide](USER_GUIDE.md)** · [Release notes](RELEASE_NOTES.md#english)
 

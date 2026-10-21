@@ -46,6 +46,17 @@ public static class UnitDraftLinks
         do
         {
             changed = false;
+            if (result.Values.Any(Weapons.MissileDebugRepair.IsRepair))
+                foreach (var repair in combined.Where(Weapons.MissileDebugRepair.IsRepair))
+                    if (result.TryAdd(repair.Id, repair)) changed = true;
+            foreach (var binding in combined.Where(o => Weapons.ApBinding.Has(o) || Weapons.MissileMotion.Has(o)))
+            {
+                var names = (binding.ApBindings ?? []).Select(b => b.Ammo).Concat((binding.MissileMotion ?? []).Select(b => b.Ammo)).ToHashSet();
+                var entities = (binding.MissileMotion ?? []).Select(b => b.Entity).ToArray();
+                var related = combined.Where(o => o.Id == binding.Id || names.Contains(o.ObjectName) || entities.Any(e => Touches(o, e)) ||
+                    Weapons.WeaponBatch.IsWeaponEdit(o) && Weapons.WeaponBatch.Dependencies(o).Any(names.Contains)).ToArray();
+                if (related.Any(o => result.ContainsKey(o.Id))) foreach (var op in related) if (result.TryAdd(op.Id, op)) changed = true;
+            }
             foreach (var name in result.Values.Where(o => o.TargetKind == DraftTargetKind.NdfField && (AviationMovement.IsField(o.FieldKey) || o.FieldKey == AviationMovement.Speed)).Select(o => o.ObjectName).Distinct().ToArray())
                 foreach (var op in combined.Where(o => o.ObjectName == name && o.TargetKind == DraftTargetKind.NdfField && (AviationMovement.IsField(o.FieldKey) || o.FieldKey == AviationMovement.Speed)))
                     if (result.TryAdd(op.Id, op)) changed = true;
@@ -67,7 +78,7 @@ public static class UnitDraftLinks
                 foreach (var op in related) if (result.TryAdd(op.Id, op)) changed = true;
             }
             // Expand connected weapon/ammo plans; independent weapons remain separately applicable.
-            if (combined.Any(o => o.TargetKind == DraftTargetKind.WeaponBatch || Batch.AmmoBatchPlanner.IsBatch(o) || o.InsertAmmoField || Weapons.AmmoProfessional.RequiresV3(o.FieldKey)))
+            if (combined.Any(o => Weapons.MissileMotion.Has(o) || o.TargetKind == DraftTargetKind.WeaponBatch || Batch.AmmoBatchPlanner.IsBatch(o) || o.InsertAmmoField || Weapons.AmmoProfessional.RequiresV3(o.FieldKey)))
             {
                 var names = result.Values.Where(Weapons.WeaponBatch.IsWeaponEdit).SelectMany(Weapons.WeaponBatch.Dependencies).ToHashSet();
                 foreach (var op in combined.Where(Weapons.WeaponBatch.IsWeaponEdit))

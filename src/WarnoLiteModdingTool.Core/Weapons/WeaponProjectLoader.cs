@@ -113,6 +113,7 @@ public sealed class WeaponProjectLoader
         IReadOnlyList<AmmoReferenceCatalog.Missile> missileCatalog = [];
         if (ammo.Count > 0)
             foreach (var catalog in AmmoReferenceCatalog.Load(context.Layout.RootPath, cancellationToken, out catalogFiles, out missileCatalog)) catalogs[catalog.Key] = catalog.Value;
+        var choicePool = new Projects.ChoicePool();
         for (var i = 0; i < ammo.Count; i++)
         {
             var a = ammo[i];
@@ -125,8 +126,8 @@ public sealed class WeaponProjectLoader
                     m.File.Equals(a.Source.RelativeSourceFile.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase) || m.Exported &&
                     string.Equals(Path.GetDirectoryName(m.File.Replace('\\', '/')), Path.GetDirectoryName(a.Source.RelativeSourceFile.Replace('\\', '/')), StringComparison.OrdinalIgnoreCase)).Select(m => "~/" + m.Name)).ToArray();
                 var choices = candidates.Concat(f.State == WeaponFieldState.Declared ? new[] { f.RawValue } : []).Distinct().ToArray();
-                return f with { Choices = choices, State = f.IsMissing && choices.Length == 0 ? WeaponFieldState.Unavailable : f.State,
-                    Reason = f.IsMissing && choices.Length == 0 ? "当前Mod没有可用候选，保留未声明" : f.Reason };
+                return f with { Choices = choicePool.Intern(choices), State = f.IsMissing && choices.Length == 0 && f.Key != DamageDistance.ReferenceKey ? WeaponFieldState.Unavailable : f.State,
+                    Reason = f.IsMissing && choices.Length == 0 && f.Key != DamageDistance.ReferenceKey ? "当前Mod没有可用候选，保留未声明" : f.Reason };
             }
             ammo[i] = new AmmoRecord(a.Source, a.Fields.Select(WithChoices).ToArray())
                 { SafetyValues = a.SafetyValues, NameToken = a.NameToken, NameRaw = a.NameRaw, NameLocation = a.NameLocation, CanEditName = a.CanEditName, DisplayName = a.DisplayName, ChineseName = a.ChineseName };
@@ -190,7 +191,7 @@ public sealed class WeaponProjectLoader
             weapons.Add(new WeaponRecord(descriptor, fields, mounts));
         }
 
-        return new WeaponWorkspaceData(weapons, ammo, units.Units, BuildReferences(weapons, ammo, units.Units), diagnostics) { CatalogFiles = catalogFiles };
+        return new WeaponWorkspaceData(weapons, ammo, units.Units, BuildReferences(weapons, ammo, units.Units), diagnostics) { CatalogFiles = catalogFiles, DamageSource = () => units.Rules!.Damage, MotionSource = MissileMotion.Source(units.Localisation.ProjectRoot, cancellationToken) };
     }
 
     internal static WeaponReferenceIndex BuildReferences(IReadOnlyList<WeaponRecord> weapons, IReadOnlyList<AmmoRecord> ammo, IReadOnlyList<UnitRecord> units)

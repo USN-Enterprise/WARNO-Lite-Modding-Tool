@@ -14,10 +14,22 @@ using WarnoLiteModdingTool.Core.Batch;
 
 namespace WarnoLiteModdingTool.App.ViewModels.Units;
 
-public sealed partial class UnitWorkspaceViewModel : ObservableObject
+public sealed partial class UnitWorkspaceViewModel : ObservableObject, IDisposable
 {
+    private readonly CancellationTokenSource _lifetime = new();
+    private bool _disposed;
+    internal CancellationToken LifetimeToken => _lifetime.Token;
+    private CancellationTokenSource? _previewCancellation;
+    public bool IsPreparingPreview => _previewCancellation is not null;
+    public void CancelPreview() => _previewCancellation?.Cancel();
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true; _lifetime.Cancel(); _previewCancellation?.Cancel(); _lifetime.Dispose();
+    }
     private const string All = "全部";
     private readonly UnitWorkspaceData _data;
+    private UnitChoice[]? _deploymentPresets;
     private readonly WeaponWorkspaceData? _weaponData;
     private readonly DivisionWorkspaceData? _divisionData;
     private readonly DraftStore _draftStore;
@@ -55,8 +67,10 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
         DraftStore draftStore,
         DraftLoadResult loadResult,
         Action<string> setStatus,
-        Func<Task> reloadProject, Func<ApplyPreview, Task>? refreshAfterApply = null)
+        Func<Task> reloadProject, Func<ApplyPreview, Task>? refreshAfterApply = null, DraftAnalysis? analysis = null)
     {
+        _analysis = analysis ?? new(data, weaponData, divisionData, null);
+        draftStore.PrepareChangeAsync = _analysis.PrepareAsync;
         _data = data;
         _weaponData = weaponData;
         _divisionData = divisionData;
@@ -120,16 +134,31 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
     public ObservableCollection<UnitListItemViewModel> Units { get; }
 
     public UnitWorkspaceData Data => _data;
+    private readonly DraftAnalysis _analysis;
+    public IReadOnlyList<ResolvedDraftOperation> ResolvedDrafts => _analysis.Get(_draftStore.Operations);
     public IEnumerable<UnitBatchFieldOption> VisibleBatchFields => BatchFieldOptions.Where(f => Advanced.EditorMode.CanEdit(f.Definition.Key));
     public IEnumerable<UnitBatchOperationOption> VisibleBatchOperations => BatchOperationOptions.Where(o => Advanced.EditorMode.IsAdvanced || o.Operation is UnitBatchOperation.Set or UnitBatchOperation.IncreasePercent or UnitBatchOperation.DecreasePercent);
     public void RefreshMode()
     {
         foreach (var field in Fields) field.RefreshMode();
-        var expanded=FieldSections.ToDictionary(s=>s.Title,s=>s.IsExpanded);
-        foreach(var section in FieldSections)section.PropertyChanged-=SectionExpansionChanged;
-        FieldSections.Clear();
-        foreach(var section in FieldSectionBuilder.Build(Fields.Where(f=>f.IsVisible),f=>f.Section,f=>f.Group))
-        {section.IsExpanded=expanded.GetValueOrDefault(section.Title);section.PropertyChanged+=SectionExpansionChanged;FieldSections.Add(section);}
+        var existingSections = FieldSections.ToDictionary(s => s.Title);
+        foreach (var section in FieldSections) section.PropertyChanged -= SectionExpansionChanged;
+        var index = 0;
+        foreach (var prepared in FieldSectionBuilder.Build(Fields.Where(f => f.IsVisible), f => f.Section, f => f.Group))
+        {
+            var section = prepared;
+            if (existingSections.TryGetValue(prepared.Title, out var existing))
+            { existing.UpdateGroups(prepared.Groups); section = existing; }
+            else
+            { section.IsExpanded = false; }
+            section.PropertyChanged += SectionExpansionChanged;
+            if (index >= FieldSections.Count) FieldSections.Add(section);
+            else if (!ReferenceEquals(FieldSections[index], section))
+                FieldSections[index] = section;
+            index++;
+        }
+        while (FieldSections.Count > index)
+            FieldSections.RemoveAt(FieldSections.Count - 1);
         foreach(var option in FilterDimensions.Where(d=>d.Key=="category").SelectMany(d=>d.Options).Where(o=>!Localisation.GameText.VisibleCategory(o.Value))) option.IsSelected=false;
         OnPropertyChanged(nameof(VisibleBatchFields));
         if (SelectedBatchField is not null && !VisibleBatchFields.Contains(SelectedBatchField)) SelectedBatchField = VisibleBatchFields.FirstOrDefault();
@@ -665,7 +694,7 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
         await WaitForPendingEditsAsync();
     }
 
-    public async Task<ApplyPreview> PrepareApplyAsync(Func<Task>? flushRelatedEditors = null, IReadOnlySet<string>? selectedIds = null)
+    public async Task<ApplyPreview> PrepareApplyAsync(Func<Task>? flushRelatedEditors = null, IReadOnlySet<string>? selectedIds = null, CancellationToken cancellationToken = default)
     {
         if (IsTransactionBusy)
         {
@@ -693,12 +722,20 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
             var projectRoot = _draftStore.ProjectRoot;
             var operations = _draftStore.Operations.Where(o => selectedIds == null || selectedIds.Contains(o.Id)).ToArray();
             if (operations.Length == 0) throw new TransactionValidationException("请先选择草稿");
-            return await Task.Run(() => _transactions.PrepareApplyAsync(projectRoot, operations));
+            _previewCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetime.Token);
+            OnPropertyChanged(nameof(IsPreparingPreview));
+            var token = _previewCancellation.Token;
+            return await Task.Run(() => _transactions.PrepareApplyAsync(projectRoot, operations, token), token);
         }
         catch
         {
             SetTransactionBusy(false);
             throw;
+        }
+        finally
+        {
+            _previewCancellation?.Dispose(); _previewCancellation = null;
+            OnPropertyChanged(nameof(IsPreparingPreview));
         }
     }
 
@@ -1021,17 +1058,18 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
     {
         var sameUnit=_sectionUnit==SelectedUnit?.InternalName;
         var prior=FieldSections.ToDictionary(s=>s.Title,s=>s.IsExpanded);
+        var previousSections = FieldSections.ToDictionary(s=>s.Title);
         foreach(var section in FieldSections)section.PropertyChanged-=SectionExpansionChanged;
         _sectionUnit=SelectedUnit?.InternalName;
         Fields.Clear();
-        FieldSections.Clear();
         if (SelectedUnit is null)
         {
+            FieldSections.Clear();
             return;
         }
 
         var unit = SelectedUnit.Unit;
-        var resolved = DraftResolver.Resolve(_data, _weaponData, _divisionData, _draftStore.Operations, StrategicData)
+        var resolved = ResolvedDrafts
             .Where(item => item.Operation.ObjectName == unit.Name)
             .ToArray();
         var nameDraft = resolved.FirstOrDefault(item => item.Operation.FieldKey == "localisation.gameName");
@@ -1048,7 +1086,7 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
             var preparedField = field;
             if (field.Definition.Key == "deployment.shift")
             {
-                var presets = _data.Units
+                var presets = _deploymentPresets ??= _data.Units
                     .Select(item => item.Field(field.Definition.Key))
                     .Where(item => item?.CanEdit == true)
                     .Select(item => new UnitChoice(item!.DisplayValue, item.RawValue))
@@ -1084,13 +1122,23 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
             var current = Fields[i];
             Fields[i] = _fieldEdits.Restore(current, old => old.Unit.Name == current.Unit.Name && old.Key == current.Key);
         }
-        foreach (var section in FieldSectionBuilder.Build(Fields.Where(f=>f.IsVisible), field => field.Section, field => field.Group))
+        var sectionIndex = 0;
+        foreach (var prepared in FieldSectionBuilder.Build(Fields.Where(f=>f.IsVisible), field => field.Section, field => field.Group))
         {
+            var section = prepared;
+            if (previousSections.TryGetValue(prepared.Title, out var existing))
+            {
+                existing.UpdateGroups(prepared.Groups); section = existing;
+            }
             if(sameUnit&&prior.TryGetValue(section.Title,out var expanded))section.IsExpanded=expanded;
             else if(_sectionInteraction)section.IsExpanded=section.Title==_lastExpandedSection;
+            else section.IsExpanded=prepared.IsExpanded;
             section.PropertyChanged+=SectionExpansionChanged;
-            FieldSections.Add(section);
+            if (sectionIndex >= FieldSections.Count) FieldSections.Add(section);
+            else if (!ReferenceEquals(FieldSections[sectionIndex], section)) FieldSections[sectionIndex] = section;
+            sectionIndex++;
         }
+        while (FieldSections.Count > sectionIndex) FieldSections.RemoveAt(FieldSections.Count - 1);
     }
 
     public ICollectionView DraftView => CollectionViewSource.GetDefaultView(DraftItems);
@@ -1101,19 +1149,32 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
         var originalIds=_data.Units.Select(u=>u.Name).ToHashSet();
         foreach(var pending in Units.Where(u=>!originalIds.Contains(u.InternalName)&&!creates.Any(o=>o.ObjectName==u.InternalName)).ToArray()){if(SelectedUnit==pending)SelectedUnit=null;Units.Remove(pending);}
         foreach(var op in creates){try{var state=UnitCreation.Read(op);var mother=_data.Units.Single(u=>u.Name==state.Mother);var projected=UnitCreation.Project(mother,state,op.BaselineRaw);var existing=Units.FirstOrDefault(u=>u.InternalName==op.ObjectName);if(existing is null)Units.Add(new UnitListItemViewModel(projected));else existing.UpdateProjection(projected);}catch{}}
-        var resolved = DraftResolver.Resolve(_data, _weaponData, _divisionData, _draftStore.Operations, StrategicData);
-        var selected = DraftItems.Where(i => i.IsSelected).Select(i => i.Resolved.Operation.Id).ToHashSet();
-        DraftItems.Clear();
-        foreach (var item in resolved.OrderBy(item => item.Operation.RelativeSourceFile).ThenBy(item => item.Operation.Summary))
+        var resolved = ResolvedDrafts;
+        var existingItems = DraftItems.ToDictionary(i => i.Resolved.Operation.Id, StringComparer.Ordinal);
         {
-            DraftItems.Add(new DraftItemViewModel(item, StrategicData) { IsSelected = selected.Contains(item.Operation.Id) });
+            var position = 0;
+            foreach (var item in resolved.OrderBy(item => item.Operation.RelativeSourceFile).ThenBy(item => item.Operation.Summary))
+            {
+                existingItems.TryGetValue(item.Operation.Id, out var existingItem);
+                var row = existingItem is not null && ReferenceEquals(existingItem.Resolved, item) ? existingItem :
+                    new DraftItemViewModel(item, StrategicData) { IsSelected = existingItem?.IsSelected == true };
+                if (position >= DraftItems.Count || !ReferenceEquals(DraftItems[position], row))
+                {
+                    var oldIndex = DraftItems.IndexOf(row);
+                    if (oldIndex >= 0) DraftItems.Move(oldIndex, position);
+                    else DraftItems.Insert(position, row);
+                }
+                position++;
+            }
+            while (DraftItems.Count > position) DraftItems.RemoveAt(DraftItems.Count - 1);
         }
 
         if (DraftView.GroupDescriptions.Count == 0) DraftView.GroupDescriptions.Add(new PropertyGroupDescription("BatchKey"));
         OnPropertyChanged(nameof(DraftView));
+        var byObject = resolved.ToLookup(r => r.Operation.ObjectName, StringComparer.Ordinal);
         foreach (var unit in Units)
         {
-            var matches = resolved.Where(item => item.Operation.ObjectName == unit.Unit.Name).ToArray();
+            var matches = byObject[unit.Unit.Name].ToArray();
             var draftName = matches.FirstOrDefault(item =>
                 item.Status == DraftResolutionStatus.Active && item.Operation.TargetKind == DraftTargetKind.UnitName)?.Operation.TargetValue;
             unit.UpdateLifecycle(matches.FirstOrDefault(m=>m.Operation.TargetKind==DraftTargetKind.UnitRename) is {} rename ? UnitIdentityEditing.Read(rename.Operation).NewName : null, matches.Any(m=>m.Operation.TargetKind==DraftTargetKind.UnitDelete), matches.Any(m=>m.Operation.TargetKind==DraftTargetKind.UnitDelete && UnitDeletion.Read(m.Operation).Force));
@@ -1129,7 +1190,9 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
         OnPropertyChanged(nameof(CanApply));
         OnPropertyChanged(nameof(CanRestoreBackups));
         UpdateBackupRestoreAvailability();
-        RefreshFilter();
+        // Ordinary value drafts do not change filter membership. Resetting the whole
+        // view also resets selection and forces a complete inspector/table rebuild.
+        RefreshFilter(TextFilter.Length > 0 || creates.Length > 0 || _filterDimensions["draft"].Options.Any(o => o.IsSelected));
         RebuildCommonBatchFields();
         RefreshLifecycle();
     }
@@ -1389,9 +1452,9 @@ public sealed partial class UnitWorkspaceViewModel : ObservableObject
         OnPropertyChanged(nameof(HasActiveFilters));
     }
 
-    private void RefreshFilter()
+    private void RefreshFilter(bool refreshRows = true)
     {
-        _unitsView.Refresh();
+        if (refreshRows) _unitsView.Refresh();
         VisibleUnitCount = _unitsView.Cast<object>().Count();
         InvalidateBatchPreview();
         OnPropertyChanged(nameof(BatchTargetCount));

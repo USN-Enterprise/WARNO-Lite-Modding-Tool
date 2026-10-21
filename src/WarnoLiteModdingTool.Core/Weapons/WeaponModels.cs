@@ -145,6 +145,29 @@ public sealed record WeaponWorkspaceData(
     IReadOnlyList<string> Diagnostics)
 {
     public IReadOnlyList<string> CatalogFiles { get; init; } = [];
-    public WeaponRecord? Weapon(string name) => Weapons.FirstOrDefault(item => item.Name == name);
-    public AmmoRecord? Ammo(string name) => Ammunition.FirstOrDefault(item => item.Name == name);
+    [System.Text.Json.Serialization.JsonIgnore]
+    public Func<Rules.DamageWorkspace>? DamageSource { get; init; }
+    [System.Text.Json.Serialization.JsonIgnore]
+    public Func<UnitProjectGraph>? MotionSource { get; init; }
+    private readonly object _lookupGate = new();
+    private (IReadOnlyList<WeaponRecord> Source, Dictionary<string, WeaponRecord> Index)? _weaponIndex;
+    private (IReadOnlyList<AmmoRecord> Source, Dictionary<string, AmmoRecord> Index)? _ammoIndex;
+    public WeaponRecord? Weapon(string name)
+    {
+        lock (_lookupGate)
+        {
+            if (_weaponIndex is not { } index || !ReferenceEquals(index.Source, Weapons))
+                _weaponIndex = (Weapons, Weapons.GroupBy(w => w.Name, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal));
+            return _weaponIndex.Value.Index.GetValueOrDefault(name);
+        }
+    }
+    public AmmoRecord? Ammo(string name)
+    {
+        lock (_lookupGate)
+        {
+            if (_ammoIndex is not { } index || !ReferenceEquals(index.Source, Ammunition))
+                _ammoIndex = (Ammunition, Ammunition.GroupBy(a => a.Name, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal));
+            return _ammoIndex.Value.Index.GetValueOrDefault(name);
+        }
+    }
 }

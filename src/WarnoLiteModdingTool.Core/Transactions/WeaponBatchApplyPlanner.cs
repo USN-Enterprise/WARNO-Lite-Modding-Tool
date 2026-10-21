@@ -12,6 +12,7 @@ public static class WeaponBatchApplyPlanner
     public static IReadOnlyList<WeaponBatchCell> ValidateCombination(WeaponWorkspaceData data, IReadOnlyList<DraftOperation> operations)
     {
         var cells = WeaponBatch.Cells(data, operations);
+        if (operations.Any(MissileMotion.Has)) MissileMotion.ValidateCombination(data, operations);
         foreach (var c in cells)
         {
             if (c.Unit.Length > 0 && operations.Any(o => o.TargetKind == DraftTargetKind.UnitDelete && o.ObjectName == c.Unit))
@@ -39,6 +40,12 @@ public static class WeaponBatchApplyPlanner
         var blocks = new Dictionary<string,List<string>>(StringComparer.OrdinalIgnoreCase);
         var names = data.Weapons.Select(w => w.Name).Concat(data.Ammunition.Select(a => a.Name)).ToHashSet();
         var ammoCount = 0; var weaponCount = 0;
+        var motion = operations.Any(MissileMotion.Has) ? new MissileMotion.Planner(data, operations, snapshot, (path, name, body) =>
+        {
+            path = path.Replace('\\', '/');
+            if (!blocks.ContainsKey(path)) { blocks[path] = []; newNames[path] = []; }
+            blocks[path].Add(body); newNames[path].Add(name);
+        }, (path, replacement) => direct.Add(new(path, replacement, replacement.Description))) : null;
         UnitProjectGraph? referenceGraph = null;
         Dictionary<string,WeaponBatchCell> Globals(string name, bool ammo) => cells.Where(c => c.Unit.Length == 0 && Ammo(c) == ammo && (ammo ? c.Ammo : c.Weapon) == name).DistinctBy(c => c.Key).ToDictionary(c => c.Key);
         string Signature(IEnumerable<KeyValuePair<string,string>> values) => string.Join("\n", values.OrderBy(p => p.Key,StringComparer.Ordinal).Select(p => p.Key+"="+p.Value));
@@ -51,7 +58,7 @@ public static class WeaponBatchApplyPlanner
         {
             string name; do name = source.Name+"_WLMT_"+Guid.NewGuid().ToString("N")[..10]; while (!names.Add(name));
             var s = snapshot(source.RelativeSourceFile); var body = s.Text.Substring(source.CharacterOffset,source.CharacterLength);
-            var declaration = Regex.Match(body,$@"^(\s*(?:export\s+)?){Regex.Escape(source.Name)}\s+is\s+");
+            var declaration = Regex.Match(body,$@"^(\s*(?:(?:export|private)\s+)?){Regex.Escape(source.Name)}\s+is\s+");
             if (!declaration.Success) throw new TransactionValidationException("无法定位武器声明："+source.Name);
             var edits = new List<TextReplacement> { new(declaration.Groups[1].Length,source.Name.Length,source.Name,name,"隔离对象") };
             foreach (var f in fields.Where(f => values.TryGetValue(f.Key,out var v) && v != f.RawValue))
@@ -82,7 +89,7 @@ public static class WeaponBatchApplyPlanner
                 var body = source.Text.Substring(record.Source.CharacterOffset, record.Source.CharacterLength);
                 var edits = values.Select(p => AmmoProfessional.Replacement(record.Field(p.Key)!, p.Value, record.Source.CharacterOffset));
                 var candidate = SemicolonCsvDocument.ApplyReplacements(body, AmmoProfessional.MergeInsertions(edits));
-                AmmoProfessionalValidation.Candidate(record, candidate, values, () => referenceGraph ??= new UnitProjectGraph(source.ProjectRoot), units.Localisation);
+                AmmoProfessionalValidation.Candidate(record, candidate, values, () => referenceGraph ??= UnitProjectGraph.Read(source.ProjectRoot), units.Localisation);
             }
             var familyRaw = values.GetValueOrDefault("ammo.damage.family") ?? record.Field("ammo.damage.family")?.RawValue;
             var indexRaw = values.GetValueOrDefault("ammo.damage.index") ?? record.Field("ammo.damage.index")?.RawValue;
@@ -93,8 +100,10 @@ public static class WeaponBatchApplyPlanner
         foreach (var a in data.Ammunition)
         {
             var global = Globals(a.Name,true); if (global.Count == 0) continue;
-            ValidateAmmo(a,global.ToDictionary(p => p.Key,p => p.Value.Raw));
-            foreach (var c in global.Values) Add(a.Field(c.Key)!,c.Raw);
+            var values = global.ToDictionary(p => p.Key,p => p.Value.Raw);
+            ValidateAmmo(a, values);
+            motion?.Rewrite(a, "", "", -1, values);
+            foreach (var c in values) Add(a.Field(c.Key)!,c.Value);
         }
         foreach (var w in data.Weapons)
             foreach (var c in Globals(w.Name,false).Values) Add(WeaponBatch.Field(data,c)!,c.Raw);
@@ -111,6 +120,7 @@ public static class WeaponBatchApplyPlanner
                 var edits = Globals(a.Name,true).ToDictionary(p => p.Key,p => p.Value.Raw);
                 foreach (var c in mount) edits[c.Key] = c.Raw;
                 ValidateAmmo(a,edits);
+                motion?.Rewrite(a, group.Key.Unit, w.Name, mount.Key.Mount, edits);
                 var key = a.Name+"|"+Signature(edits);
                 if (!ammoVariants.TryGetValue(key,out var name)) ammoVariants[key] = name = Clone(a.Source,a.Fields,edits,true);
                 var field = w.Mounts.Single(m => m.Index == mount.Key.Mount).Fields.Single(f => f.Definition.FieldName == "Ammunition");
@@ -132,7 +142,7 @@ public static class WeaponBatchApplyPlanner
         }
         var merged = direct.GroupBy(p => p.RelativePath, StringComparer.OrdinalIgnoreCase).SelectMany(g => AmmoProfessional.MergeInsertions(g.Select(p => p.Replacement)).Select(r => new WeaponPlannedReplacement(g.Key, r, r.Description))).ToArray();
         return new(merged,newNames.ToDictionary(p => p.Key,p => (IReadOnlyList<string>)p.Value),
-            [$"批量武器：{weaponCount} 个 Weapon 副本、{ammoCount} 个 Ammo 副本", "按最终单位、挂载与字段组合隔离；同结果复用副本"]);
+            [$"批量武器：{weaponCount} 个 Weapon 副本、{ammoCount} 个 Ammo 副本", "按最终单位、挂载与字段组合隔离；同结果复用副本", ..operations.Where(MissileMotion.Has).Select(MissileMotion.Details)]);
     }
     private static string ReplaceLeaf(string raw,string leaf) => raw[..(raw.LastIndexOf('/')+1)]+leaf;
 }

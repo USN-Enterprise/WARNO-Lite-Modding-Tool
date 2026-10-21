@@ -8,7 +8,20 @@ namespace WarnoLiteModdingTool.Core.Units;
 // Never resolves a qualified reference by its leaf alone.
 public sealed class UnitProjectGraph
 {
-    public sealed record Source(string Path, string Text, NdfSyntaxDocument Syntax, IReadOnlyList<NdfObjectInfo> Objects);
+    public sealed record Source(string Path, string Text, NdfSyntaxDocument Syntax, IReadOnlyList<NdfObjectInfo> Objects)
+    {
+        public bool HasScanErrors { get; init; }
+        private readonly Dictionary<(int Start, int Length), NdfSyntaxDocument> _documents = new();
+        public NdfSyntaxDocument Document(NdfObjectInfo obj)
+        {
+            lock (_documents)
+            {
+                var key = (obj.CharacterOffset, obj.CharacterLength);
+                if (!_documents.TryGetValue(key, out var doc)) _documents[key] = doc = Syntax.Slice(key.CharacterOffset, key.CharacterLength);
+                return doc;
+            }
+        }
+    }
     public sealed record Reference(Source File, NdfSyntaxDocument.NdfToken Token, NdfObjectInfo? Owner);
     public string Root { get; }
     public Dictionary<string, Source> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -18,8 +31,12 @@ public sealed class UnitProjectGraph
     public string[] CatalogPaths { get; } = [];
     private readonly Dictionary<string, HashSet<string>> _namespaces = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, NdfObjectInfo[]> _byName;
+    private Dictionary<string, List<(Source File, NdfSyntaxDocument.NdfToken Token)>>? _referenceTokens;
     public IEnumerable<NdfObjectInfo> Objects => Files.Values.SelectMany(f => f.Objects);
     public IReadOnlyList<NdfObjectInfo> FindObjects(string name) => _byName.GetValueOrDefault(name) ?? [];
+    public static UnitProjectGraph Read(string root, bool deletionScope = false, bool tolerateUnreadable = false) =>
+        Projects.ProjectReadScope.Memo($"unit-graph:{Path.GetFullPath(root)}:{deletionScope}:{tolerateUnreadable}",
+            () => new UnitProjectGraph(root, deletionScope: deletionScope, tolerateUnreadable: tolerateUnreadable));
 
     public static IEnumerable<string> InputFiles(string root)
     {
@@ -32,31 +49,39 @@ public sealed class UnitProjectGraph
         }
     }
 
-    public UnitProjectGraph(string root, IReadOnlyList<PlannedFileChange>? candidates = null, bool deletionScope = false, bool tolerateUnreadable = false)
+    public UnitProjectGraph(string root, IReadOnlyList<PlannedFileChange>? candidates = null, bool deletionScope = false, bool tolerateUnreadable = false, CancellationToken cancellationToken = default)
     {
+        Projects.AnalysisMetrics.Current?.Graph();
+        if (!cancellationToken.CanBeCanceled) cancellationToken = Projects.ProjectReadScope.Current?.Cancellation ?? default;
         Root = Path.GetFullPath(root);
         if (deletionScope)
         {
-            var catalog = SourceWorkspace.SourceFiles.Discover(Root);
+            var catalog = SourceWorkspace.SourceFiles.Discover(Root, cancellationToken);
             CatalogPaths = catalog.Files.Select(f => f.Path).Where(p => SourceWorkspace.SourceFiles.IsNdf(p) && !p.StartsWith(".warno-editor/", StringComparison.OrdinalIgnoreCase) && !p.StartsWith(".git/", StringComparison.OrdinalIgnoreCase)).Order(StringComparer.OrdinalIgnoreCase).ToArray();
             CoverageIssues.AddRange(catalog.Errors.Order(StringComparer.Ordinal));
         }
-        foreach (var path in (deletionScope ? CatalogPaths : InputFiles(Root)).Concat(candidates?.Where(f => f.Kind == FormalTextFileKind.Ndf).Select(f => f.RelativePath) ?? []).Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (var path in (deletionScope ? CatalogPaths : InputFiles(Root)).Concat(candidates?.Where(f => f.Kind == FormalTextFileKind.Ndf).Select(f => f.RelativePath) ?? []).Select(Normalize).Distinct(StringComparer.OrdinalIgnoreCase))
         {
+          cancellationToken.ThrowIfCancellationRequested();
           try
           {
             var snapshot = TextFileSnapshot.Load(Root, path, FormalTextFileKind.Ndf, true);
             Dependencies[path] = snapshot.OriginalBytes;
-            var candidate = candidates?.SingleOrDefault(f => f.RelativePath.Equals(path, StringComparison.OrdinalIgnoreCase));
+            var candidate = candidates?.SingleOrDefault(f => Normalize(f.RelativePath).Equals(path, StringComparison.OrdinalIgnoreCase));
             if (candidate?.Action == PlannedFileAction.Delete) continue;
             var text = candidate is null ? snapshot.Text : Encoding.UTF8.GetString(candidate.CandidateBytes);
-            var syntax = new NdfSyntaxDocument(text);
-            var starts = syntax.Tokens.Select(t=>t.Start).ToHashSet();
-            var scan = new NdfTopLevelScanner().Scan(text, snapshot.FullPath, "units", Root);
-            if (deletionScope && scan.Diagnostics.Any(d => d.Severity == NdfDiagnosticSeverity.Error))
+            var parsed = Projects.ProjectReadScope.ObjectValue("graph-source:" + snapshot.FullPath, text, 0, text.Length, () =>
+            {
+                Projects.AnalysisMetrics.Current?.GraphFile();
+                var syntax = new NdfSyntaxDocument(text, cancellationToken: cancellationToken);
+                var starts = syntax.Tokens.Select(t => t.Start).ToHashSet();
+                var scan = new NdfTopLevelScanner().Scan(text, snapshot.FullPath, "units", Root, cancellationToken);
+                return new Source(path, text, syntax, scan.Objects.Where(o => starts.Contains(o.CharacterOffset)).ToArray())
+                    { HasScanErrors = scan.Diagnostics.Any(d => d.Severity == NdfDiagnosticSeverity.Error) };
+            });
+            if (deletionScope && parsed.HasScanErrors)
             { UnverifiedFiles.Add(path); CoverageIssues.Add(path + " · NDF结构未验证 / NDF structure unverified"); }
-            var objects = scan.Objects.Where(o=>starts.Contains(o.CharacterOffset)).ToArray();
-            Files[path] = new(path, text, syntax, objects);
+            Files[path] = parsed;
             _namespaces[path] = [];
           }
           catch (Exception ex) when ((deletionScope || tolerateUnreadable) && ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
@@ -71,10 +96,13 @@ public sealed class UnitProjectGraph
         _byName = Objects.GroupBy(o => o.Name).ToDictionary(g => g.Key, g => g.ToArray(), StringComparer.Ordinal);
         var unique = _byName.Where(g => g.Value.Length == 1).ToDictionary(g => g.Key, g => g.Value[0], StringComparer.Ordinal);
         foreach (var file in Files.Values)
+        {
+        cancellationToken.ThrowIfCancellationRequested();
         foreach (var token in file.Syntax.Tokens.Where(t => t.Text.StartsWith("$/", StringComparison.Ordinal)))
         {
             if (!unique.TryGetValue(NdfSyntaxDocument.Leaf(token.Text), out var obj) || !IsExported(obj)) continue;
             _namespaces[Normalize(obj.RelativeSourceFile)].Add(token.Text[..(token.Text.LastIndexOf('/') + 1)]);
+        }
         }
         // Relative cross-file references also carry scope evidence. Conditions,
         // for example, are private declarations in the same compilation scope.
@@ -83,6 +111,7 @@ public sealed class UnitProjectGraph
         bool changed;
         do
         {
+            cancellationToken.ThrowIfCancellationRequested();
             changed = false;
             foreach (var edge in relative)
                 foreach (var prefix in _namespaces[edge.Source].ToArray()) changed |= _namespaces[edge.Target].Add(prefix);
@@ -92,12 +121,20 @@ public sealed class UnitProjectGraph
     public static string Normalize(string path) => path.Replace('\\', '/');
     public Source FileOf(NdfObjectInfo obj) => Files[Normalize(obj.RelativeSourceFile)];
     public string Body(NdfObjectInfo obj) => FileOf(obj).Text.Substring(obj.CharacterOffset, obj.CharacterLength);
-    public bool IsExported(NdfObjectInfo obj) => new NdfSyntaxDocument(Body(obj)).Tokens.FirstOrDefault()?.Text == "export";
+    public NdfSyntaxDocument Document(NdfObjectInfo obj) => FileOf(obj).Document(obj);
+    public bool IsExported(NdfObjectInfo obj)
+    {
+        var syntax = FileOf(obj).Syntax; var first = syntax.TokenIndexAtOrAfter(obj.CharacterOffset);
+        return first < syntax.Tokens.Count && syntax.Tokens[first].Start < obj.CharacterOffset + obj.CharacterLength && syntax.Tokens[first].Text == "export";
+    }
     public string? Prefix(NdfObjectInfo obj)
     {
         var evidence = _namespaces[Normalize(obj.RelativeSourceFile)];
         return evidence.Count == 1 ? evidence.Single() : null;
     }
+    internal bool HasSameScope(string file, UnitProjectGraph other) =>
+        _namespaces.TryGetValue(Normalize(file), out var scope) &&
+        other._namespaces.TryGetValue(Normalize(file), out var otherScope) && scope.SetEquals(otherScope);
     public NdfObjectInfo RequireObject(string file, string name) => Files.GetValueOrDefault(Normalize(file))?.Objects.SingleOrDefault(o => o.Name == name)
         ?? throw new TransactionValidationException("对象不存在或不唯一：" + file + " · " + name);
 
@@ -141,25 +178,48 @@ public sealed class UnitProjectGraph
     public IReadOnlyList<Reference> References(NdfObjectInfo target, bool allowBrokenRegistration = false)
     {
         var result = new List<Reference>();
-        foreach (var file in Files.Values)
+        if (_referenceTokens is null)
         {
+            var index = new Dictionary<string, List<(Source, NdfSyntaxDocument.NdfToken)>>(StringComparer.Ordinal);
+            var identifiers = new System.Text.RegularExpressions.Regex("[A-Za-z0-9_]+", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+            // Preserve the original conservative ASCII boundary test, including
+            // uncommon non-ASCII object names in unsupported expressions.
+            var nonAsciiNames = _byName.Keys.Where(n => n.Any(c => c > 127)).Select(n => (Name: n,
+                Pattern: new System.Text.RegularExpressions.Regex("(?<![A-Za-z0-9_])" + System.Text.RegularExpressions.Regex.Escape(n) + "(?![A-Za-z0-9_])"))).ToArray();
+            foreach (var file in Files.Values)
+            {
+            Projects.ProjectReadScope.Current?.Cancellation.ThrowIfCancellationRequested();
             var tokens = file.Syntax.Tokens;
             for (var i = 0; i < tokens.Count; i++)
             {
+                if ((i & 1023) == 0) Projects.ProjectReadScope.Current?.Cancellation.ThrowIfCancellationRequested();
                 var token = tokens[i];
                 if (token.Text.StartsWith('"') || token.Text.StartsWith('\'')) continue;
-                if (NdfSyntaxDocument.Leaf(token.Text) != target.Name)
-                {
-                    if(token.Text.Contains(target.Name,StringComparison.Ordinal) && System.Text.RegularExpressions.Regex.IsMatch(token.Text,"(?<![A-Za-z0-9_])"+System.Text.RegularExpressions.Regex.Escape(target.Name)+"(?![A-Za-z0-9_])"))
-                        throw new TransactionValidationException("单位引用表达式不支持："+file.Path+" · "+token.Text);
-                    continue;
-                }
-                if (i + 1 < tokens.Count && tokens[i + 1].Text == "is") continue;
-                var resolved = Resolve(file.Path, token.Text);
-                if (Same(resolved, target)) result.Add(new(file, token, file.Objects.FirstOrDefault(o => token.Start >= o.CharacterOffset && token.End <= o.CharacterOffset + o.CharacterLength)));
-                else if (resolved is null && !(allowBrokenRegistration && token.Text == target.Name && IsRegistration(file, token)))
-                    throw new TransactionValidationException("引用作用域无法确认：" + file.Path + " · " + token.Text);
+                var leaf = NdfSyntaxDocument.Leaf(token.Text);
+                var names = identifiers.Matches(token.Text).Select(m => m.Value).Append(leaf).ToHashSet(StringComparer.Ordinal);
+                if (nonAsciiNames.Length > 0 && token.Text.Any(c => c > 127))
+                    foreach (var name in nonAsciiNames)
+                        if (token.Text.Contains(name.Name, StringComparison.Ordinal) && name.Pattern.IsMatch(token.Text)) names.Add(name.Name);
+                foreach (var name in names.Where(_byName.ContainsKey))
+                    // Declarations are excluded only for the exact name, matching the
+                    // original conservative treatment of unsupported expressions.
+                    if (leaf != name || i + 1 >= tokens.Count || tokens[i + 1].Text != "is")
+                    {
+                        if (!index.TryGetValue(name, out var entries)) index[name] = entries = [];
+                        entries.Add((file, token));
+                    }
             }
+            }
+            _referenceTokens = index;
+        }
+        foreach (var (file, token) in _referenceTokens.GetValueOrDefault(target.Name) ?? [])
+        {
+            if (NdfSyntaxDocument.Leaf(token.Text) != target.Name)
+                throw new TransactionValidationException("单位引用表达式不支持：" + file.Path + " · " + token.Text);
+            var resolved = Resolve(file.Path, token.Text);
+            if (Same(resolved, target)) result.Add(new(file, token, file.Objects.FirstOrDefault(o => token.Start >= o.CharacterOffset && token.End <= o.CharacterOffset + o.CharacterLength)));
+            else if (resolved is null && !(allowBrokenRegistration && token.Text == target.Name && IsRegistration(file, token)))
+                throw new TransactionValidationException("引用作用域无法确认：" + file.Path + " · " + token.Text);
         }
         return result;
     }

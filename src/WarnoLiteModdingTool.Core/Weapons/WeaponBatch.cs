@@ -184,7 +184,7 @@ public static class WeaponBatch
                 var changed = value != current;
                 rows.Add(new(t.Unit, w.Name, m.Index, f.Definition.Label, f.IsMissing && current.Length == 0 ? "未显式设置" : current, value, changed ? f.IsMissing ? "将新增字段" : "将修改" : "不变"));
                 seen.Add(c.Identity);
-                if (changed) changes.TryAdd(c.Identity, c);
+                if (changed || MissileMotion.IsParameter(c.Key) && MissileMotion.Guided(data.Ammo(c.Ammo)!)) changes.TryAdd(c.Identity, c);
                 IEnumerable<MountedWeaponRecord> siblings = f.Definition.Owner switch
                 {
                     WeaponFieldOwner.Weapon => w.Mounts.Where(x => x.AmmoBoxIndex == m.AmmoBoxIndex),
@@ -208,11 +208,23 @@ public static class WeaponBatch
             if (overlaps.Length == 0) continue;
             if (!request.ReplaceExisting || o.TargetKind != DraftTargetKind.WeaponBatch) { errors.Add("已存在重叠草稿，请明确替换批量草稿，或在草稿中心移除单字段草稿：" + o.Summary); continue; }
             var keep = cells.Where(c => !overlaps.Contains(c)).ToArray(); removals.Add(o.Id);
-            if (keep.Length > 0) upserts.Add(Operation(keep, data, o.ObjectName));
+            if (keep.Length > 0) upserts.Add(Operation(keep, data, o.ObjectName) with
+            {
+                MissileMotion = o.MissileMotion?.Where(b => keep.Any(c => c.Unit == b.Unit && c.Weapon == b.Weapon && c.Mount == b.Mount && c.Ammo == b.Ammo && c.Key == b.Key)).ToArray()
+            });
             impacts.Add("替换草稿范围：" + o.Summary + " / " + overlaps.Length);
         }
         if (request.Targets.Count == 0) errors.Add("请先勾选武器挂载");
         if (changes.Count > 0) upserts.Add(Operation(changes.Values.ToArray(), data));
+        try { upserts = ApBinding.PrepareBatch(data, drafts, upserts, removals).ToList(); }
+        catch (Exception e) when (e is InvalidDataException or TransactionValidationException or InvalidOperationException) { errors.Add(e.Message); }
+        try
+        {
+            upserts = upserts.Select(o => drafts.Any(d => d.Id == o.Id) ? o : MissileMotion.Prepare(data, drafts, o, current => Calculate(current, WeaponValueKind.Decimal, request))).ToList();
+        }
+        catch (Exception e) when (e is InvalidDataException or TransactionValidationException or InvalidOperationException or FormatException or OverflowException) { errors.Add(e.Message); }
+        foreach (var linked in upserts.Where(MissileMotion.Has)) impacts.Add(MissileMotion.Details(linked));
+        foreach (var linked in upserts.Where(ApBinding.Has)) impacts.Add(ApBinding.Details(linked));
         var combined = drafts.Where(o => !removals.Contains(o.Id)).Concat(upserts).ToArray();
         try
         {

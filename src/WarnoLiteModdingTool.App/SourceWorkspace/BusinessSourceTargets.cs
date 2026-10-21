@@ -44,8 +44,10 @@ public static class BusinessSourceTargets
             case WeaponFieldViewModel field:
                 var f = field.Field;
                 var selectedMount = main.WeaponWorkspace?.SelectedMount?.Mount;
-                return [new(f.Location.RelativeSourceFile, f.Location.FieldPath,
-                    text => SourceNavigation.WeaponField(text, f.OwnerObjectName, f.OwnerObjectType, f.Definition, selectedMount), true)];
+                var locations = new List<BusinessSourceTarget> { new(f.Location.RelativeSourceFile, f.Location.FieldPath,
+                    text => SourceNavigation.WeaponField(text, f.OwnerObjectName, f.OwnerObjectType, f.Definition, selectedMount), true) };
+                if (field.MissileEntity is { } missile) locations.Add(Object(missile, true));
+                return locations;
             case DivisionListItemViewModel division: return [Object(division.Division.Source)];
             case DivisionUnitRuleViewModel rule when main.DivisionWorkspace?.SelectedDivision is {} division:
                 return [new(division.Division.UnitRuleList.RelativeSourceFile, rule.Unit,

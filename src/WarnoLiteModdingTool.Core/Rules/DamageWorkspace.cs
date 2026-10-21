@@ -31,7 +31,7 @@ public sealed class DamageWorkspace
     public string MatrixError { get; private set; } = "";
     public DamageWorkspace(string root, IReadOnlyList<PlannedFileChange>? candidates = null)
     {
-        Graph = new(root, candidates);
+        Graph = candidates is null ? UnitProjectGraph.Read(root) : new(root, candidates);
         try { Matrix = ReadMatrix(Graph); }
         catch (Exception e) when (e is InvalidDataException or InvalidOperationException or ArgumentException)
         { MatrixError = e.Message; Diagnostics.Add(e.Message); }
@@ -40,7 +40,7 @@ public sealed class DamageWorkspace
             try
             {
                 if (Graph.FindObjects(obj.Name).Count != 1) throw new InvalidDataException("距离规则重名：" + obj.Name);
-                var body = Graph.Body(obj); var doc = new NdfSyntaxDocument(body);
+                var body = Graph.Body(obj); var doc = Graph.Document(obj);
                 var owner = doc.FindConstructors(obj.TypeName).Single();
                 var distance = doc.Raw(Required(doc, owner, "DistanceGRU"));
                 var ap = doc.Raw(Required(doc, owner, "AP"));
@@ -76,7 +76,7 @@ public sealed class DamageWorkspace
         var containers = graph.Objects.Where(o => o.TypeName == "TGameplayDamageResistanceContainer").ToArray();
         if (containers.Length != 1) throw new InvalidDataException("伤害矩阵缺失或不唯一");
         var obj = containers[0]; var source = graph.FileOf(obj);
-        var doc = new NdfSyntaxDocument(source.Text, obj.CharacterOffset, obj.CharacterLength);
+        var doc = graph.Document(obj);
         var root = doc.FindConstructors(obj.TypeName).Single();
         List<(string Family, int Count)> ReadCounts(string field)
         {
@@ -112,7 +112,7 @@ public sealed class DamageWorkspace
         {
             var registrations = graph.Objects.Where(o => o.TypeName == type).ToArray();
             if (registrations.Length != 1) throw new InvalidDataException("家族名称注册缺失或不唯一：" + type);
-            var reg = new NdfSyntaxDocument(graph.Body(registrations[0]));
+            var reg = graph.Document(registrations[0]);
             var values = reg.ReadArrayElements(Required(reg, reg.FindConstructors(type).Single(), "Values"))
                 .Select(v => NdfSyntaxDocument.Unquote(reg.Raw(v))).ToArray();
             if (!values.SequenceEqual(families.Select(f => f.Family))) throw new InvalidDataException("家族注册与矩阵顺序不一致");

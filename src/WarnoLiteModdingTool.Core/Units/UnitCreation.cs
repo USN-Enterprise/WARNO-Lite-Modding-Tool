@@ -20,6 +20,8 @@ public sealed record UnitCreationState(string Mother,string Id,string Guid,strin
     public IReadOnlyList<WeaponStructureState> WeaponStructures { get; init; } = [];
 }
 public sealed record UnitCreationMountChoice(string WeaponName,int MountIndex,string AmmoName);
+// Operation-local provenance, emitted only after the creation baseline and candidate have been checked.
+public sealed record UnitCreationOrigin(string RelativeFile, string Name, string Mother, string Type);
 public static class UnitCreation
 {
     public const string SerializerPath="GameData/Generated/Gameplay/Decks/DeckSerializer.ndf";
@@ -40,12 +42,12 @@ public static class UnitCreation
             return new(op,DraftResolutionStatus.Active,"");
         }catch(Exception ex)when(ex is IOException or InvalidDataException or InvalidOperationException or JsonException or ArgumentException){return new(op,DraftResolutionStatus.Conflict,ex.Message);}
     }
-    public static UnitCreationState New(UnitRecord mother,UnitWorkspaceData data,IEnumerable<DraftOperation> drafts)
+    public static UnitCreationState New(UnitRecord mother,UnitWorkspaceData data,IEnumerable<DraftOperation> drafts, UnitProjectGraph? preparedGraph = null)
     {
         Localisation.VanillaNames.RequireAvailable();
         var root=data.Localisation.ProjectRoot;
         var pending=drafts.ToArray();
-        var graph=new UnitProjectGraph(root);
+        var graph=preparedGraph ?? UnitProjectGraph.Read(root);
         var registrationSource=UnitIdentityEditing.Registration(graph,graph.RequireObject(mother.Source.RelativeSourceFile,mother.Name)).File;
         var text=registrationSource.Text;var doc=registrationSource.Syntax;
         var used=doc.ReadMapEntries(doc.FindDirectAssignments(doc.FindConstructors("TDeckSerializerEntries").Single(),"UnitIds").Single()).Select(e=>int.Parse(doc.Raw(e.Value))).ToHashSet();
@@ -114,9 +116,10 @@ public static class UnitCreation
         unit.DisplayName=state.Name;unit.NameToken=state.Token;unit.CanEditName=true;unit.UnitsCsvRelativePath=mother.UnitsCsvRelativePath;
         unit.ReplaceFields(unit.Fields.Select(f=>f with {Choices=mother.Field(f.Definition.Key)?.Choices??f.Choices}).ToArray());return unit;
     }
-    public static void Plan(string root,UnitWorkspaceData units,WeaponWorkspaceData weapons,DivisionWorkspaceData? divisions,ProjectIndexResult index,IReadOnlyList<DraftOperation> operations,List<PlannedFileChange> files)
+    public static IReadOnlyList<UnitCreationOrigin> Plan(string root,UnitWorkspaceData units,WeaponWorkspaceData weapons,DivisionWorkspaceData? divisions,ProjectIndexResult index,IReadOnlyList<DraftOperation> operations,List<PlannedFileChange> files)
     {
-        var creates=operations.Where(o=>o.TargetKind==DraftTargetKind.UnitCreate).ToArray();if(creates.Length==0)return;
+        var creates=operations.Where(o=>o.TargetKind==DraftTargetKind.UnitCreate).ToArray();if(creates.Length==0)return [];
+        var origins = new List<UnitCreationOrigin>();
         Localisation.VanillaNames.RequireAvailable();
         var csv=units.Localisation.UniqueUnitsCsvPath??throw new TransactionValidationException("无法唯一定位UNITS.csv声明，不能新增单位");
         var existingNames=index.Objects.Select(o=>o.Name).ToHashSet();var tokens=units.Units.Select(u=>u.NameToken).ToHashSet();var ids=new HashSet<int>();
@@ -149,9 +152,11 @@ public static class UnitCreation
                 var name=weapon.Name+"_"+state.Id["Descriptor_Unit_".Length..];
                 if(clonedWeapons.Add(name)){if(!existingNames.Add(name))throw new TransactionValidationException("独立武器名称已占用");var wdoc=new NdfSyntaxDocument(original);var match=Regex.Match(original,@"\b"+Regex.Escape(weapon.Name)+@"\s+is\b");var edits=new List<TextReplacement>{new(match.Index,weapon.Name.Length,weapon.Name,name,"独立武器")};foreach(var span in wdoc.FindAssignmentsAnywhere("DescriptorId"))edits.Add(new(wdoc.StartOffset(span),wdoc.Length(span),wdoc.Raw(span),"GUID:{"+Guid.NewGuid()+"}","武器GUID"));
                     foreach(var choice in choices){var field=weapon.Mounts.Single(m=>m.Index==choice.MountIndex).Fields.Single(f=>f.Definition.FieldName=="Ammunition");WeaponValueConverter.TryFormat(field,choice.AmmoName,out _,out var raw,out _);edits.Add(new(field.Location.CharacterOffset-weapon.Source.CharacterOffset,field.Location.CharacterLength,field.RawValue,raw,"槽位弹药"));}
-                    var body=Patch(original,edits);var old=Get(weapon.Source.RelativeSourceFile);Put(weapon.Source.RelativeSourceFile,old+touched[weapon.Source.RelativeSourceFile.Replace('\\','/')].Snapshot.NewLine+body);}
+                    var body=Patch(original,edits);var old=Get(weapon.Source.RelativeSourceFile);Put(weapon.Source.RelativeSourceFile,old+touched[weapon.Source.RelativeSourceFile.Replace('\\','/')].Snapshot.NewLine+body);
+                    origins.Add(new(weapon.Source.RelativeSourceFile, name, weapon.Name, weapon.Source.TypeName));}
                 changes.Add(new(doc.StartOffset(reference.Span),doc.Length(reference.Span),reference.Raw,"$/GFX/Weapon/"+name,"武器引用"));}clone=Patch(clone,changes);}
             var source=Get(mother.Source.RelativeSourceFile);Put(mother.Source.RelativeSourceFile,source+touched[mother.Source.RelativeSourceFile.Replace('\\','/')].Snapshot.NewLine+clone);
+            origins.Add(new(mother.Source.RelativeSourceFile, state.Id, mother.Name, mother.Source.TypeName));
             var serializer=Get(serializerPath);var sd=new NdfSyntaxDocument(serializer);var map=sd.FindDirectAssignments(sd.FindConstructors("TDeckSerializerEntries").Single(),"UnitIds").Single();var entries=sd.ReadMapEntries(map);if(entries.Any(e=>int.Parse(sd.Raw(e.Value))==state.SerializerId||NdfSyntaxDocument.Leaf(sd.Raw(e.Key))==state.Id))throw new TransactionValidationException("牌组编号已占用");var insertion=sd.StartOffset(map)+sd.Length(map)-1;Put(serializerPath,serializer.Insert(insertion,(sd.NeedsArraySeparator(map)?","+touched[serializerPath].Snapshot.NewLine:"")+$"    ({registration}, {state.SerializerId}),"+touched[serializerPath].Snapshot.NewLine));
             var csvPath=Path.GetRelativePath(root,csv).Replace('\\','/');var csvText=Get(csvPath,FormalTextFileKind.Csv);if(csvText.Length==0)csvText="TOKEN;REFTEXT";var csvDoc=SemicolonCsvDocument.Parse(csvText);if(csvDoc.Rows[0].Fields.Count!=2||csvDoc.Rows[0].Fields[0].Value.Trim()!="TOKEN"||csvDoc.Rows[0].Fields[1].Value.Trim()!="REFTEXT"||csvDoc.Rows.Skip(1).Any(r=>r.Fields[0].Value==state.Token))throw new TransactionValidationException("名称表格式不兼容或token冲突");var nl=touched[csvPath].Snapshot.NewLine;Put(csvPath,csvText+(csvText.EndsWith('\n')?"":nl)+state.Token+";"+SemicolonCsvDocument.Quote(state.Name)+nl,FormalTextFileKind.Csv);
             foreach(var (divisionId,rule) in state.Divisions){var division=divisions?.Division(divisionId)??throw new TransactionValidationException("所选师不可用");if(!state.DivisionBaselines.TryGetValue(divisionId,out var baseline)||baseline!=DivisionDraftCodec.Serialize(division.Baseline))throw new TransactionValidationException("所选师基线已变化");
@@ -163,6 +168,7 @@ public static class UnitCreation
             }
         }
         foreach(var (path,pair) in touched){if(pair.Snapshot.Kind==FormalTextFileKind.Ndf){var scan=new NdfTopLevelScanner().Scan(pair.Text,pair.Snapshot.FullPath,"units",root);if(scan.Diagnostics.Any(d=>d.Severity==NdfDiagnosticSeverity.Error)||scan.Objects.GroupBy(o=>o.Name).Any(g=>g.Count()>1))throw new TransactionValidationException("创建候选结构或对象唯一性校验失败");}files.RemoveAll(f=>f.RelativePath.Equals(path,StringComparison.OrdinalIgnoreCase));files.Add(new(path,pair.Snapshot.FullPath,pair.Snapshot.Kind,PlannedFileAction.Write,pair.Snapshot.Existed,pair.Snapshot.OriginalBytes,pair.Snapshot.Encode(pair.Text),pair.Snapshot.LastWriteUtc,["新增单位及注册"]));}
+        return origins;
     }
     public static void ValidateMountChoices(UnitRecord mother,UnitCreationState state,WeaponWorkspaceData weapons)
     {

@@ -25,12 +25,24 @@ public sealed class UnitApplyPlanner(
     private readonly NdfFieldLocator _fieldLocator = new();
     private readonly NdfTopLevelScanner _scanner = new();
 
-    public async Task<ApplyPreview> PrepareAsync(
+    public Task<ApplyPreview> PrepareAsync(
         string projectRoot,
         IReadOnlyList<DraftOperation> operations,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IProgress<MissileRepairProgress>? repairProgress = null) =>
+        PrepareCoreAsync(projectRoot, operations, new ProjectReadScope(cancellation: cancellationToken), cancellationToken, repairProgress);
+
+    public async Task<ApplyPreview> PrepareRepairsAsync(string projectRoot, IReadOnlyList<string> selected,
+        CancellationToken cancellationToken = default, IProgress<MissileRepairProgress>? progress = null)
     {
-        var readSnapshot = new ProjectReadScope();
+        var scope = new ProjectReadScope(cancellation: cancellationToken); using var entered = scope.Enter();
+        var operations = MissileDebugRepair.Analyze(projectRoot, cancellationToken, progress).Prepare(selected, cancellationToken);
+        return await PrepareCoreAsync(projectRoot, operations, scope, cancellationToken, progress);
+    }
+
+    private async Task<ApplyPreview> PrepareCoreAsync(string projectRoot, IReadOnlyList<DraftOperation> operations,
+        ProjectReadScope readSnapshot, CancellationToken cancellationToken, IProgress<MissileRepairProgress>? repairProgress)
+    {
         if (operations.Any(o => o.TargetKind == DraftTargetKind.SourceFile))
             return await SourceWorkspace.SourceEditing.Prepare(projectRoot, operations, cancellationToken);
         using var readScope = readSnapshot.Enter();
@@ -51,11 +63,18 @@ public sealed class UnitApplyPlanner(
         var allOperations = UnitDraftLinks.Expand(operations, currentDrafts.Operations);
         var deleteNames = allOperations.Where(o=>o.TargetKind==DraftTargetKind.UnitDelete).Select(o=>o.ObjectName).ToHashSet();
         operations = allOperations.Where(o=>!deleteNames.Contains(o.ObjectName)||o.TargetKind==DraftTargetKind.UnitDelete).ToArray();
-        var lifecycle = allOperations.Any(o=>UnitDraftLinks.Lifecycle(o)||o.TargetKind is DraftTargetKind.UnitCreate or DraftTargetKind.UnitPicture or DraftTargetKind.WeaponBatch or DraftTargetKind.WeaponStructure or DraftTargetKind.DamageDistance);
+        if (operations.All(MissileDebugRepair.IsRepair))
+            return MissileRepairPlanner.Prepare(root, operations, currentDrafts.Operations, cancellationToken, repairProgress);
+        var sharedMotionOnly = operations.Any(MissileMotion.Has) && operations.All(o => MissileDebugRepair.IsRepair(o) ||
+            o.TargetKind == DraftTargetKind.AmmoField && o.EditScope == DraftEditScope.AllReferences && MissileMotion.IsParameter(o.FieldKey) &&
+            MissileMotion.Has(o) && o.ApBindings is null && !o.InsertAmmoField);
+        var lifecycle = allOperations.Any(o=>MissileMotion.Has(o)||MissileDebugRepair.IsRepair(o)||ApBinding.Has(o)||UnitDraftLinks.Lifecycle(o)||o.TargetKind is DraftTargetKind.UnitCreate or DraftTargetKind.UnitPicture or DraftTargetKind.WeaponBatch or DraftTargetKind.WeaponStructure or DraftTargetKind.DamageDistance);
         var sharedAmmo = allOperations.Any(Batch.AmmoBatchPlanner.IsShared);
         var reviewInputs = lifecycle || sharedAmmo || allOperations.Any(o => o.InsertAmmoField || AmmoProfessional.RequiresV3(o.FieldKey) || o.TargetKind is DraftTargetKind.DivisionText or DraftTargetKind.DivisionIdentity or DraftTargetKind.TerrainField or DraftTargetKind.DamageRule or DraftTargetKind.DamageDistance);
-        var deletionReview = operations.Any(UnitDeletionV2.IsNew) ? new UnitProjectGraph(root, deletionScope: true) : null;
-        var unitReview = reviewInputs && deletionReview is null ? new UnitProjectGraph(root).Dependencies : null;
+        var deletionReview = operations.Any(UnitDeletionV2.IsNew) ? UnitProjectGraph.Read(root, deletionScope: true) : null;
+        var unitReview = reviewInputs && deletionReview is null ? allOperations.Any(o => MissileMotion.Has(o) || MissileDebugRepair.IsRepair(o))
+            ? new Dictionary<string, byte[]>(MissileDebugRepair.Analyze(root, cancellationToken, repairProgress).Dependencies, StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, byte[]>(UnitProjectGraph.Read(root).Dependencies, StringComparer.OrdinalIgnoreCase) : null;
         var historyPath = Path.Combine(root,UnitCreationHistory.LedgerPath);
         if(unitReview is not null) unitReview[UnitCreationHistory.LedgerPath] = File.Exists(historyPath)?File.ReadAllBytes(historyPath):[];
 
@@ -67,7 +86,7 @@ public sealed class UnitApplyPlanner(
 
         var index = await _indexer.IndexAsync(context, cancellationToken: cancellationToken);
         var unitCapability = index.Modules.FirstOrDefault(item => item.Key == "units");
-        if (operations.Any(o => !Batch.AmmoBatchPlanner.IsShared(o) && !(o.TargetKind == DraftTargetKind.DamageDistance && o.EditScope == DraftEditScope.AllReferences) && o.TargetKind != DraftTargetKind.AmmoName && o.TargetKind is not (DraftTargetKind.StrategicPlan or DraftTargetKind.StrategicPack or DraftTargetKind.GlobalRule or DraftTargetKind.ExperienceLevel or DraftTargetKind.TerrainField or DraftTargetKind.DamageRule or DraftTargetKind.DivisionText)) &&
+        if (operations.Any(o => !Batch.AmmoBatchPlanner.IsShared(o) && !MissileDebugRepair.IsRepair(o) && !(o.TargetKind == DraftTargetKind.DamageDistance && o.EditScope == DraftEditScope.AllReferences) && o.TargetKind != DraftTargetKind.AmmoName && o.TargetKind is not (DraftTargetKind.StrategicPlan or DraftTargetKind.StrategicPack or DraftTargetKind.GlobalRule or DraftTargetKind.ExperienceLevel or DraftTargetKind.TerrainField or DraftTargetKind.DamageRule or DraftTargetKind.DivisionText)) &&
             (unitCapability?.CanScan != true || unitCapability.Availability == ModuleAvailability.ParseError))
         {
             throw new TransactionValidationException("单位模块当前不可安全写入；请先处理扫描诊断。");
@@ -87,11 +106,20 @@ public sealed class UnitApplyPlanner(
             }
         }
 
-        var workspace = await _unitLoader.LoadAsync(context, index, cancellationToken);
+        repairProgress?.Report(new("核对草稿 / Checking drafts", 0, operations.Count));
+        // Ordinary inline unit fields only need the selected unit baselines. The full
+        // index and final candidate graph still validate file syntax and relationships.
+        var ordinaryUnits = operations.All(o => o.TargetKind == DraftTargetKind.NdfField && !MissileMotion.Has(o) && !ApBinding.Has(o));
+        var unitNames = operations.Select(o => o.ObjectName).ToHashSet(StringComparer.Ordinal);
+        var unitIndex = ordinaryUnits ? index with { Objects = index.Objects.Where(o => o.ModuleKey != "units" || unitNames.Contains(o.Name)).ToArray() } : index;
+        var rulesOnly = operations.All(o => o.TargetKind is DraftTargetKind.GlobalRule or DraftTargetKind.ExperienceLevel or DraftTargetKind.TerrainField or DraftTargetKind.DamageRule);
+        var workspace = sharedMotionOnly || rulesOnly ? _unitLoader.LoadWithoutUnitFields(context, cancellationToken) :
+            await _unitLoader.LoadAsync(context, unitIndex, cancellationToken, referencesOnly: operations.All(Batch.AmmoBatchPlanner.IsShared));
         WeaponWorkspaceData? weaponWorkspace = null;
         if (hasWeaponOperations)
         {
-            weaponWorkspace = await _weaponLoader.LoadAsync(context, index, workspace, cancellationToken);
+            var weaponIndex = sharedMotionOnly ? index with { Objects = index.Objects.Where(o => o.ModuleKey == "ammo").ToArray() } : index;
+            weaponWorkspace = await _weaponLoader.LoadAsync(context, weaponIndex, workspace, cancellationToken);
         }
         DivisionWorkspaceData? divisionWorkspace = null;
         if (operations.Any(item => item.TargetKind is DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity or DraftTargetKind.DivisionText || item.TargetKind==DraftTargetKind.UnitCreate && UnitCreation.Read(item).Divisions.Count>0))
@@ -112,7 +140,7 @@ public sealed class UnitApplyPlanner(
         StrategicWorkspace? strategic = null;
         if (operations.Any(o => o.TargetKind is DraftTargetKind.StrategicPlan or DraftTargetKind.StrategicPack))
             strategic = await new StrategicLoader().LoadAsync(context, index, workspace, cancellationToken);
-        var resolved = DraftResolver.Resolve(workspace, weaponWorkspace, divisionWorkspace, operations, strategic);
+        var resolved = DraftResolver.Resolve(workspace, weaponWorkspace, divisionWorkspace, operations, strategic, cancellationToken);
         var conflicts = resolved.Where(item => item.Status == DraftResolutionStatus.Conflict).ToArray();
         if (conflicts.Length > 0)
         {
@@ -121,6 +149,8 @@ public sealed class UnitApplyPlanner(
         }
 
         ValidateOperationIdentity(operations);
+        if (weaponWorkspace is not null && (operations.Any(ApBinding.Has) || operations.Any(o => o.FieldKey == ApBinding.PiercingKey || o.FieldKey == DamageDistance.ReferenceKey)))
+            operations = ApBinding.Expand(weaponWorkspace, workspace.Rules!.Damage, operations);
         var damageOperations = operations;
         DistanceExpansion? distanceExpansion = null;
         if (operations.Any(o => o.TargetKind == DraftTargetKind.DamageDistance))
@@ -172,6 +202,15 @@ public sealed class UnitApplyPlanner(
             fileSummaries.Add(summary);
         }
 
+        if (operations.Any(MissileDebugRepair.IsRepair))
+        {
+            var repairAnalysis = MissileDebugRepair.Analyze(root, cancellationToken, repairProgress);
+            foreach (var operation in operations.Where(MissileDebugRepair.IsRepair))
+            {
+                var patch = repairAnalysis.Replacement(operation, cancellationToken);
+                AddReplacement(patch.RelativePath, patch.Replacement, patch.Summary);
+            }
+        }
         foreach (var operation in operations.Where(item => item.TargetKind == DraftTargetKind.NdfField))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -313,7 +352,8 @@ public sealed class UnitApplyPlanner(
         divisionPlanner.ValidateCandidates(divisionWorkspace, divisionPlan, plannedFiles);
         var emblemDependencies = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
         DivisionIdentity.Plan(root,divisionWorkspace,index,operations,plannedFiles,emblemDependencies);
-        if(operations.Any(o=>o.TargetKind==DraftTargetKind.UnitCreate))UnitCreation.Plan(root,workspace,weaponWorkspace!,divisionWorkspace,index,operations,plannedFiles);
+        var creationOrigins = operations.Any(o => o.TargetKind == DraftTargetKind.UnitCreate)
+            ? UnitCreation.Plan(root, workspace, weaponWorkspace!, divisionWorkspace, index, operations, plannedFiles) : [];
         if(weaponWorkspace is not null)AmmoNames.Plan(root,workspace,weaponWorkspace,operations,plannedFiles);
         var structureMessages = weaponWorkspace is null ? [] : WeaponStructurePlanner.Plan(root, workspace, weaponWorkspace, operations, plannedFiles);
         if(strategic is not null)StrategicPackEditing.Plan(strategic,operations,plannedFiles);
@@ -345,8 +385,11 @@ public sealed class UnitApplyPlanner(
         {
             ValidateCandidateReferenceClosure(index, plannedFiles, weaponWorkspace);
         }
+        MissileDebugRepair.ValidateFinal(root, plannedFiles, cancellationToken);
         var weaponSafetyMessages = new List<string>();
-        var weaponSafetyDependencies = WeaponSafety.ValidateFinal(root, plannedFiles, weaponSafetyMessages, generatedClones: true);
+        var weaponSafetyDependencies = sharedMotionOnly
+            ? WeaponSafety.ValidateSharedMotion(root, weaponWorkspace!, operations, plannedFiles, weaponSafetyMessages)
+            : WeaponSafety.ValidateFinal(root, plannedFiles, weaponSafetyMessages, generatedClones: true, creationOrigins);
         var validation = new List<string>
         {
             $"已重新索引并确认 {operations.Count} 项草稿基线",
@@ -390,7 +433,7 @@ public sealed class UnitApplyPlanner(
             preparedUtc,
             allOperations.ToArray(),
             plannedFiles,
-            validation.ToArray()) { DeletionReview = deletionReview, DeletionWarnings = deletionResult?.Warnings.ToArray() ?? [], ObservedFiles = readSnapshot.ObservedPaths, PictureReadDependencies = pictureDependencies, WeaponReadDependencies = weaponSafetyDependencies, ReadDependencies = experience?.Dependencies ?? new(), ExperienceReview = experienceEdits?.Review(operations), UnitReadDependencies = unitReview, DraftReview = reviewInputs || operations.Any(o => AviationMovement.IsField(o.FieldKey) || o.GroupId?.StartsWith("aviation-speed:", StringComparison.Ordinal) == true) ? currentDrafts.Operations.ToArray() : null };
+            validation.ToArray()) { FullNdfReview = allOperations.Any(o => MissileMotion.Has(o) || MissileDebugRepair.IsRepair(o)), DeletionReview = deletionReview, DeletionWarnings = deletionResult?.Warnings.ToArray() ?? [], ObservedFiles = readSnapshot.ObservedPaths, PictureReadDependencies = pictureDependencies, WeaponReadDependencies = weaponSafetyDependencies, ReadDependencies = experience?.Dependencies ?? new(), ExperienceReview = experienceEdits?.Review(operations), UnitReadDependencies = unitReview, DraftReview = reviewInputs || operations.Any(o => AviationMovement.IsField(o.FieldKey) || o.GroupId?.StartsWith("aviation-speed:", StringComparison.Ordinal) == true) ? currentDrafts.Operations.ToArray() : null };
     }
 
     internal static string CreateBackupId(string prefix) =>
@@ -411,13 +454,13 @@ public sealed class UnitApplyPlanner(
             snapshot.LastWriteUtc,
             summaries);
 
-    private static void ValidateOperationIdentity(IReadOnlyList<DraftOperation> operations)
+    internal static void ValidateOperationIdentity(IReadOnlyList<DraftOperation> operations)
     {
         foreach (var operation in operations)
         {
             var expectedModule = operation.TargetKind switch
             {
-                DraftTargetKind.WeaponField or DraftTargetKind.MountedWeaponAmmo or DraftTargetKind.WeaponBatch or DraftTargetKind.WeaponStructure => "weapons",
+                DraftTargetKind.WeaponField or DraftTargetKind.MountedWeaponAmmo or DraftTargetKind.WeaponBatch or DraftTargetKind.WeaponStructure or DraftTargetKind.MissileDebugRepair => "weapons",
                 DraftTargetKind.AmmoField or DraftTargetKind.AmmoName => "ammo",
                 DraftTargetKind.DivisionPlan or DraftTargetKind.DivisionIdentity or DraftTargetKind.DivisionText => "divisions",
                 DraftTargetKind.StrategicPlan => "strategic",
@@ -819,7 +862,7 @@ public sealed class UnitApplyPlanner(
         return candidate;
     }
 
-    private static string BuildApplyLog(
+    internal static string BuildApplyLog(
         string backupId,
         DateTimeOffset preparedUtc,
         IReadOnlyList<DraftOperation> operations,

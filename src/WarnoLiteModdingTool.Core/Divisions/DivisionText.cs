@@ -53,7 +53,7 @@ public static class DivisionText
         else
         {
             var occupied = new HashSet<string>(drafts.Select(o => o.NameToken).OfType<string>(), StringComparer.Ordinal);
-            var graph = new UnitProjectGraph(data.ProjectRoot);
+            var graph = UnitProjectGraph.Read(data.ProjectRoot);
             foreach (var t in graph.Files.Values.SelectMany(f => f.Syntax.Tokens)) occupied.Add(NdfSyntaxDocument.Unquote(t.Text));
             do token = "WL" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
             while (occupied.Contains(token) || VanillaNames.Lookup("UNITS", token, "US") is not null || VanillaNames.Lookup("UNITS", token, "SC") is not null ||

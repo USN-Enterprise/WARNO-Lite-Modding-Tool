@@ -14,12 +14,14 @@ public sealed record WeaponSafetyIssue(string Rule, WeaponSafetyLevel Level, str
 /// <summary>Checks the final, isolated object graph. No game installation or stock data is required.</summary>
 public static partial class WeaponSafety
 {
-    private sealed class Node(string file, string name, string type, string body)
+    private sealed class Node(string file, string name, string type, Func<NdfSyntaxDocument> document)
     {
+        public Node(string file, string name, string type, string body) : this(file, name, type, () => new NdfSyntaxDocument(body)) { }
         public string File { get; } = file;
         public string Name { get; } = name;
         public string Type { get; } = type;
-        public NdfSyntaxDocument Doc { get; } = new(body);
+        private readonly Lazy<NdfSyntaxDocument> _document = new(document);
+        public NdfSyntaxDocument Doc => _document.Value;
         public string Raw(string field)
         {
             var roots = Doc.FindConstructors(Type);
@@ -69,17 +71,23 @@ public static partial class WeaponSafety
         return result;
     }
 
-    public static Dictionary<string, byte[]> ValidateFinal(string root, IReadOnlyList<PlannedFileChange> files, ICollection<string> messages, bool generatedClones = false)
+    public static Dictionary<string, byte[]> ValidateFinal(string root, IReadOnlyList<PlannedFileChange> files, ICollection<string> messages, bool generatedClones = false,
+        IReadOnlyList<UnitCreationOrigin>? creationOrigins = null)
     {
         if (!files.Any(f => f.Kind == FormalTextFileKind.Ndf && new[] { "TAmmunitionDescriptor", "TWeaponManagerModuleDescriptor", "TEntityDescriptor", "TWeaponDeploymentModuleDescriptor", "TAirplaneMovementModuleDescriptor" }.Any(t => System.Text.Encoding.UTF8.GetString(f.CandidateBytes).Contains(t, StringComparison.Ordinal) || System.Text.Encoding.UTF8.GetString(f.OriginalBytes).Contains(t, StringComparison.Ordinal)))) return new(StringComparer.OrdinalIgnoreCase);
-        var before = new UnitProjectGraph(root, tolerateUnreadable: true);
+        using var ownedReads = Projects.ProjectReadScope.Current is null ? new Projects.ProjectReadScope().Enter() : null;
+        var before = UnitProjectGraph.Read(root, tolerateUnreadable: true);
         var after = new UnitProjectGraph(root, files, tolerateUnreadable: true);
         foreach (var path in after.UnverifiedFiles.Where(p => files.Any(f => f.RelativePath.Equals(p, StringComparison.OrdinalIgnoreCase))))
             throw new TransactionValidationException("无法检查修改文件 / Cannot validate changed file: " + path, "weapon.safety");
         foreach (var coverage in after.CoverageIssues) messages.Add("未检查 / Unverified: " + coverage);
         var old = Evaluate(before); var current = Evaluate(after);
+        var createdKeys = creationOrigins is { Count: > 0 }
+            ? creationOrigins.Select(o => ObjectKey(o.RelativeFile, o.Name)).ToHashSet(StringComparer.Ordinal) : null;
+        var inherited = createdKeys is null ? null : InheritedCreationIssues(before, after, old, current, creationOrigins!, messages);
         // Only business-generated clones inherit baseline rule state. Source edits cannot claim an origin by naming convention.
-        var origins = generatedClones ? after.Objects.Where(n => before.FindObjects(n.Name).Count == 0)
+        var origins = generatedClones ? after.Objects.Where(n => n.Name.Contains("_WLMT_", StringComparison.Ordinal) &&
+            createdKeys?.Contains(ObjectKey(n.RelativeSourceFile, n.Name)) != true && before.FindObjects(n.Name).Count == 0)
             .Select(n => (n.Name, Original: before.Objects.Where(o => o.TypeName == n.TypeName && n.Name.StartsWith(o.Name + "_WLMT_", StringComparison.Ordinal)).OrderByDescending(o => o.Name.Length).FirstOrDefault()?.Name))
             .Where(p => p.Original is not null).Distinct().ToArray() : [];
         string Canonical(string value)
@@ -88,9 +96,16 @@ public static partial class WeaponSafety
             return value;
         }
         current = current.ToDictionary(p => p.Key, p => new Check(Canonical(p.Value.Stamp), p.Value.Issue));
-        var affected = current.Where(p => p.Value.Issue is not null && (!old.TryGetValue(Canonical(p.Key), out var previous) || previous.Stamp != p.Value.Stamp)).Select(p => p.Value.Issue!).ToArray();
+        var affected = current.Where(p => p.Value.Issue is not null && inherited?.Contains(p.Key) != true &&
+            (!old.TryGetValue(Canonical(p.Key), out var previous) || previous.Stamp != p.Value.Stamp)).Select(p => p.Value.Issue!).ToArray();
         var errors = affected.Where(i => i.Level == WeaponSafetyLevel.Error || i.Level == WeaponSafetyLevel.Unverified).ToArray();
-        if (errors.Length > 0) throw new TransactionValidationException("弹药/武器关联不允许应用；请配齐相关草稿 / Ammunition or weapon dependencies prevent apply; complete the related drafts:\n" + string.Join("\n", errors.Select(i => i.ToString())), "weapon.safety");
+        if (errors.Length > 0)
+        {
+            var header = errors.All(i => i.Rule.StartsWith("module.", StringComparison.Ordinal))
+                ? "单位模块引用或结构无法确认；请核对以下项目 / Unit module references or structure cannot be verified; review the following items:"
+                : "单位、弹药或武器关联不允许应用；请核对以下项目 / Unit, ammunition or weapon dependencies prevent apply; review the following items:";
+            throw new TransactionValidationException(header + "\n" + string.Join("\n", errors.Select(i => i.ToString())), "weapon.safety");
+        }
         foreach (var item in affected) messages.Add(item.ToString());
         if (current.Any(p => !old.TryGetValue(Canonical(p.Key), out var previous) || previous.Stamp != p.Value.Stamp))
             messages.Add("已检查受影响弹药和武器的已知组合；未确认的数值门槛仅提示 / Checked known affected ammunition and weapon combinations; unverified numerical limits remain warnings");
@@ -100,8 +115,9 @@ public static partial class WeaponSafety
     private static Dictionary<string, Check> Evaluate(UnitProjectGraph graph)
     {
         var result = new Dictionary<string, Check>(StringComparer.Ordinal);
-        var nodes = graph.Objects.Select(o => new Node(UnitProjectGraph.Normalize(o.RelativeSourceFile), o.Name, o.TypeName, graph.Body(o))).ToArray();
+        var nodes = graph.Objects.Select(o => new Node(UnitProjectGraph.Normalize(o.RelativeSourceFile), o.Name, o.TypeName, () => graph.Document(o))).ToArray();
         var byKey = nodes.GroupBy(n => n.Key).ToDictionary(g => g.Key, g => g.ToArray());
+        var byName = nodes.GroupBy(n => n.Name, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.ToArray(), StringComparer.Ordinal);
         Node? Resolve(Node from, string raw)
         {
             var o = graph.Resolve(from.File, raw);
@@ -149,7 +165,7 @@ public static partial class WeaponSafety
                 {
                     // The native Gfx ammunition files also contain private descriptors in the weapon compilation scope.
                     // Never fall back for a different qualified namespace, file family, or directory.
-                    var native = nodes.Where(n => n.Name == NdfSyntaxDocument.Leaf(reference) && n.Type == "TAmmunitionDescriptor" &&
+                    var native = (byName.GetValueOrDefault(NdfSyntaxDocument.Leaf(reference)) ?? []).Where(n => n.Type == "TAmmunitionDescriptor" &&
                         Path.GetDirectoryName(n.File) == Path.GetDirectoryName(weapon.File) &&
                         UnitProjectGraph.Normalize(Path.GetDirectoryName(n.File) ?? "").Equals("GameData/Generated/Gameplay/Gfx", StringComparison.OrdinalIgnoreCase) &&
                         Path.GetFileName(n.File) is "Ammunition.ndf" or "AmmunitionMissiles.ndf").ToArray();
@@ -170,11 +186,15 @@ public static partial class WeaponSafety
         foreach (var unit in nodes.Where(n => n.Type == "TEntityDescriptor"))
         {
             var modules = new List<Node>(); var unresolved = new List<string>(); var visited = new HashSet<string>(); var moduleIndex = 0;
-            void AddModule(Node origin, string raw)
+            void AddModule(Node origin, NdfValueSpan span)
             {
-                var doc = new NdfSyntaxDocument(raw);
-                var type = doc.Tokens.FirstOrDefault()?.Text ?? "";
-                if (doc.Tokens.Count > 1 && doc.Tokens[1].Text == "(") { modules.Add(new(origin.File, origin.Name, type, raw)); return; }
+                var raw = origin.Doc.Raw(span);
+                var type = origin.Doc.Tokens[span.StartTokenIndex].Text;
+                if (span.StartTokenIndex < span.EndTokenIndex && origin.Doc.Tokens[span.StartTokenIndex + 1].Text == "(")
+                {
+                    modules.Add(new(origin.File, origin.Name, type, () => origin.Doc.Slice(origin.Doc.StartOffset(span), origin.Doc.Length(span))));
+                    return;
+                }
                 var resolved = Resolve(origin, raw);
                 Record(unit, "module.ref." + moduleIndex++, "ModulesDescriptors", raw + "|" + resolved?.Type,
                     resolved is null ? "单位模块引用未解析 / Unit module reference unresolved: " + raw : null, WeaponSafetyLevel.Unverified);
@@ -189,7 +209,7 @@ public static partial class WeaponSafety
                 if (assignments.Count > 0) Record(unit, "module.coverage", "ModulesDescriptors", unit.Raw("ModulesDescriptors"), "单位模块列表无法验证 / Unit module list cannot be verified", WeaponSafetyLevel.Unverified);
                 continue;
             }
-            foreach (var element in unit.Doc.ReadArrayElements(assignments[0])) AddModule(unit, unit.Doc.Raw(element));
+            foreach (var element in unit.Doc.ReadArrayElements(assignments[0])) AddModule(unit, element);
             var deployment = modules.Any(m => m.Type == "TWeaponDeploymentModuleDescriptor");
             var airplane = modules.Any(m => m.Type is "TAirplaneMovementModuleDescriptor" or "AirplaneMovementDescriptor");
             foreach (var weapon in modules.Where(m => m.Type == "TWeaponManagerModuleDescriptor"))

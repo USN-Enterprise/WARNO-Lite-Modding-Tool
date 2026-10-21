@@ -1,4 +1,35 @@
 设置|Settings
+扫描|Scan
+选择|Select
+修复导弹副本|Repair missile clones
+导弹实体|Missile entity
+原debug名称|Original debug name
+修复后debug名称|Repaired debug name
+预览修复|Preview repairs
+修复导弹副本debug名称 / Repair missile clone debug name · {0}|Repair missile clone debug name · {0}
+弹速 GRU|Projectile speed GRU
+最大加速度 GRU|Maximum acceleration GRU
+ProjectileSpeedGRU；导弹同时联动实体的默认与失控配置。|ProjectileSpeedGRU; missile edits also link the entity's default and uncontrollable configurations.
+MaxAccelerationGRU；导弹同时联动实体的默认与失控配置。|MaxAccelerationGRU; missile edits also link the entity's default and uncontrollable configurations.
+补齐AP配套|Complete AP setup
+未声明|Not declared
+AP配套已完整，无需补齐|AP setup is already complete.
+请先将伤害族设为AP|Set the damage family to AP first.
+已有家族草稿与补齐范围不同，请先处理|The existing family draft has a different scope. Resolve it first.
+AP配套草稿已保存；保留原始Index。|AP setup draft saved; the original Index is unchanged.
+AP联动（待应用）|Linked AP setup (pending)
+AP联动：距离变化已启用（待应用）|Linked AP setup: range evolution enabled (pending)
+AP联动将设为True（待应用）；当前显示正式基线或独立草稿。|AP setup will set this to True (pending); this field shows the saved baseline or a separate draft.
+保留原始Index；远距离穿深可能改变。|The original Index is unchanged; penetration at longer ranges may change.
+未启用距离变化|Range evolution is disabled
+距离规则字段未声明|Range evolution field is not declared
+距离引用无法解析|The range evolution reference cannot be resolved
+AP缺少距离配置时可先补齐AP配套；其他家族请使用专业模式。|For AP without a range rule, complete the AP setup first. Use Professional mode for other families.
+AP联动 · {0}|Linked AP setup · {0}
+{0} · 新建|{0} · New
+AP家族需要启用距离规则及穿甲标记：{0}|AP requires a valid range rule and PiercingWeapon=True: {0}
+距离引用无法解析，请先处理原配置：{0}|The range reference cannot be resolved. Resolve the existing configuration first: {0}
+AP联动与距离草稿范围不同，请统一范围：{0}|The AP setup and range draft have different scopes. Use the same scope: {0}
 常规|General
 外观|Appearance
 关于|About
@@ -648,6 +679,7 @@ Pack 与索引|Packs & Indices
 连 {0} · {1}|Company {0} · {1}
 组 {0} · {1}|Group {0} · {1}
 单位 {0}|Unit {0}
+继承母版的未验证模块关联（{0}项）；未确认有效 / Inherited unverified module dependencies ({1}); validity unconfirmed: {2} ← {3}|Inherited unverified module dependencies ({1}); validity unconfirmed: {2} ← {3}
 {0} / {1}|{0} / {1}
 {0}：{1} → {2}|{0}: {1} → {2}
 
@@ -840,25 +872,25 @@ AI 难度|AI difficulty
 当前挂载的 NbWeapons；不等同于弹药数量。|NbWeapons of this mount; separate from ammunition quantity.
 无运输|No transport
 
-搜索名称、单位、运输	Search names, units and transports
-返回列表	Back to list
-未保存编辑	Unsaved edits
-当前 Pack 有未加入草稿的修改。是：加入草稿；否：放弃修改；取消：留在当前 Pack。	This Pack has edits not yet saved to drafts. Yes: save to drafts; No: discard edits; Cancel: stay on this Pack.
-请选择 Pack	Select a Pack
-复制名称	Copy name
-未加入草稿	Not saved to drafts
-撤销编辑	Discard edits
-使用位置	Used by
-尚未被引用	No known references
-跳转到将军模式	Go to Army General
-显示	Showing
-当前 Pack 有未加入草稿的修改。	This Pack has edits not yet saved to drafts.
-加入草稿并切换	Save draft and switch
-放弃并切换	Discard and switch
-查看详情	View details
-经验与老练度	Experience and veterancy
-经验类型	Experience type
-各等级效果	Effects by level
+搜索名称、单位、运输|Search names, units and transports
+返回列表|Back to list
+未保存编辑|Unsaved edits
+当前 Pack 有未加入草稿的修改。是：加入草稿；否：放弃修改；取消：留在当前 Pack。|This Pack has edits not yet saved to drafts. Yes: save to drafts; No: discard edits; Cancel: stay on this Pack.
+请选择 Pack|Select a Pack
+复制名称|Copy name
+未加入草稿|Not saved to drafts
+撤销编辑|Discard edits
+使用位置|Used by
+尚未被引用|No known references
+跳转到将军模式|Go to Army General
+显示|Showing
+当前 Pack 有未加入草稿的修改。|This Pack has edits not yet saved to drafts.
+加入草稿并切换|Save draft and switch
+放弃并切换|Discard and switch
+查看详情|View details
+经验与老练度|Experience and veterancy
+经验类型|Experience type
+各等级效果|Effects by level
 师徽图片编辑|Emblem image editor
 确认图片|Confirm image
 导入自定义图片|Import custom image
@@ -881,27 +913,27 @@ AI 难度|AI difficulty
 浅色预览|Light preview
 深色预览|Dark preview
 编辑参数无法恢复，保留已保存图片|Could not restore editing parameters. Saved image retained.
-导入或编辑图片	Import or edit image
-固定模板生成	Generate from template
-选择已有师徽	Choose existing emblem
-无法编辑师徽	Cannot edit emblem
-修改师名称和徽章，名称及标题一起更新。简介与历史文字保持原内容。	Edit the division name and emblem. The name and title update together; description and history are retained.
-允许面板独立弹出	Allow detachable panels
-大面板（默认）	Whole workspace (default)
-小面板（折叠分组）	Small panel (expandable group)
-双击标题独立弹出	Double-click the title to detach
-面板已独立打开，关闭窗口后归位	Panel detached. Close its window to restore it.
-苏联近卫红旗	Soviet Guards banner
-东德圆徽	East German round emblem
-苏联空降盾徽	Soviet airborne shield
-苏联黑底盾徽	Soviet black shield
-波兰三角	Polish triangle
-波兰圆形	Polish circle
-波兰方形	Polish square
-波兰菱形	Polish diamond
-捷克菱形标记	Czech diamond symbol
-捷克尖角标记	Czech pointed symbol
-番号只允许最多3位数字	Enter up to 3 digits for the number
+导入或编辑图片|Import or edit image
+固定模板生成|Generate from template
+选择已有师徽|Choose existing emblem
+无法编辑师徽|Cannot edit emblem
+修改师名称和徽章，名称及标题一起更新。简介与历史文字保持原内容。|Edit the division name and emblem. The name and title update together; description and history are retained.
+允许面板独立弹出|Allow detachable panels
+大面板（默认）|Whole workspace (default)
+小面板（折叠分组）|Small panel (expandable group)
+双击标题独立弹出|Double-click the title to detach
+面板已独立打开，关闭窗口后归位|Panel detached. Close its window to restore it.
+苏联近卫红旗|Soviet Guards banner
+东德圆徽|East German round emblem
+苏联空降盾徽|Soviet airborne shield
+苏联黑底盾徽|Soviet black shield
+波兰三角|Polish triangle
+波兰圆形|Polish circle
+波兰方形|Polish square
+波兰菱形|Polish diamond
+捷克菱形标记|Czech diamond symbol
+捷克尖角标记|Czech pointed symbol
+番号只允许最多3位数字|Enter up to 3 digits for the number
 
 经验与老练度|Experience and veterancy
 特种经验|Special forces experience
@@ -1737,3 +1769,19 @@ AI 难度|AI difficulty
 
 短装填时间 秒|Short reload time (s)
 每发补给|Supply per shot
+
+正在检查关联…|Checking related values…
+正在准备新单位…|Preparing the new unit…
+
+取消预览|Cancel preview
+
+返回列表|Back to list
+复制名称|Copy name
+撤销编辑|Undo edits
+使用位置|Used in
+显示|Shown
+战略 Pack|Strategic Packs
+
+正在识别项目…|Detecting project…
+单位模块引用或结构无法确认；请核对以下项目 / Unit module references or structure cannot be verified; review the following items:|Unit module references or structure cannot be verified; review the following items:
+单位、弹药或武器关联不允许应用；请核对以下项目 / Unit, ammunition or weapon dependencies prevent apply; review the following items:|Unit, ammunition or weapon dependencies prevent apply; review the following items:

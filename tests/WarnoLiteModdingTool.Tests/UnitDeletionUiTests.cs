@@ -33,7 +33,7 @@ internal static partial class Program
                 var loading = LoadP4Async(root); RunWithDispatcher(loading, dispatcher); var (_, units, _) = loading.Result;
                 vm.UnitWorkspace!.SelectedUnit = vm.UnitWorkspace.Units.First();
                 var graph = new UnitProjectGraph(root, deletionScope: true);
-                Directory.CreateDirectory("publish/qa-deletion");
+                Directory.CreateDirectory("publish/qa-2.11.9/deletion");
                 foreach (var language in new[] { "zh-CN", "en" })
                 foreach (var theme in Enum.GetValues<AppTheme>())
                 {
@@ -101,6 +101,6 @@ internal static partial class Program
     {
         window.UpdateLayout(); var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(window); var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        using var file = File.Create(Path.Combine("publish/qa-deletion", name)); encoder.Save(file);
+        using var file = File.Create(Path.Combine("publish/qa-2.11.9/deletion", name)); encoder.Save(file);
     }
 }

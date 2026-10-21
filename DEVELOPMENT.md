@@ -1,12 +1,18 @@
 # 开发与构建 / Development and building
 
+## 2.11.10 创建单位引用基线 / Unit creation reference baseline
+
+`UnitCreation.Plan` returns operation-local, baseline-validated origins. `WeaponSafety.Creation.cs` uses existing graph indexes and check results to match inherited unresolved references by exact value and multiplicity, verify unchanged declaration evidence and scope, and compare unchanged unverified deployment inputs. Raw source validation supplies no origins. Known errors remain errors; inherited references remain explicitly unverified. No persistent cache, graph pass, parser pass or draft format is added.
+
+新增回归：测试程序 `--test 2.11.10`；实际窗口：`--creation-safety-ui`。合成事务覆盖草稿重开、部分应用、独立武器、失败恢复和提交前文件变化。已有完整回归220/220及后续本地化WPF复测通过；约3,000单位合成对照的图与解析计数不变，50候选分配减少约19MiB。单候选耗时中位增加约8.2%，超过拟定5%门槛，不宣称全部性能达标。Existing regression: 220/220 plus affected WPF checks. Parsing counts are unchanged; timing targets are not all met.标准规模对照保留在 `tmp/unit-safety-perf-20261021`；仅接受带合成标记的样本，勿传入真实 Mod。重型测试串行运行，不把旧版拒绝路径与修复后完整成功路径混作同等耗时。
+
 [中文](#chinese) | [English](#english) · [返回 README](README.md)
 
 <a id="chinese"></a>
 
 ## 开发环境
 
-本文对应根目录的 **2.11.4 / .NET 8 / WPF** 工程。普通用户请下载便携包并阅读[使用教程](使用教程.md)，不需要安装开发工具。
+本文对应根目录的 **2.11.10 / .NET 8 / WPF** 工程。普通用户请下载便携包并阅读[使用教程](使用教程.md)，不需要安装开发工具。
 
 - Windows 与 Microsoft .NET 8 x64 SDK。
 - 源码编辑依赖 AvalonEdit 6.3.1.120（[MIT](licenses/AvalonEdit-MIT.txt)），组件随自包含包分发，不要求用户安装 IDE 或 WebView2。源码专项：测试程序 `--source`；实际 WPF：`--source-ui`；合成大文件：`--source-perf`；旧版拒读：`--source-old-reader <旧Core.dll>`。
@@ -62,7 +68,7 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 - 按当前实现更新两份教程，同步步骤、作用域和限制；教程描述当前能力，版本变化集中写入发布说明。
 - README 保留短流程和文档入口，不再逐版本累加操作说明。
-- 当前教程面向根目录活动工程（现为 2.11.4），不将封存 v2 等实验工程的依赖或功能写入其使用说明。
+- 当前教程面向根目录活动工程（现为 2.11.10），不将封存 v2 等实验工程的依赖或功能写入其使用说明。
 
 ---
 
@@ -70,7 +76,7 @@ dotnet publish src/WarnoLiteModdingTool.App/WarnoLiteModdingTool.App.csproj -c R
 
 ## Development environment
 
-This document covers the root **2.11.4 / .NET 8 / WPF** project. End users should download the portable release and read the [user guide](USER_GUIDE.md); developer tools are not required.
+This document covers the root **2.11.10 / .NET 8 / WPF** project. End users should download the portable release and read the [user guide](USER_GUIDE.md); developer tools are not required.
 
 - Windows and the Microsoft .NET 8 x64 SDK.
 - Source editing uses AvalonEdit 6.3.1.120 ([MIT](licenses/AvalonEdit-MIT.txt)), bundled with the portable app; no external IDE or WebView2 is required. Test switches: `--source`, `--source-ui`, `--source-perf`, and `--source-old-reader <old Core.dll>`.
@@ -118,7 +124,7 @@ Public user documents live at the root and belong in version control; internal `
 
 - Update both guides together, including steps, scope and limits. Guides describe current behavior; release notes record changes by version.
 - Keep the README focused on the short workflow and navigation instead of appending version-specific instructions.
-- These guides cover the active root project (now 2.11.4); keep the archived v2 and other experimental projects' dependencies and features separate.
+- These guides cover the active root project (now 2.11.10); keep the archived v2 and other experimental projects' dependencies and features separate.
 
 
 ### 工作台优化回归 / Workspace optimization checks
@@ -139,4 +145,43 @@ Results are written under `publish/qa-source-optimization`; existing `qa-source-
 
 ## 2.11.4 safeguards
 
+2.11.5 adds `Weapons/ApBinding.cs`: family drafts own automatic piercing/range setup; ordinary edit/transaction planners expand it within the original scope. `DamageDistance` v2 supports omitted references and local rule creation. New drafts use schema8; older drafts retain their semantics. Runtime damage accessors are excluded from JSON and restored for each workspace generation. Test with `--test 2.11.5`, `--ap-ui`, and `--ap-old-reader <2.11.4 Core.dll>`; UI evidence is in `publish/qa-2.11.5`. All use synthetic data. / AP联动、补建及旧版拒读专项和实际WPF验证均使用合成Mod；不自动执行游戏或生成器。
+
 `--weapon-safety` covers graph contracts, historical/changed issues, partial application, combined transactions and source interception. `--weapon-safety-ui` uses synthetic WPF fixtures for invalid-input retention, recoverable combination drafts, apply refusal and bilingual mode/theme snapshots in `publish/qa-2.11.4`. The validator operates on final candidate graphs and checks dependency baselines before commit. Cached ammo projections retain only the small set of scalar relation values needed by inline feedback. Official runtime thresholds remain warnings pending independent verification.
+
+## 2.11.6 missile movement / 导弹运动
+
+`Weapons/MissileMotion.cs` owns three independent field baselines, strict inline config parsing, current-value arithmetic and final entity variants. Single edits and both batch planners share the same payload; partial application expands connected Ammo/entity references. Exclusive shared Ammo edits can update their entity directly; other scopes reuse isolated variants with new names/GUIDs. `ChangeMerge.Missile.cs` preserves config-qualified numeric identities. Draft schema9 rejects old readers; cached weapon projections rebuild once for ProjectileType and use a lazy full-Mod graph accessor excluded from JSON.
+
+Synthetic verification: `--test 2.11.6`, `--motion-ui`, and `--motion-old-reader <2.11.5 Core.dll>`. Evidence is under `publish/qa-2.11.6`. Source editing retains its independent contract and shares form dependency coordination. A missile-reference draft changed after a motion draft requires re-editing motion; no silent retargeting.
+
+## 2.11.7 missile debug identity repair / 导弹debug身份修复
+
+`Weapons/MissileDebugRepair.cs` provides identity allocation, conservative old-clone provenance checks, exact debug-field patches and final identity validation. New motion clones share the allocator; normal drafts keep schema9 while dedicated repair operations require schema10. `Mod tools → Repair missile clones` reuses public presentation and the normal draft/backup transaction. Full-Mod dependencies and explicitly verified missile NDF paths support custom directories without opening unrelated write paths. Restores use the backed-up file set.
+
+Synthetic checks: `--test 2.11.7`, `--missile-repair-ui`, `--missile-repair-old-reader <2.11.6 Core.dll>`, plus the 2.11.6 movement checks. Evidence: `publish/qa-2.11.7`. The UI template warning reported alongside the fatal error is a separate parser limitation and is not changed by this release.
+
+## 2.11.8 repair analysis and full-size verification / 修复分析与规模验证
+
+`MissileRepairAnalysis.cs` keeps one per-scope entity identity/provenance analysis, a batched reference pass and exact content dependencies. Per-file syntax is released after analysis; final identity validation overlays changed files. `MissileRepairPlanner.cs` handles debug-only operations without a Unit workspace. Shared Ammo motion retains the existing motion/batch planner with a minimal workspace and final touched numeric checks; all other operation kinds retain their ordinary validation paths. `UnitTransactionService` still checks the full NDF set/content and related drafts before backed-up commit.
+
+The repair window computes off the UI thread, reports stages, propagates cancellation, invalidates changed selections and verifies retained preview inputs before saving. Preview data must not survive a project/content/draft revision. Persisted schema9/10 contracts and runtime dependencies are unchanged.
+
+Synthetic regression: `--test 2.11.8`, `--test 2.11.7`, `--test 2.11.6`; actual WPF: `--missile-repair-ui`; old reader: `--missile-repair-old-reader <2.11.6 Core.dll>`. Evidence is in `publish/qa-2.11.8`. Synthetic scale fixtures require no Exp or user Mod. Full-size apply/restore and performance checks used disposable Project OPFOR copies; their private source data is excluded from the portable package. Official generation/game behavior remains untested.
+
+## 2.11.9 cross-module performance / 整体性能
+
+Shared source projections and syntax belong to `ProjectReadScope`; immutable draft revisions share `DraftAnalysis`. Binding getters and setters must not build a project graph. Formal previews and commits retain fresh content, directory and dependency checks. Cache format7 stores common weapon choices once; it is rebuildable and does not migrate drafts or backups. Hidden views release row subscriptions; ordinary UI selection and mode changes reuse groups without discarding pending input.
+
+The executable test harness accepts:
+
+```powershell
+dotnet tests/WarnoLiteModdingTool.Tests/bin/Release/net8.0-windows/WarnoLiteModdingTool.Tests.dll --overall-performance-core
+dotnet tests/WarnoLiteModdingTool.Tests/bin/Release/net8.0-windows/WarnoLiteModdingTool.Tests.dll --overall-performance-sample tmp/perf-new-3000 3000
+dotnet tests/WarnoLiteModdingTool.Tests/bin/Release/net8.0-windows/WarnoLiteModdingTool.Tests.dll --overall-performance-transactions tmp/perf-new-3000 tmp/perf-transactions
+dotnet tests/WarnoLiteModdingTool.Tests/bin/Release/net8.0-windows/WarnoLiteModdingTool.Tests.dll --overall-performance-ui tmp/perf-new-3000 tmp/perf-ui 10
+```
+
+The sample command requires a new directory. Transaction/UI benchmarks write only explicitly marked synthetic samples; never pass a real Mod. Use a separate fresh sample for each independent transaction run. `--overall-performance-drafts <synthetic-root> 100` stages synthetic ordinary drafts; it replaces existing synthetic drafts, not formal files. The 10,000-unit sample uses the same generator with `10000`.
+
+Run heavyweight checks serially and retain failed runs. UI measurement requires an actual Windows WPF window; source and change-record probes have their own scale budgets. The benchmark's diagnostic GC and 100ms private-memory sampler are test-only. A cold-cache run, a warm reopen, a background-settled snapshot and a first image extraction are different boundaries. Performance goals are not all satisfied: retain the documented heartbeat and real-project memory limits, rather than treating functional tests as performance acceptance.

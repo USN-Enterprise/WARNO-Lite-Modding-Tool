@@ -8,6 +8,8 @@ public sealed class DraftItemViewModel : ObservableObject
     public DraftItemViewModel(ResolvedDraftOperation resolved, WarnoLiteModdingTool.Core.Strategic.StrategicWorkspace? strategic = null)
     {
         Resolved = resolved;
+        if (Core.Weapons.ApBinding.Has(resolved.Operation)) _damageDetails = resolved.Operation.TargetValue + "\n" + Localisation.UiText.T(Core.Weapons.ApBinding.Details(resolved.Operation));
+        if (Core.Weapons.MissileMotion.Has(resolved.Operation)) _damageDetails = resolved.Operation.TargetValue + "\n" + Weapons.WeaponSafetyFeedback.MotionText(Core.Weapons.MissileMotion.Details(resolved.Operation));
         _record=strategic?.Records.FirstOrDefault(r=>r.Id==resolved.Operation.ObjectName);
         if(resolved.Operation.TargetKind is DraftTargetKind.DamageRule or DraftTargetKind.DamageDistance)
         {

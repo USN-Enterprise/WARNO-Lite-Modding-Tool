@@ -80,11 +80,12 @@ public sealed class ExperienceCatalog
     public void Apply(IReadOnlyList<UnitRecord> units)
     {
         var choices=Packs.Where(p=>p.Error is null).Select(p=>new UnitChoice(Label(p.Name),p.Raw)).OrderBy(c=>c.Display).ToArray();
+        var details=Packs.ToDictionary(p=>Label(p.Name),p=>p.Error??p.Summary);
         foreach(var unit in units)unit.ReplaceFields(unit.Fields.Select(f=>
         {
             if(f.Definition.Key!="experience.type")return f;
             var p=Packs.SingleOrDefault(p=>p.Raw==f.RawValue);
-            return f with {DisplayValue=p is null?f.DisplayValue:Label(p.Name),Choices=choices,ChoiceDetails=Packs.ToDictionary(p=>Label(p.Name),p=>p.Error??p.Summary)};
+            return f with {DisplayValue=p is null?f.DisplayValue:Label(p.Name),Choices=choices,ChoiceDetails=details};
         }).ToArray());
     }
     public void Validate(IEnumerable<DraftOperation> operations)

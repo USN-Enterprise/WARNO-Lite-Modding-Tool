@@ -14,11 +14,14 @@ public static class StrategicPackEditing
 {
     public static StrategicPackEdit State(StrategicPack pack)=>new(pack.Source.Info.Name,pack.Unit,pack.Transport,pack.Xp);
     public static StrategicPackEdit Read(DraftOperation op)=>JsonSerializer.Deserialize<StrategicPackEdit>(op.TargetRaw)??throw new InvalidDataException("SP 草稿为空");
-    public static HashSet<string> ExistingNames(string root)
+    public static HashSet<string> ExistingNames(string root, CancellationToken cancellationToken = default)
     {
         var result=new HashSet<string>(StringComparer.Ordinal);
         foreach(var file in System.IO.Directory.EnumerateFiles(Path.Combine(root,"GameData"),"*.ndf",SearchOption.AllDirectories))
-            foreach(var obj in new NdfTopLevelScanner().Scan(File.ReadAllText(file),file,"sp",root).Objects)result.Add(obj.Name);
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            foreach(var obj in new NdfTopLevelScanner().Scan(File.ReadAllText(file),file,"sp",root,cancellationToken).Objects)result.Add(obj.Name);
+        }
         return result;
     }
     public static string Name(string unit,string transport,int xp,ISet<string> used)
@@ -50,20 +53,37 @@ public static class StrategicPackEditing
     }
     public static IReadOnlyList<StrategicPackUse> Uses(StrategicWorkspace data,string pack)
     {
-        var result=new List<StrategicPackUse>();
+        var index = UseIndexes.GetValue(data, d => BuildUses(d, default));
+        if (index.Error is { } error) throw new InvalidDataException(error);
+        return index.Packs.GetValueOrDefault(pack) ?? [];
+    }
+    private sealed record UseIndex(Dictionary<string, IReadOnlyList<StrategicPackUse>> Packs, string? Error = null);
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<StrategicWorkspace, UseIndex> UseIndexes = new();
+    public static void PrepareUses(StrategicWorkspace data, CancellationToken cancellationToken = default) =>
+        _ = UseIndexes.GetValue(data, d => BuildUses(d, cancellationToken));
+    private static UseIndex BuildUses(StrategicWorkspace data, CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<string, List<StrategicPackUse>>(StringComparer.Ordinal);
+        var recordsByDeck = data.Records.ToLookup(r=>r.Deck.Info.Name,StringComparer.Ordinal);
         foreach(var deck in data.Decks.Values)
         {
-            var d=new NdfSyntaxDocument(deck.Text);var list=Field(d,"TDeckDescriptor","DeckPackList");if(list is null)throw new InvalidDataException("编制引用无法解析："+deck.Info.Name);
-            var entries=d.ReadArrayElements(list);var records=data.Records.Where(r=>r.Deck.Info.Name==deck.Info.Name).ToArray();
-            for(var i=0;i<entries.Count;i++)if(Leaf(d.Raw(entries[i]))==pack)
+            cancellationToken.ThrowIfCancellationRequested();
+            var d=new NdfSyntaxDocument(deck.Text,cancellationToken:cancellationToken);var list=Field(d,"TDeckDescriptor","DeckPackList");
+            if(list is null)return new(new(), "编制引用无法解析："+deck.Info.Name);
+            var entries=d.ReadArrayElements(list);var records=recordsByDeck[deck.Info.Name].ToArray();
+            for(var i=0;i<entries.Count;i++)
             {
+                if((i & 255)==0)cancellationToken.ThrowIfCancellationRequested();
+                var pack = Leaf(d.Raw(entries[i]));
+                if(!result.TryGetValue(pack,out var uses)) result[pack]=uses=[];
                 foreach(var r in records.DefaultIfEmpty())
                 {
                     var groups=r?.Baseline.Companies.SelectMany(c=>c.Groups.Select(g=>(Company:c,Group:g))).Where(x=>x.Group.Slots.Any(s=>s.Pack==pack && int.TryParse(r!.Templates.GetValueOrDefault(s.Id+"/start"),out var start) && i>=start && i<start+s.Count)).Select(x=>x.Company.Name+" / "+x.Group.Name).Distinct()??[];
-                    result.Add(new(deck.Info.Name,r?.DisplayName??"",string.Join(", ",groups),i,r?.Pawn?.Info.Name??""));
+                    uses.Add(new(deck.Info.Name,r?.DisplayName??"",string.Join(", ",groups),i,r?.Pawn?.Info.Name??""));
                 }
             }
-        }return result;
+        }
+        return new(result.ToDictionary(p=>p.Key,p=>(IReadOnlyList<StrategicPackUse>)p.Value.ToArray(),StringComparer.Ordinal));
     }
     public static void Plan(StrategicWorkspace data,IReadOnlyList<DraftOperation> operations,List<PlannedFileChange> planned)
     {

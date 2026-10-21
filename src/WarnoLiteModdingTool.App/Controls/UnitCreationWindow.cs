@@ -25,7 +25,7 @@ public sealed class UnitCreationWindow:Window
     private UnitCreationState? _suggestedState;
     private UnitCapabilityState? _capabilities;
     private string? _suggestedName;
-    private UnitProjectGraph? _graph;
+    private readonly UnitProjectGraph _graph;
     private string? _identityError;
     private readonly CheckBox _independent=new();
     private readonly Dictionary<string,Control> _fields=[];
@@ -47,9 +47,9 @@ public sealed class UnitCreationWindow:Window
         public string TransportText=>string.Join(", ",Transports);
         public void Refresh(){foreach(var key in new[]{nameof(TransportText),nameof(Selected),nameof(WithoutTransport),nameof(Cards),nameof(Count),nameof(Xp)})OnPropertyChanged(key);}
     }
-    public UnitCreationWindow(UnitWorkspaceData units,WeaponWorkspaceData weapons,DivisionWorkspaceData? divisions,IReadOnlyList<DraftOperation> drafts,DraftOperation? existing=null)
+    public UnitCreationWindow(UnitWorkspaceData units,WeaponWorkspaceData weapons,DivisionWorkspaceData? divisions,IReadOnlyList<DraftOperation> drafts,UnitProjectGraph graph,DraftOperation? existing=null)
     {
-        _units=units;_weapons=weapons;_divisions=divisions;_drafts=drafts;_existing=existing;_state=existing is null?null:UnitCreation.Read(existing);
+        _graph=graph;_units=units;_weapons=weapons;_divisions=divisions;_drafts=drafts;_existing=existing;_state=existing is null?null:UnitCreation.Read(existing);
         Title=UiText.T("新增单位");Width=950;Height=720;WindowStartupLocation=WindowStartupLocation.CenterOwner;SetResourceReference(BackgroundProperty,"SurfaceBrush");SetResourceReference(ForegroundProperty,"TextBrush");
         var root=new DockPanel{Margin=new Thickness(18)};Content=root;var actions=new StackPanel{Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Right};DockPanel.SetDock(actions,Dock.Bottom);root.Children.Add(actions);
         var tabs=new TabControl();root.Children.Add(tabs);
@@ -66,7 +66,7 @@ public sealed class UnitCreationWindow:Window
             if (_mother is null) return;
             try
             {
-                var dialog = new WeaponStructureWindow(_weapons, _graph ??= new UnitProjectGraph(_units.Localisation.ProjectRoot), _drafts,
+                var dialog = new WeaponStructureWindow(_weapons, _graph, _drafts,
                     _mother.Name, template: _mother, initial: _weaponStructures) { Owner = this };
                 if (dialog.ShowDialog() == true) _weaponStructures = dialog.Plans;
             }
@@ -94,9 +94,8 @@ public sealed class UnitCreationWindow:Window
     private void BuildBasics()
     {
         if(_mother is null)return;
-        _graph??=new UnitProjectGraph(_units.Localisation.ProjectRoot);
         var handEdited=_suggestedName is not null && _variableName.Text!=_suggestedName;
-        try{_suggestedState=_state??UnitCreation.New(_mother,_units,_drafts);_identityError=null;}
+        try{_suggestedState=_state??UnitCreation.New(_mother,_units,_drafts,_graph);_identityError=null;}
         catch(Exception ex)when(ex is IOException or InvalidOperationException){_suggestedState=null;_identityError=ex.Message;}
         _capabilities=_state?.Capabilities;
         _weaponStructures = _state?.WeaponStructures ?? [];
@@ -118,13 +117,13 @@ public sealed class UnitCreationWindow:Window
     private void BuildResult()
     {
         var mother=_mother??throw new InvalidDataException("请选择母版");
-        var state=_state??_suggestedState??UnitCreation.New(mother,_units,_drafts);
+        var state=_state??_suggestedState??UnitCreation.New(mother,_units,_drafts,_graph);
         var name=_variableName.Text.Trim();
-        UnitIdentityEditing.RequireAvailable(name,_graph??new UnitProjectGraph(_units.Localisation.ProjectRoot),_drafts,_state?.Id);
+        UnitIdentityEditing.RequireAvailable(name,_graph,_drafts,_state?.Id);
         state=state with {Id=name,Capabilities=_capabilities};
         var fields=new Dictionary<string,string>(_state?.Fields??[]);foreach(var (key,input) in _fields){var value=input is ComboBox combo?combo.SelectedValue?.ToString()??"":((TextBox)input).Text;if(value!=mother.Field(key)!.DisplayValue)fields[key]=value;else fields.Remove(key);}
         var divisionRules=new Dictionary<string,DivisionUnitRuleState>();var baselines=new Dictionary<string,string>();foreach(var row in _rows.Where(r=>r.Selected)){divisionRules[row.Division.Name]=new(state.Id,row.WithoutTransport,row.Transports,row.Cards,row.Count,row.Xp.Split(',',StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries).Select(v=>double.Parse(v,System.Globalization.CultureInfo.InvariantCulture)).ToArray());baselines[row.Division.Name]=_state?.DivisionBaselines.GetValueOrDefault(row.Division.Name)??DivisionDraftCodec.Serialize(row.Division.Baseline);}
-        var weapons=new Dictionary<string,string>();foreach(var id in mother.Weapons){var w=_weapons.Weapon(id)??throw new InvalidDataException("母版武器不存在");weapons[id]=_state?.WeaponBaselines.GetValueOrDefault(id)??File.ReadAllText(w.Source.SourceFile).Substring(w.Source.CharacterOffset,w.Source.CharacterLength);}
+        var weapons=new Dictionary<string,string>();foreach(var id in mother.Weapons){var w=_weapons.Weapon(id)??throw new InvalidDataException("母版武器不存在");weapons[id]=_state?.WeaponBaselines.GetValueOrDefault(id)??_graph.Body(_graph.RequireObject(w.Source.RelativeSourceFile,w.Name));}
         state=state with {Name=_name.Text.Trim(),Fields=fields,IndependentWeapons=_independent.IsChecked==true,Divisions=divisionRules,DivisionBaselines=baselines,WeaponBaselines=weapons,MountChoices=_weaponSlots.Choices,
             WeaponStructures = _weaponStructures.Select(s => s with { Unit = state.Id, CreationId = state.Id, Shared = false }).ToArray()};
         UnitCreation.ValidateMountChoices(mother,state,_weapons);

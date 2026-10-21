@@ -1,6 +1,6 @@
 # WARNO Lite Modding Tool User Guide
 
-For version **2.11.4**, Windows x64. Available fields and features depend on the selected Mod's data and structure.
+For version **2.11.10**, Windows x64. Available fields and features depend on the selected Mod's data and structure.
 
 [Home](README.md#english) · [中文教程](使用教程.md) · [Release notes](RELEASE_NOTES.md#english)
 
@@ -59,7 +59,9 @@ For a first exercise, consider a dedicated test Mod. Transaction backups preserv
 3. Run `WarnoLiteModdingTool.exe`. Only one instance is allowed in the same Windows login session. If it reports that it is already running, return to the existing window.
 4. Before upgrading, close the old version normally. Extract the new version into a fresh directory. Drafts and transaction backups are stored inside the target Mod, not the editor installation.
 
-This guide describes 2.11.4. The download page may offer a later release; consult its release notes as well.
+This guide describes the local 2.11.10 portable build. The public download may differ; consult its release notes as well.
+
+In 2.11.9, ordinary draft preview computation offers Cancel preview. Cancelling retains drafts and does not change formal files. Once formal application starts, the transaction follows its backup and recovery procedure. The first opening after upgrading rebuilds performance caches; existing drafts and backups remain available.
 
 ### 2.2 Open an existing Mod
 
@@ -192,6 +194,8 @@ Choose **New Unit** and follow the five pages:
 
 Use **Edit Creation Settings** to revise a pending unit. Applying writes the identity, name, registrations and selected division rules together. The new unit retains the template's appearance; replacing Ammo does not automatically adapt models or firing animations.
 
+In 2.11.10, unchanged unverified module references inherited from the template remain visible as notices instead of blocking creation solely because the unit has a new name. Unverified does not mean game-validated. New or changed unresolved references and invalid dependency changes still prevent application.
+
 ### 6.5 Variable names, registration and deletion
 
 - **Rename unit variable** in professional mode changes the internal identifier and updates verifiable references. It does not mean changing the display name; GUIDs, name tokens and registration numbers have separate roles.
@@ -260,6 +264,27 @@ For batch editing:
 
 Unused Ammo and projects containing only ammunition files are supported. The old standalone weapon-batch window has been removed. Existing historical batches can still be applied or removed in the draft center; do not follow old instructions that ask you to open that window.
 
+**Linked missile movement (2.11.6):** projectile speed and maximum acceleration drafts include the Ammo field and the linked entity's DefaultConfig and UncontrollableConfig. Fixed values set all three; arithmetic and percentages use each field's own effective current value, with existing professional rounding and limits. Speed and acceleration remain independent. Opening a project preserves differences; undo restores each original value.
+
+Weapon edits retain the selected Unit scope; ammunition edits affect all users of the selected Ammo. Entities shared with other Ammo are isolated when needed, preserving those other users. Review entity and config values in the preview. If a related missile-reference draft changes, re-edit movement before applying. The professional source link offers both the Ammo and its entity.
+
+Unresolved entities, ambiguous/non-inline configs or unsupported numeric expressions prevent the new linked edit; other fields and ordinary ammunition retain their existing capabilities. Legacy drafts keep their Ammo-only meaning and display a notice. New movement drafts use schema9, preserve a pre-upgrade copy and are rejected by 2.11.5 and earlier. Values remain raw GRU; engine precedence and in-game flight effects have not been tested.
+
+#### Repair existing missile clones
+
+From 2.11.7, new missile clones receive separate NDF names, GUIDs and `ClassNameForDebug` values, fixing the 2.11.6 duplicate-debug-name defect. Updating the tool does not automatically change existing clones. Open the affected Mod, then:
+
+1. Choose **Mod tools → Repair missile clones → Scan**. Both modes support this action; Unit and Weapon files are not required.
+2. Review the original/repaired debug names and status. Technical details show origin and reference locations. Only confirmed duplicate tool clones with a matching retained origin are selectable; original entities, authored objects and ambiguous structures remain untouched.
+3. Select clones, **Preview repairs**, then **Add to drafts**. Scanning and draft saving do not write Mod files.
+4. Preview and apply the complete group in Draft overview. The normal backup/restore flow applies. Only the clone's debug string changes; NDF name, GUID, Ammo references, models and movement values are preserved.
+
+**2.11.8 workflow:** scanning and preview show their current stage and support cancellation or closing the window. Cancelling computation does not write Mod files. Unreferenced old clones can still have duplicate debug identities; editing speed again does not remove those declarations. Preview separates repairs from required related drafts. Details retain origins, references, related before/after values and final affected files; unrelated drafts remain saved. Only a repair-only group changes debug strings alone; a mixed group also applies the movement targets explicitly shown in the preview.
+
+Adding drafts rechecks complete input contents, the file set and draft revision; changes require another preview. Apply from Draft overview afterwards: finding repairable rows or saving drafts does not mean that repair has been applied. Schema10 repairs/schema9 motion and existing runtime dependencies are unchanged. Full-size verification used temporary copies and preserved the supplied Mod and official generated output.
+
+Rescanning skips already-unique names. External changes, collisions or unclear origins require review. Repair drafts use schema10 with a preserved pre-upgrade copy; 2.11.6 and earlier reject them. Older drafts retain their meaning. This repair addresses the debug-identity error, not every possible Mod error. Official generation and in-game behavior have not been tested.
+
 ### 7.4 Professional mode: omitted and advanced ammunition fields
 
 Professional mode adds 30 Ammo parameters and controlled insertion for fire and forget, maximum acceleration, aiming time and near/far dispersion: 35 audited parameters in total. Existing basic fields remain available. Search by label or source parameter name.
@@ -278,13 +303,17 @@ Availability follows the selected Mod's structures and resources. Unknown projec
 ### 7.5 Distance rules and damage coefficients
 
 1. On Weapons, select a mount and the current/selected-unit scope. On Ammunition, check the targets; if none are checked, the current ammunition is used. Open **Distance rules and damage lookup**.
-2. Basic mode edits the interval only for **DamageFamily_ap ammunition with PiercingWeapon=True and a resolvable positive step**. For example, change 175 to 500 while retaining each target's AP. Professional mode also edits AP or selects a compatible existing rule in this Mod. Missing fields are not inserted and nil is not treated as 175.
+2. Basic mode edits the interval for **DamageFamily_ap ammunition with PiercingWeapon=True and a valid step**, including pending linked AP drafts. For example, change 175 to 500 while retaining each target's AP. Professional mode also edits AP or selects a compatible existing rule in this Mod.
 3. **Calculate preview**, inspect targets, GRU/AP and all affected units, then **Add to drafts**. Unsupported targets block the entire batch; revise the selection. In Professional batches, blank AP retains each target's current value; the interval must be explicit.
 4. Preview and apply in Draft overview. Local weapon edits isolate the necessary Weapon/Ammo objects; numeric changes create independent steps. Ammunition edits still affect every user of the selected Ammo, while other Ammo retains its original step.
 
 Distances are **raw GRU**. Arme.Index is retained; penetration at maximum range is not automatically preserved. Increasing the interval may change long-range results. Selecting an existing rule uses its current parameters; edit the shared definition on Game rules. Conflicting local/shared targets for the same field must be resolved first.
 
 **Damage coefficient lookup** selects a Mod unit and its front, sides, rear or top. It displays both Family/Index coordinates and a static matrix coefficient from formal files, **excluding unapplied drafts**. It is not final damage or shots to kill, and excludes distance, hit rolls, suppression mappings and cover resistance changes. Apply drafts and reopen the lookup to query the resulting files.
+
+**2.11.5 linked AP setup:** setting the damage family to `DamageFamily_ap` also prepares `PiercingWeapon=True` and a valid range-rule reference within the selected scope. Valid existing rules are retained. Nil or omitted fields are completed using 175 GRU/1 AP by default; if no clear compatible default exists, a dedicated step is created inside the current Mod. Single edits, batches and both modes share this behavior. For existing AP without a range rule, choose **Complete AP setup** in the range window. Opening a project does not rewrite older configurations.
+
+Automatic values belong to the initiating family draft and are removed when it is undone; separately authored range drafts remain. Switching to another family does not clear existing range rules. Broken references, duplicate fields and conflicting explicit drafts need resolution first. The raw Index is unchanged; conversion does not preserve the original long-range armory value. Linked AP and new insertion drafts use schema8, preserve the pre-upgrade draft, and are rejected by 2.11.4 and earlier. Manage them with 2.11.5 or a compatible later release.
 
 <a id="divisions"></a>
 
@@ -402,7 +431,7 @@ Open **Game rules → Damage and resistance rules**:
 - **Shared distance rules:** select a step, inspect the full reference chain, edit DistanceGRU and AP, then add to drafts. This directly changes the shared definition for all references, potentially on both sides. Use Weapons/Ammunition for scoped changes.
 - Family IDs, name registrations, Counts and matrix dimensions must agree. An unsupported matrix does not disable independent steps. Rules-only projects do not require unit files.
 
-Damage/distance drafts use **schema 4**, with a preserved copy before older drafts are upgraded. Version 1.9.20 and earlier reject this format. Switching to Basic mode retains Professional drafts for inspection, undo and application. Applying rechecks the combined result and references; changes after preview require a new preview, and failed commits roll back while retaining drafts.
+Existing matrix/distance drafts retain **schema 4**; new AP linkage and omitted-reference drafts use **schema 8** as described in section 7.5. A copy is preserved before upgrade, and incompatible older releases reject the new format. Switching to Basic mode retains Professional drafts for inspection, undo and application. Applying rechecks the combined result and references; changes after preview require a new preview, and failed commits roll back while retaining drafts.
 
 This release does not add/delete/reorder families or indices, edit suppression mappings, global penetration algorithms or complete fire chains, or automatically preserve long-range penetration. File operations and UI were verified; official generation and in-game verification were not run.
 

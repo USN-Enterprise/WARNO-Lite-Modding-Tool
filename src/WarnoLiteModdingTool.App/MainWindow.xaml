@@ -38,7 +38,7 @@
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="290" Margin="0,0,12,0">
                     <TextBlock Text="{Binding ProjectName}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding ProjectPath}"/>
-                    <TextBlock Text="2.11.4" Foreground="{DynamicResource MutedTextBrush}" FontSize="11"/>
+                    <TextBlock Text="2.11.10" Foreground="{DynamicResource MutedTextBrush}" FontSize="11"/>
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
@@ -58,11 +58,15 @@
                             Visibility="{Binding IsScanning, Converter={StaticResource BooleanToVisibilityConverter}}"
                             Click="CancelScan_Click"
                             Margin="0,0,10,0" />
-                    <Button Content="{l:LocalizedBinding Path=ProblemButtonText}"
+                    <Button Content="{l:Loc Key='取消预览'}"
+                            Style="{StaticResource SecondaryButton}"
+                            Visibility="{Binding UnitWorkspace.IsPreparingPreview, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            Click="CancelPreview_Click" Margin="0,0,10,0" />
+                    <Button
                             Style="{StaticResource SecondaryButton}"
                             Click="OpenProblems_Click"
                             Padding="12,8"
-                            Margin="0,0,10,0" />
+                            Margin="0,0,10,0"><TextBlock Text="{l:LocalizedBinding Path=ProblemButtonText}" SizeChanged="HeaderText_SizeChanged" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/></Button>
                     <Grid Margin="0,0,10,0">
                         <ToggleButton x:Name="ModToolsButton"
                                       Content="{l:Loc Key='Mod 工具'}"
@@ -83,6 +87,7 @@
                                     <Button Content="{l:Loc Key='自动查找 Mod'}" Click="FindMods_Click" IsEnabled="{Binding CanOpenProject}" Padding="12,8" Margin="0,0,0,8"/>
                                     <Button x:Name="ModToolsOpenProjectButton" Content="{l:Loc Key='打开 Mod 文件夹'}" Style="{StaticResource PrimaryButton}" Padding="12,8" IsEnabled="{Binding CanOpenProject}" Click="OpenProject_Click" />
                                     <Button Content="{l:Loc Key='修改记录与还原'}" Style="{StaticResource SecondaryButton}" Padding="12,8" IsEnabled="{Binding CanOpenProject}" Click="ChangeRecords_Click" Tag="change-records-entry" />
+                                    <Button Content="{l:Loc Key='修复导弹副本'}" Style="{StaticResource SecondaryButton}" Padding="12,8" IsEnabled="{Binding HasOpenProject}" Click="MissileRepair_Click" Tag="missile-repair-entry" />
                                     <TextBlock Text="{l:Loc Key='选择包含 GameData 的 Mod 根目录'}" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" Margin="2,3,0,8" />
 
                                     <Button Content="{l:Loc Key='创建新 Mod'}"
@@ -105,13 +110,12 @@
                         </Popup>
                     </Grid>
 
-                    <Button x:Name="TopDraftButton" Content="{l:Loc Key=草稿总览}" Click="OpenDrafts_Click" IsEnabled="{Binding HasOpenProject}" Margin="0,0,10,0"/>
+                    <Button x:Name="TopDraftButton" Click="OpenDrafts_Click" IsEnabled="{Binding HasOpenProject}" Margin="0,0,10,0"><TextBlock Text="{l:Loc Key=草稿总览}" SizeChanged="HeaderText_SizeChanged" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/></Button>
                     <Button x:Name="TopGenerateButton"
-                            Content="{l:Loc Key='生成 / 编译 Mod'}"
                             Style="{StaticResource PrimaryButton}"
                             IsEnabled="{Binding CanRunGenerate}"
                             Click="RunGenerate_Click"
-                            ToolTip="{Binding GenerateAvailability}" />
+                            ToolTip="{Binding GenerateAvailability}"><TextBlock Text="{l:Loc Key='生成 / 编译 Mod'}" SizeChanged="HeaderText_SizeChanged" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/></Button>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -291,17 +295,31 @@
                                  Background="{DynamicResource ProgressTrackBrush}" />
 
                     <controls:RulesView Grid.Row="2" Workspace="{Binding RulesWorkspace}" Visibility="{Binding IsRulesModule, Converter={StaticResource BooleanToVisibilityConverter}}"><controls:RulesView.Style><Style TargetType="controls:RulesView"><Style.Triggers><DataTrigger Binding="{Binding UnitWorkspace.IsTransactionBusy}" Value="True"><Setter Property="IsEnabled" Value="False"/></DataTrigger></Style.Triggers></Style></controls:RulesView.Style></controls:RulesView>
-                    <controls:StrategicPackView Grid.Row="2" DataContext="{Binding StrategicWorkspace.Packs}" Visibility="{Binding DataContext.IsPackModule, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                    <controls:StrategicWorkspaceView Grid.Row="2" DataContext="{Binding StrategicWorkspace}" Visibility="{Binding DataContext.IsStrategicModule, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                    <workspaces:UnitWorkspaceView x:Name="UnitPage" Grid.Row="2" Visibility="{Binding IsUnitModule, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <controls:StrategicPackView Grid.Row="2" Visibility="{Binding DataContext.IsPackModule, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <controls:StrategicPackView.Style><Style TargetType="controls:StrategicPackView"><Setter Property="DataContext" Value="{x:Null}"/><Style.Triggers><DataTrigger Binding="{Binding DataContext.IsPackModule, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"><Setter Property="DataContext" Value="{Binding DataContext.StrategicWorkspace.Packs, RelativeSource={RelativeSource AncestorType=Window}}"/></DataTrigger></Style.Triggers></Style></controls:StrategicPackView.Style>
+                    </controls:StrategicPackView>
+                    <controls:StrategicWorkspaceView Grid.Row="2" Visibility="{Binding DataContext.IsStrategicModule, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <controls:StrategicWorkspaceView.Style><Style TargetType="controls:StrategicWorkspaceView"><Setter Property="DataContext" Value="{x:Null}"/><Style.Triggers><DataTrigger Binding="{Binding DataContext.IsStrategicModule, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"><Setter Property="DataContext" Value="{Binding DataContext.StrategicWorkspace, RelativeSource={RelativeSource AncestorType=Window}}"/></DataTrigger></Style.Triggers></Style></controls:StrategicWorkspaceView.Style>
+                    </controls:StrategicWorkspaceView>
+                    <workspaces:UnitWorkspaceView x:Name="UnitPage" Grid.Row="2" Visibility="{Binding DataContext.IsUnitModule, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <workspaces:UnitWorkspaceView.Style><Style TargetType="workspaces:UnitWorkspaceView"><Setter Property="DataContext" Value="{x:Null}"/><Style.Triggers><DataTrigger Binding="{Binding DataContext.IsUnitModule, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"><Setter Property="DataContext" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"/></DataTrigger></Style.Triggers></Style></workspaces:UnitWorkspaceView.Style>
+                    </workspaces:UnitWorkspaceView>
 
-                    <workspaces:WeaponWorkspaceView x:Name="WeaponPage" Grid.Row="2" Visibility="{Binding IsWeaponModule, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <workspaces:WeaponWorkspaceView x:Name="WeaponPage" Grid.Row="2" Visibility="{Binding DataContext.IsWeaponModule, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <workspaces:WeaponWorkspaceView.Style><Style TargetType="workspaces:WeaponWorkspaceView"><Setter Property="DataContext" Value="{x:Null}"/><Style.Triggers><DataTrigger Binding="{Binding DataContext.IsWeaponModule, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"><Setter Property="DataContext" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"/></DataTrigger></Style.Triggers></Style></workspaces:WeaponWorkspaceView.Style>
+                    </workspaces:WeaponWorkspaceView>
 
-                    <workspaces:AmmoWorkspaceView x:Name="AmmoPage" Grid.Row="2" Visibility="{Binding IsAmmoModule, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <workspaces:AmmoWorkspaceView x:Name="AmmoPage" Grid.Row="2" Visibility="{Binding DataContext.IsAmmoModule, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <workspaces:AmmoWorkspaceView.Style><Style TargetType="workspaces:AmmoWorkspaceView"><Setter Property="DataContext" Value="{x:Null}"/><Style.Triggers><DataTrigger Binding="{Binding DataContext.IsAmmoModule, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"><Setter Property="DataContext" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"/></DataTrigger></Style.Triggers></Style></workspaces:AmmoWorkspaceView.Style>
+                    </workspaces:AmmoWorkspaceView>
 
-                    <workspaces:DivisionWorkspaceView x:Name="DivisionPage" Grid.Row="2" Visibility="{Binding IsDivisionModule, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <workspaces:DivisionWorkspaceView x:Name="DivisionPage" Grid.Row="2" Visibility="{Binding DataContext.IsDivisionModule, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <workspaces:DivisionWorkspaceView.Style><Style TargetType="workspaces:DivisionWorkspaceView"><Setter Property="DataContext" Value="{x:Null}"/><Style.Triggers><DataTrigger Binding="{Binding DataContext.IsDivisionModule, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"><Setter Property="DataContext" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"/></DataTrigger></Style.Triggers></Style></workspaces:DivisionWorkspaceView.Style>
+                    </workspaces:DivisionWorkspaceView>
 
-                    <workspaces:DraftWorkspaceView x:Name="DraftPage" Grid.Row="2" Visibility="{Binding IsDraftModule, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <workspaces:DraftWorkspaceView x:Name="DraftPage" Grid.Row="2" Visibility="{Binding DataContext.IsDraftModule, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <workspaces:DraftWorkspaceView.Style><Style TargetType="workspaces:DraftWorkspaceView"><Setter Property="DataContext" Value="{x:Null}"/><Style.Triggers><DataTrigger Binding="{Binding DataContext.IsDraftModule, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"><Setter Property="DataContext" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"/></DataTrigger></Style.Triggers></Style></workspaces:DraftWorkspaceView.Style>
+                    </workspaces:DraftWorkspaceView>
 
                     <workspaces:ProblemWorkspaceView x:Name="ProblemPage" Grid.Row="2" Visibility="{Binding IsProblemModule, Converter={StaticResource BooleanToVisibilityConverter}}" />
 

@@ -3,6 +3,8 @@ namespace WarnoLiteModdingTool.App.ViewModels;
 public sealed class FieldSectionViewModel<T> : ObservableObject
 {
     private bool _isExpanded;
+    private readonly System.Collections.ObjectModel.ObservableCollection<FieldGroupViewModel<T>> _visibleGroups = [];
+    private int _publishGeneration;
 
     public FieldSectionViewModel(
         string title,
@@ -10,24 +12,64 @@ public sealed class FieldSectionViewModel<T> : ObservableObject
         bool isExpanded)
     {
         Title = title;
-        Groups = groups;
+        Groups = new(groups);
         _isExpanded = isExpanded;
+        PublishGroups();
     }
 
     public string Title { get; }
 
-    public IReadOnlyList<FieldGroupViewModel<T>> Groups { get; }
+    public System.Collections.ObjectModel.ObservableCollection<FieldGroupViewModel<T>> Groups { get; }
+    public IReadOnlyList<FieldGroupViewModel<T>> VisibleGroups => _visibleGroups;
 
     public int FieldCount => Groups.Sum(group => group.Fields.Count);
+    public void UpdateGroups(IReadOnlyList<FieldGroupViewModel<T>> groups)
+    {
+        if (Groups.Select(g => g.Title).SequenceEqual(groups.Select(g => g.Title)))
+            for (var i = 0; i < Groups.Count; i++) Groups[i].UpdateFields(groups[i].Fields);
+        else { Groups.Clear(); foreach (var group in groups) Groups.Add(group); PublishGroups(); }
+        OnPropertyChanged(nameof(FieldCount));
+    }
 
     public bool IsExpanded
     {
         get => _isExpanded;
-        set => SetProperty(ref _isExpanded, value);
+        set { if (SetProperty(ref _isExpanded, value)) { PublishGroups(); OnPropertyChanged(nameof(VisibleGroups)); } }
+    }
+
+    private void PublishGroups()
+    {
+        var generation = ++_publishGeneration;
+        _visibleGroups.Clear();
+        if (!IsExpanded) return;
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher is null || dispatcher.HasShutdownStarted)
+        { foreach (var group in Groups) _visibleGroups.Add(group); return; }
+        var next = 0;
+        void PublishNext()
+        {
+            if (generation != _publishGeneration || !IsExpanded || next >= Groups.Count) return;
+            _visibleGroups.Add(Groups[next++]);
+            if (next < Groups.Count) dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, new Action(PublishNext));
+        }
+        // Let layout/render and input run between groups rather than materializing
+        // every field template in a single opening/selection dispatcher turn.
+        dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, new Action(PublishNext));
     }
 }
 
-public sealed record FieldGroupViewModel<T>(string Title, IReadOnlyList<T> Fields);
+public sealed class FieldGroupViewModel<T>(string title, IReadOnlyList<T> fields)
+{
+    public string Title { get; } = title;
+    public System.Collections.ObjectModel.ObservableCollection<T> Fields { get; } = new(fields);
+    public void UpdateFields(IReadOnlyList<T> fields)
+    {
+        for (var i = 0; i < fields.Count; i++)
+            if (i >= Fields.Count) Fields.Add(fields[i]);
+            else if (!ReferenceEquals(Fields[i], fields[i])) Fields[i] = fields[i];
+        while (Fields.Count > fields.Count) Fields.RemoveAt(Fields.Count - 1);
+    }
+}
 
 public static class FieldSectionBuilder
 {

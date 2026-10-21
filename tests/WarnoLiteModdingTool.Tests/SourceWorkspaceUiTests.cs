@@ -34,7 +34,7 @@ internal static partial class Program
                 var old = window.ActiveEditor!.Text; window.ActiveEditor.Text = old.Replace("Value = 7", "Value = 8"); RunWithDispatcher(window.SaveAllAsync(), dispatcher);
                 Assert(vm.SourceDraftCount == 1 && File.ReadAllText(Path.Combine(root, "Custom/Nested/Unknown.NDF")) == old, "actual editor persists draft without formal write");
                 Assert(window.ActiveEditor.Document.Text.Contains("\r\n") && window.ActiveEditor.Document.Text.Contains("\n("), "editor retains mixed line endings");
-                Directory.CreateDirectory("publish/qa-source-workspace");
+                Directory.CreateDirectory("publish/qa-2.11.9/source");
                 if(largeFiles)
                 {
                     var measurements=new List<object>();UiText.Current.SetLanguage("en");
@@ -51,7 +51,7 @@ internal static partial class Program
                         measurements.Add(new{Megabytes=mb,OpenUiMs=openMs,InputP95=inputs.Order().ElementAt(11),InputSamples=inputs,SaveDraftMs=saveMs,PrepareAndDiffUiMs=diffMilliseconds,PeakWorkingSet=System.Diagnostics.Process.GetCurrentProcess().PeakWorkingSet64});
                         window.ActiveEditor!.Text=content;RunWithDispatcher(window.SaveAllAsync(),dispatcher);
                     }
-                    Directory.CreateDirectory("publish/qa-source-optimization");File.WriteAllText("publish/qa-source-optimization/large-ui.json",System.Text.Json.JsonSerializer.Serialize(new{Results=measurements,Note="10 then 50 MB multiline comments, 183-character lines, actual WPF; whole-process peak includes previous steps, no real IME"},new System.Text.Json.JsonSerializerOptions{WriteIndented=true}));
+                    Directory.CreateDirectory("publish/qa-2.11.9/source");File.WriteAllText("publish/qa-2.11.9/source/large-ui.json",System.Text.Json.JsonSerializer.Serialize(new{Results=measurements,Note="10 then 50 MB multiline comments, 183-character lines, actual WPF; whole-process peak includes previous steps, no real IME"},new System.Text.Json.JsonSerializerOptions{WriteIndented=true}));
                     window.Close();DrainDispatcher(dispatcher);owner.Close();app.Shutdown();completion.SetResult();return;
                 }
                 UiText.Current.SetLanguage("en");
@@ -77,7 +77,7 @@ internal static partial class Program
                 }
                 RunWithDispatcher(InputSamples(),dispatcher);
                 Assert(vm.SourceDraftStore.Operations.Single(o=>o.RelativeSourceFile=="Input.ndf").Source!.Text.EndsWith(new string('x',40)),"input during save retains newer revision");
-                Directory.CreateDirectory("publish/qa-source-optimization");File.WriteAllText("publish/qa-source-optimization/input-ui.json",System.Text.Json.JsonSerializer.Serialize(new {Bytes=System.Text.Encoding.UTF8.GetByteCount(inputText),Samples=latencies, P50=latencies.Order().ElementAt(19),P95=latencies.Order().ElementAt(37),Max=latencies.Max(),Note="Programmatic WPF insert/caret/layout through ContextIdle; not real IME or cross-screen DPI"},new System.Text.Json.JsonSerializerOptions {WriteIndented=true}));
+                Directory.CreateDirectory("publish/qa-2.11.9/source");File.WriteAllText("publish/qa-2.11.9/source/input-ui.json",System.Text.Json.JsonSerializer.Serialize(new {Bytes=System.Text.Encoding.UTF8.GetByteCount(inputText),Samples=latencies, P50=latencies.Order().ElementAt(19),P95=latencies.Order().ElementAt(37),Max=latencies.Max(),Note="Programmatic WPF insert/caret/layout through ContextIdle; not real IME or cross-screen DPI"},new System.Text.Json.JsonSerializerOptions {WriteIndented=true}));
                 window.ActiveEditor.Text=inputText;RunWithDispatcher(window.SaveAllAsync(),dispatcher);RunWithDispatcher(window.OpenFileAsync("Custom/Nested/Unknown.NDF"),dispatcher);
                 foreach (var language in new[] { "zh-CN", "en" })
                 foreach (var theme in Enum.GetValues<AppTheme>())
@@ -166,6 +166,6 @@ internal static partial class Program
     private static void SourceScreenshot(Window window, string name)
     {
         var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render((FrameworkElement)window.Content);
-        var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using var stream = File.Create(Path.Combine("publish/qa-source-workspace", name)); encoder.Save(stream);
+        var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using var stream = File.Create(Path.Combine("publish/qa-2.11.9/source", name)); encoder.Save(stream);
     }
 }

@@ -46,7 +46,7 @@ public static class WeaponStructurePlanner
     {
         var states = States(operations); if (states.Count == 0) return [];
         ValidateCombination(units, weapons, operations);
-        var originalGraph = new UnitProjectGraph(root); var messages = new List<string>();
+        var originalGraph = UnitProjectGraph.Read(root); var messages = new List<string>();
         foreach (var state in states)
         {
             WeaponStructurePresentation.ValidateBaselines(originalGraph, state);

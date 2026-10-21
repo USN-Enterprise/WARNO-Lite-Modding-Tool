@@ -33,6 +33,9 @@ public sealed class DraftStore : IDisposable
     public IReadOnlyList<DraftOperation> Operations => _document.Operations;
 
     public bool IsBlocked => _blocked;
+    // The owner may prepare immutable display analysis before publishing a persisted revision.
+    // No callback is required for headless transactions or old-reader compatibility.
+    public Func<IReadOnlyList<DraftOperation>, CancellationToken, Task>? PrepareChangeAsync { get; set; }
 
     public async Task<DraftLoadResult> LoadAsync(CancellationToken cancellationToken = default)
     {
@@ -56,7 +59,7 @@ public sealed class DraftStore : IDisposable
                 input.Position = prefixLength == 3 && prefix.AsSpan().SequenceEqual(new byte[] { 0xef, 0xbb, 0xbf }) ? 3 : 0;
                 var document = await JsonSerializer.DeserializeAsync<DraftDocument>(input, JsonOptions, cancellationToken)
                     ?? throw new JsonException("草稿内容为空。");
-                if (document.SchemaVersion is not (1 or 2 or 3 or 4 or 5 or 6 or 7) || document.Operations.Any(o => !Enum.IsDefined(o.TargetKind) || o.TargetKind == DraftTargetKind.SourceFile && (o.Source is null || document.SchemaVersion < 6) || Units.UnitDeletionV2.IsNew(o) && document.SchemaVersion < 7))
+                if (document.SchemaVersion is not (1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 10) || document.Operations.Any(o => !Enum.IsDefined(o.TargetKind) || o.TargetKind == DraftTargetKind.MissileDebugRepair && document.SchemaVersion < 10 || o.MissileMotion is not null && document.SchemaVersion < 9 || o.TargetKind == DraftTargetKind.SourceFile && (o.Source is null || document.SchemaVersion < 6) || Units.UnitDeletionV2.IsNew(o) && document.SchemaVersion < 7 || (o.ApBindings is not null || o.TargetKind == DraftTargetKind.DamageDistance && Weapons.DamageDistance.Read(o).Version == 2) && document.SchemaVersion < 8))
                 {
                     _blocked = true;
                     return new DraftLoadResult(
@@ -190,7 +193,7 @@ public sealed class DraftStore : IDisposable
         }
     }
 
-    public void Dispose() => _gate.Dispose();
+    public void Dispose() { PrepareChangeAsync = null; _gate.Dispose(); }
 
     private DraftDocument Candidate(IReadOnlyList<DraftOperation> operations)
     {
@@ -200,11 +203,12 @@ public sealed class DraftStore : IDisposable
             || o.TargetKind == DraftTargetKind.UnitCreate && Units.UnitCreation.Read(o).WeaponStructures.Any(s => s.AmmoFields.Values.Any(f => f.Keys.Any(Weapons.AmmoProfessional.RequiresV3)))
             || o.TargetKind == DraftTargetKind.WeaponBatch && Weapons.WeaponBatch.ReadCells(o).Any(c => c.InsertAmmoField || Weapons.AmmoProfessional.RequiresV3(c.Key)));
         var aviation = operations.Any(o => Units.AviationMovement.IsField(o.FieldKey) || o.GroupId?.StartsWith("aviation-speed:", StringComparison.Ordinal) == true || o.TargetKind == DraftTargetKind.UnitCreate && Units.UnitCreation.Read(o).Fields.Keys.Any(k => Units.AviationMovement.IsField(k) || k == Units.AviationMovement.Speed));
-        return new(Math.Max(_document.SchemaVersion, operations.Any(Units.UnitDeletionV2.IsNew) ? 7 : operations.Any(o => o.TargetKind == DraftTargetKind.SourceFile) ? 6 : aviation ? 5 : operations.Any(o => o.TargetKind is DraftTargetKind.DamageRule or DraftTargetKind.DamageDistance) ? 4 : ammo ? 3 : advanced ? 2 : 1), DateTimeOffset.UtcNow, operations);
+        return new(Math.Max(_document.SchemaVersion, operations.Any(Weapons.MissileDebugRepair.IsRepair) ? 10 : operations.Any(o => o.MissileMotion is not null) ? 9 : operations.Any(o => o.ApBindings is not null || o.TargetKind == DraftTargetKind.DamageDistance && Weapons.DamageDistance.Read(o).Version == 2) ? 8 : operations.Any(Units.UnitDeletionV2.IsNew) ? 7 : operations.Any(o => o.TargetKind == DraftTargetKind.SourceFile) ? 6 : aviation ? 5 : operations.Any(o => o.TargetKind is DraftTargetKind.DamageRule or DraftTargetKind.DamageDistance) ? 4 : ammo ? 3 : advanced ? 2 : 1), DateTimeOffset.UtcNow, operations);
     }
 
     private async Task SaveCandidateAsync(DraftDocument candidate, CancellationToken cancellationToken)
     {
+        if (PrepareChangeAsync is { } prepare) await prepare(candidate.Operations, cancellationToken).ConfigureAwait(false);
         await Task.Run(() => VerifySourceDraftRevision(candidate.SchemaVersion >= 6),cancellationToken);
         await SourceWorkspace.SourceEditing.CheckCoexistence(ProjectRoot, candidate.Operations, cancellationToken);
         Directory.CreateDirectory(EditorDirectory);

@@ -158,7 +158,7 @@ public sealed class StrategicWorkspaceViewModel : ObservableObject
     {
         var node = new StrategicNode { Id = id, Kind = kind, Name = name, IsHQ = hq, Pack = slot?.Pack ?? "", Unit = slot?.Unit ?? "", Transport = slot?.Transport ?? "", Xp = slot?.Xp ?? 0, Count = slot?.Count ?? 1, Start = slot?.Start };
         node.TranslateName = name => { var display = DisplayName(kind == "company" ? "COMPANIES" : "PLATOONS",name); return display == name && name.Length == 10 && !Data.Names.Values.Any(d=>d.ContainsValue(name)) ? (kind == "group" ? Localisation.UiText.T("组") + " " + (int.TryParse(id.Split('/').Last(),out var n)?n+1:1) : id.Replace("Descriptor_CombatGroup_", "").Replace('_', ' ')) : display; };
-        node.UnitName = unit => Data.Units.Units.FirstOrDefault(u => u.Name == unit)?.DisplayName ?? unit;
+        node.UnitName = unit => Packs.UnitName(unit);
         var count = node.Count; node.Changed = () => { if (!_loading && count != node.Count) { ResetIndices(); count = node.Count; } Save(); }; return node;
     }
     public void RefreshLabels() { foreach(var node in AllNodes)node.RefreshLabel(); if(Roots.Count>0)Roots[0].Name=PawnName; OnPropertyChanged(nameof(PawnName)); OnPropertyChanged(nameof(VisibleRecords)); }

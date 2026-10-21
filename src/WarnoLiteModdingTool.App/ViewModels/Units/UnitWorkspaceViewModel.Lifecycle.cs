@@ -27,7 +27,9 @@ public sealed partial class UnitWorkspaceViewModel
         await FlushAsync();
         if (!CanEditSelectedLifecycle || SelectedUnit is null) throw new InvalidOperationException(UiText.T("请先选择可编辑单位"));
         var unit = SelectedUnit.Unit;
-        var graph = await Task.Run(() => new UnitProjectGraph(_draftStore.ProjectRoot));
+        var token = _lifetime.Token;
+        var graph = await Task.Run(() => new UnitProjectGraph(_draftStore.ProjectRoot, cancellationToken: token), token);
+        token.ThrowIfCancellationRequested();
         var creation = _draftStore.Operations.FirstOrDefault(o => o.TargetKind == DraftTargetKind.UnitCreate && o.ObjectName == unit.Name);
         var old = _draftStore.Operations.FirstOrDefault(o => o.TargetKind == DraftTargetKind.UnitCapabilities && o.ObjectName == unit.Name);
         var state = old is not null ? UnitCapabilities.Read(old) : UnitCapabilities.FromBody(UnitCreation.Source(unit));
@@ -55,7 +57,9 @@ public sealed partial class UnitWorkspaceViewModel
         if (!CanEditSelectedLifecycle || SelectedUnit is null) throw new InvalidOperationException(UiText.T("请先选择可编辑单位"));
         if (!registration && !Advanced.EditorMode.IsAdvanced) throw new InvalidOperationException(UiText.T("变量名编辑仅专业模式可用"));
         var unit = SelectedUnit.Unit;
-        var graph = await Task.Run(() => new UnitProjectGraph(_draftStore.ProjectRoot));
+        var token = _lifetime.Token;
+        var graph = await Task.Run(() => new UnitProjectGraph(_draftStore.ProjectRoot, cancellationToken: token), token);
+        token.ThrowIfCancellationRequested();
         var creation = _draftStore.Operations.FirstOrDefault(o => o.TargetKind == DraftTargetKind.UnitCreate && o.ObjectName == unit.Name);
         if (registration && creation is not null) throw new InvalidOperationException(UiText.T("待创建单位将在应用时注册"));
         var old = _draftStore.Operations.FirstOrDefault(o => o.TargetKind == DraftTargetKind.UnitRename && o.ObjectName == unit.Name);
@@ -103,10 +107,13 @@ public sealed partial class UnitWorkspaceViewModel
         var creation = _draftStore.Operations.FirstOrDefault(o => o.TargetKind == DraftTargetKind.UnitCreate && o.ObjectName == unit.Name);
         if (creation is null)
         {
-            var deletionGraph = await Task.Run(() => new UnitProjectGraph(_draftStore.ProjectRoot, deletionScope: true));
+            var token = _lifetime.Token;
+            var deletionGraph = await Task.Run(() => new UnitProjectGraph(_draftStore.ProjectRoot, deletionScope: true, cancellationToken: token), token);
+            token.ThrowIfCancellationRequested();
             var dialog = new UnitDeletionWindow(unit, _data, deletionGraph, async operation =>
             {
-                await Task.Run(() => _transactions.PrepareApplyAsync(_draftStore.ProjectRoot, [operation]));
+                await Task.Run(() => _transactions.PrepareApplyAsync(_draftStore.ProjectRoot, [operation], token), token);
+                token.ThrowIfCancellationRequested();
                 await _draftStore.UpsertAsync(operation); RefreshExternalDraftState();
             }) { Owner = owner };
             dialog.ShowDialog();

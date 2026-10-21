@@ -29,6 +29,7 @@ public sealed class WeaponFieldViewModel : ObservableObject
     }
 
     public WeaponFieldValue Field { get; }
+    public Core.Ndf.NdfObjectInfo? MissileEntity { get; set; }
     public string ProjectRoot { get; init; } = "";
     public Core.Localisation.UnitLocalisationCatalog? LocalisationCatalog { get; init; }
     public WeaponFieldViewModel? LinkedTags { get; set; }

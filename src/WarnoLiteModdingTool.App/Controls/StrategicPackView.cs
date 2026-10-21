@@ -16,9 +16,15 @@ public sealed class StrategicPackView : UserControl
     private TextBlock? _count;
     private FacetFilter? _filter;
     private bool _busy, _selecting, _showDetail;
+    private CancellationTokenSource? _suggestion;
+    private void CancelSuggestion()
+    {
+        _suggestion?.Cancel(); _suggestion?.Dispose(); _suggestion = null;
+    }
     public StrategicPackView()
     {
         DataContextChanged+=(_,_)=>Build();
+        Unloaded+=(_,_)=>CancelSuggestion();
         SizeChanged+=(_,_)=>Layout();
         System.ComponentModel.PropertyChangedEventManager.AddHandler(UiText.Current,(_,_)=>Build(),nameof(UiText.Version));
     }
@@ -26,10 +32,16 @@ public sealed class StrategicPackView : UserControl
     private static Button Action(string text)=>new() {Content=UiText.T(text),Margin=new Thickness(0,0,8,0),Padding=new Thickness(12,6,12,6)};
     private void Build()
     {
+        CancelSuggestion();
         if(_vm is not null)System.Collections.Specialized.CollectionChangedEventManager.RemoveHandler(_vm.View,Changed);
         if(!ReferenceEquals(_vm,DataContext))_filter=null;
         _vm=DataContext as StrategicPackWorkspaceViewModel;
-        if(_vm is not {} vm){Content=null;return;}
+        if(_vm is not {} vm)
+        {
+            Content=null;
+            _item=null; _list=null; _detail=null; _body=null; _back=null; _open=null; _count=null; _filter=null;
+            return;
+        }
         var root=new DockPanel {Margin=new Thickness(16)};Content=root;
         var sourceLink = new SourceLink(); sourceLink.SetBinding(SourceLink.TargetProperty, new Binding("Selected")); DockPanel.SetDock(sourceLink, Dock.Top); root.Children.Add(sourceLink); SourceLink.SetRowMenu(this, true);
         var toolbar=new DockPanel {Margin=new Thickness(0,0,0,10)};DockPanel.SetDock(toolbar,Dock.Top);root.Children.Add(toolbar);
@@ -108,6 +120,7 @@ public sealed class StrategicPackView : UserControl
     }
     private void Details()
     {
+        CancelSuggestion();
         if(_detail is null||_vm is not {} vm)return;
         if(_item is not {} item){_detail.Content=Label("请选择 Pack");return;}
         var state=vm.PendingEdits.GetValueOrDefault(item.Id,item.State);
@@ -126,7 +139,26 @@ public sealed class StrategicPackView : UserControl
         void Track(){var current=Current();if(current==item.State)vm.PendingEdits.Remove(item.Id);else vm.PendingEdits[item.Id]=current;status.Text=current==item.State?UiText.T(item.Status):UiText.T("未加入草稿");status.Visibility=status.Text.Length==0?Visibility.Collapsed:Visibility.Visible;}
         name.TextChanged+=(_,_)=>Track();units.SelectedItemChanged+=(_,_)=>Track();transports.SelectedItemChanged+=(_,_)=>Track();xp.SelectionChanged+=(_,_)=>Track();
         noTransport.Checked+=(_,_)=>{transports.IsEnabled=false;Track();};noTransport.Unchecked+=(_,_)=>{transports.IsEnabled=true;Track();};Track();
-        readable.Click+=(_,_)=>{try{name.Text=vm.Suggest(Current());}catch(Exception ex){status.Text=ex.Message;}};
+        readable.Click+=async(_,_)=>
+        {
+            CancelSuggestion();
+            var request = new CancellationTokenSource(); _suggestion = request;
+            var token = request.Token; var input = Current(); readable.IsEnabled = false;
+            try
+            {
+                var suggested = await vm.SuggestAsync(input, token);
+                // A late result must never replace a newer edit or another selection.
+                if (!token.IsCancellationRequested && ReferenceEquals(_vm,vm) && ReferenceEquals(_item,item) && Current()==input)
+                    name.Text=suggested;
+            }
+            catch(OperationCanceledException) when(token.IsCancellationRequested) { }
+            catch(Exception ex) { if(!token.IsCancellationRequested)status.Text=ex.Message; }
+            finally
+            {
+                readable.IsEnabled=true;
+                if(ReferenceEquals(_suggestion,request)){_suggestion=null;request.Dispose();}
+            }
+        };
         var impact=Label(vm.Impact);panel.Children.Add(impact);
         var actions=new WrapPanel {Margin=new Thickness(0,6,0,14)};panel.Children.Add(actions);
         var undo=Action("撤销编辑");undo.Click+=(_,_)=>{vm.PendingEdits.Remove(item.Id);Details();};actions.Children.Add(undo);

@@ -119,7 +119,7 @@ internal static partial class Program
                 Assert(editor.SelectionLength > 0 && editor.SelectionLength < selected.Unit.Source.CharacterLength, "field link selects a parameter rather than whole object");
                 vm.AdvancedMode = false; DrainDispatcher(dispatcher);
                 Assert(!link.IsVisible, "new business link hidden in basic mode"); vm.AdvancedMode = true;
-                Directory.CreateDirectory("publish/qa-2.11.3");
+                Directory.CreateDirectory("publish/qa-2.11.9/source-navigation");
                 foreach (var language in new[] { "zh-CN", "en" })
                 foreach (var theme in Enum.GetValues<AppTheme>())
                 {
@@ -188,7 +188,7 @@ internal static partial class Program
         static void Snapshot(Window window, string name)
         {
             window.UpdateLayout(); var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(window);
-            var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using var stream = File.Create(Path.Combine("publish/qa-2.11.3", name)); encoder.Save(stream);
+            var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using var stream = File.Create(Path.Combine("publish/qa-2.11.9/source-navigation", name)); encoder.Save(stream);
         }
     }
 }

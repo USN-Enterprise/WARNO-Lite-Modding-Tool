@@ -121,7 +121,7 @@ internal static partial class Program
         workspace.SelectedBatchField=workspace.BatchFieldOptions.Single(f=>f.Definition.Key=="survival.health");workspace.SelectedBatchOperation=workspace.BatchOperationOptions.First(o=>o.Operation==UnitBatchOperation.Set);workspace.BatchOperand="19";
         Assert(workspace.CanAddBatchDrafts,"不预览也可加入草稿");var add=workspace.AddBatchToDraftsAsync();while(!add.IsCompleted){DrainDispatcher(main.Dispatcher);Thread.Sleep(5);}add.GetAwaiter().GetResult();Assert(workspace.DraftItems.Any(d=>d.Resolved.Operation.FieldKey=="survival.health"&&d.Resolved.Operation.TargetValue=="19"),"不预览直接加入仍使用当前输入校验");workspace.ClearBatchSelection();
         var (context,units,weapons)=Task.Run(()=>LoadP4Async(root)).GetAwaiter().GetResult();var index=new ProjectIndexer().IndexAsync(context).GetAwaiter().GetResult();var divisions=new DivisionProjectLoader().LoadAsync(context,index,units).GetAwaiter().GetResult();
-        var wizard=new WarnoLiteModdingTool.App.Controls.UnitCreationWindow(units,weapons,divisions,[]);
+        var wizard=new WarnoLiteModdingTool.App.Controls.UnitCreationWindow(units,weapons,divisions,[],new UnitProjectGraph(units.Localisation.ProjectRoot));
         SaveUiSnapshot(wizard,"creation-1.png");var tabs=FindVisualChildren<System.Windows.Controls.TabControl>((System.Windows.DependencyObject)wizard.Content).Single();
         tabs.SelectedIndex=2;DrainDispatcher(main.Dispatcher);
         var slots=FindVisualChildren<WarnoLiteModdingTool.App.Controls.UnitCreationWeaponPanel>((System.Windows.DependencyObject)wizard.Content).Single();
